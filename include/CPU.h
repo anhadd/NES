@@ -76,7 +76,7 @@ enum addressing_mode {
     IndirectIndexed
 };
 
-
+// TODO: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
 class CPU {
     public:
         union cpu_memory memory;
