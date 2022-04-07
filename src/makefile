@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -lSDL2
 DEPS = /include/*
-OBJECTS = NES.o input.o GUI.o SFX.o main.o
+OBJECTS = CPU.o main.o
 
 
 all: ../main
