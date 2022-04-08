@@ -27,6 +27,9 @@ a total of 151 valid opcodes out of the possible 256.
 #define CPU_H
 
 #include <SDL2/SDL.h>
+#include <iostream>
+
+using namespace std;
 
 union cpu_memory {
     struct {
@@ -92,16 +95,19 @@ class CPU {
         uint8_t X;
         uint8_t Y;
 
+        // Used to store the final address, after considering addressing modes.
+        uint16_t absolute_address;
+
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
-        void IRQ();                      // Maskable interrupts, ignored if interrupt_disabled is set.
+        void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
                                     // jumps to the address located at $FFFE and $FFFF
-        void NMI();                      // Non-Maskable Interrupts, cannot be ignored.
+        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
                                     // Jumps to the address located at $FFFA and $FFFB
-        void reset();                    // Reset interrupt, on startup and when the reset button is pressed.
+        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
                                     // jumps to the address located at $FFFC and $FFFD
         
-        enum addressing_mode mode;
+        // enum addressing_mode mode;
 
         // Operations: Can be 1, 2, or 3 bytes long.
         // First byte is always the opcode, the rest are arguments.
@@ -113,6 +119,8 @@ class CPU {
         bool ROR(); bool RTI(); bool RTS(); bool SBC(); bool SEC(); bool SED(); bool SEI(); bool STA();
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
         bool INV(); // For invalid opcodes.
+
+        bool readAddress(enum addressing_mode mode);
 
         // Constructor / Decstructor
         CPU();
