@@ -1,4 +1,5 @@
-CC = g++
+CXX = g++
+CXXFLAGS = -std=c++11
 CFLAGS = -lSDL2
 DEPS = /include/*
 OBJECTS = CPU.o main.o
@@ -7,10 +8,10 @@ OBJECTS = CPU.o main.o
 all: ../main
 
 ../main: $(OBJECTS)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CXX) -o $@ $^ $(CFLAGS)
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CXX) -c -o $@ $< $(CFLAGS)
 
 clean:
 	rm -f *.o NES

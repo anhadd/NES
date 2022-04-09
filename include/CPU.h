@@ -28,9 +28,11 @@ a total of 151 valid opcodes out of the possible 256.
 
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
+// The entire memory of the NES.
 union cpu_memory {
     struct {
         char zero_page[0x0100 - 0x0000];
@@ -48,6 +50,7 @@ union cpu_memory {
     char full[0x10000];
 };
 
+// A register with status bits which can be set.
 union status_register {
     struct {
         uint8_t negative : 1;               // N
@@ -62,6 +65,7 @@ union status_register {
     uint8_t full;
 };
 
+// Possible addressing modes.
 enum addressing_mode {
     ZeroPage,
     ZeroPage_X,
@@ -71,17 +75,26 @@ enum addressing_mode {
     Absolute_Y,
     Indirect,
     Indirect_X,
-    Indirect_Y,
+    IndirectIndexed,
     Implied,
     Accumulator,
     Immediate,
-    Relative,
-    IndirectIndexed
+    Relative
+};
+
+// The structure of an instruction with all the data that is required.
+struct instruction {
+    uint8_t opcode;
+    enum addressing_mode opmode;
+    uint8_t opcycles;
+    bool (*opFunction)(void);
 };
 
 // TODO: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
 class CPU {
     public:
+        vector<struct instruction> op_lookup;// Used to lookup data from an opcode.
+
         union cpu_memory memory;
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
@@ -97,6 +110,10 @@ class CPU {
 
         // Used to store the final address, after considering addressing modes.
         uint16_t absolute_address;
+        // Used to store the amount of cycles that an instruction has taken.
+        uint8_t cycles;
+        // Used to store the current addressing mode.
+        enum addressing_mode mode;
 
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
@@ -120,7 +137,8 @@ class CPU {
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
         bool INV(); // For invalid opcodes.
 
-        bool readAddress(enum addressing_mode mode);
+        bool readAddress();
+        bool executeCycle();
 
         // Constructor / Decstructor
         CPU();
