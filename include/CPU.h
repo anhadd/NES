@@ -29,26 +29,27 @@ a total of 151 valid opcodes out of the possible 256.
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
-// The entire memory of the NES.
-union cpu_memory {
-    struct {
-        char zero_page[0x0100 - 0x0000];
-        char stack[0x0200 - 0x0100];
-        char ram[0x0800 - 0x0200];
-        char ram_mirrors[0x2000 - 0x0800];
-        char io1[0x2008 - 0x2000];
-        char io1_mirrors[0x4000 - 0x2008];
-        char io2[0x4020 - 0x4000];
-        char expansion_rom[0x6000 - 0x4020];
-        char sram[0x8000 - 0x6000];
-        char prg_lower[0xC000 - 0x8000];
-        char prg_upper[0x10000 - 0xC000];
-    };
-    char full[0x10000];
-};
+// // The entire memory of the NES.
+// union cpu_memory {
+//     struct {
+//         char zero_page[0x0100 - 0x0000];
+//         char stack[0x0200 - 0x0100];
+//         char ram[0x0800 - 0x0200];
+//         char ram_mirrors[0x2000 - 0x0800];
+//         char io1[0x2008 - 0x2000];
+//         char io1_mirrors[0x4000 - 0x2008];
+//         char io2[0x4020 - 0x4000];
+//         char expansion_rom[0x6000 - 0x4020];
+//         char sram[0x8000 - 0x6000];
+//         char prg_lower[0xC000 - 0x8000];
+//         char prg_upper[0x10000 - 0xC000];
+//     };
+//     char full[0x10000];
+// };
 
 // A register with status bits which can be set.
 union status_register {
@@ -67,35 +68,31 @@ union status_register {
 
 // Possible addressing modes.
 enum addressing_mode {
-    ZeroPage,
-    ZeroPage_X,
-    ZeroPage_Y,
-    Absolute,
-    Absolute_X,
-    Absolute_Y,
-    Indirect,
-    Indirect_X,
-    IndirectIndexed,
-    Implied,
-    Accumulator,
-    Immediate,
-    Relative
+    ZPN,                // Zero Page (Normal)
+    ZPX,                // Zero Page X
+    ZPY,                // Zero Page Y
+    ABS,                // Absolute
+    ABX,                // Absolute X
+    ABY,                // Absolute Y
+    IND,                // Indirect
+    IZX,                // Indirect X
+    IZY,                // Indirect Y (Indirect Indexed)
+    IMP,                // Implied
+    ACC,                // Accumulator
+    IMM,                // Immediate
+    REL                 // Relative
 };
 
-// The structure of an instruction with all the data that is required.
-struct instruction {
-    uint8_t opcode;
-    enum addressing_mode opmode;
-    uint8_t opcycles;
-    bool (*opFunction)(void);
-};
+struct instruction;
 
 // TODO: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
 class CPU {
     public:
-        vector<struct instruction> op_lookup;// Used to lookup data from an opcode.
+        vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
+        uint8_t opcode;             // Stores the current opcode.
 
-        union cpu_memory memory;
+        // union cpu_memory memory;
+        char memory[0x10000];
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -115,6 +112,8 @@ class CPU {
         // Used to store the current addressing mode.
         enum addressing_mode mode;
 
+        uint16_t rom_address;       // Address to start of the rom.
+
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
         void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
@@ -128,21 +127,30 @@ class CPU {
 
         // Operations: Can be 1, 2, or 3 bytes long.
         // First byte is always the opcode, the rest are arguments.
-        bool ADC(); bool AND(); bool ASL(); bool BCC(); bool BCD(); bool BEQ(); bool BIT(); bool BMI();
+        bool ADC(); bool AND(); bool ASL(); bool BCC(); bool BCS(); bool BEQ(); bool BIT(); bool BMI();
         bool BNE(); bool BPL(); bool BRK(); bool BVC(); bool BVS(); bool CLC(); bool CLD(); bool CLI();
         bool CLV(); bool CMP(); bool CPX(); bool CPY(); bool DEC(); bool DEX(); bool DEY(); bool EOR();
         bool INC(); bool INX(); bool INY(); bool JMP(); bool JSR(); bool LDA(); bool LDX(); bool LDY();
         bool LSR(); bool NOP(); bool ORA(); bool PHA(); bool PHP(); bool PLA(); bool PLP(); bool ROL();
         bool ROR(); bool RTI(); bool RTS(); bool SBC(); bool SEC(); bool SED(); bool SEI(); bool STA();
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
-        bool INV(); // For invalid opcodes.
+        bool UNK(); // For unknown opcodes.
 
         bool readAddress();
         bool executeCycle();
+        bool loadRom();
 
         // Constructor / Decstructor
         CPU();
         ~CPU();
+};
+
+// The structure of an instruction with all the data that is required.
+struct instruction {
+    uint8_t opcode;
+    bool (CPU::*opFunction)(void);
+    enum addressing_mode opmode;
+    uint8_t opcycles;
 };
 
 #endif
