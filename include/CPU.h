@@ -31,25 +31,9 @@ a total of 151 valid opcodes out of the possible 256.
 #include <vector>
 #include <fstream>
 
-using namespace std;
+#include "ROM.h"
 
-// // The entire memory of the NES.
-// union cpu_memory {
-//     struct {
-//         char zero_page[0x0100 - 0x0000];
-//         char stack[0x0200 - 0x0100];
-//         char ram[0x0800 - 0x0200];
-//         char ram_mirrors[0x2000 - 0x0800];
-//         char io1[0x2008 - 0x2000];
-//         char io1_mirrors[0x4000 - 0x2008];
-//         char io2[0x4020 - 0x4000];
-//         char expansion_rom[0x6000 - 0x4020];
-//         char sram[0x8000 - 0x6000];
-//         char prg_lower[0xC000 - 0x8000];
-//         char prg_upper[0x10000 - 0xC000];
-//     };
-//     char full[0x10000];
-// };
+using namespace std;
 
 // A register with status bits which can be set.
 union status_register {
@@ -85,14 +69,14 @@ enum addressing_mode {
 
 struct instruction;
 
-// TODO: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
+// DONE: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
 class CPU {
     public:
         vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
         // union cpu_memory memory;
-        char memory[0x10000];
+        uint8_t memory[0x10000];
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -104,14 +88,19 @@ class CPU {
                                     // Can also be set to value form memory.
         uint8_t X;
         uint8_t Y;
+        uint16_t temp;              // Stores the temporary results of instructions.
 
         // Used to store the final address, after considering addressing modes.
         uint16_t absolute_address;
-        // Used to store the amount of cycles that an instruction has taken.
+        // Used to store the offset of branches, if applicable.
+        int8_t relative_offset;
+        // Used to store the amount of cycles that an instruction took.
         uint8_t cycles;
-        // Used to store the current addressing mode.
-        enum addressing_mode mode;
+        uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+        
+        enum addressing_mode mode;  // Used to store the current addressing mode.
 
+        ROM rom;                    // Contains all rom header data.
         uint16_t rom_address;       // Address to start of the rom.
 
         // Interrupt priority: reset > NMI > IRQ
@@ -136,9 +125,12 @@ class CPU {
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
         bool UNK(); // For unknown opcodes.
 
+        // Helper function for branches.
+        bool checkBranch(bool flag);
+
         bool readAddress();
         bool executeCycle();
-        bool loadRom();
+        bool loadRom(char* romName);
 
         // Constructor / Decstructor
         CPU();

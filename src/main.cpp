@@ -4,6 +4,7 @@
 #include "../include/GUI.h"
 #include "../include/CPU.h"
 #include "../include/input.h"
+#include "../include/ROM.h"
 
 
 using namespace std;
@@ -17,25 +18,25 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     CPU cpu;
+    ROM rom;
     
     //set up SDL
     SDL_Init(SDL_INIT_EVERYTHING);
-    const int height = 240, width = 256, scale = 4;
-
+    const int height = 240, width = 256, scale = 2;
     GUI gui(height, width, scale);
     
-    // SFX sfx;
-    // bool play_sound = false;
-    
     bool quit = false;
-    int FPS = 60;
+    int FPS = 20;
 
     SDL_ShowWindow(gui.window);
-    cout << "Window Opened!" << endl;
+    printf("Window Opened!\n");
 
-    // TODO: LOAD ROM HERE, FOR NOW JUST LOADS NESTEST
-    cpu.loadRom();
-    cout << "Rom Loaded!" << endl;
+    // DONE: LOAD ROM HERE, FOR NOW JUST LOADS NESTEST
+    if (cpu.loadRom(argv[1]) != 0) {
+        printf("Error: Could not open ROM file!\n");
+        return 0;
+    }
+    printf("Rom Loaded!\n");
 
     while (!quit) {
         quit = handleInput(quit, gui.sdlevent, cpu, FPS);
@@ -45,6 +46,6 @@ int main(int argc, char *argv[])
     }
 
     SDL_Quit();
-    cout << "Finished!\n";
+    printf("Finished!\n");
     return 0;
 }

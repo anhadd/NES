@@ -10,7 +10,7 @@ GUI::GUI(const int height, const int width, const int scale) {
     SDL_RenderSetLogicalSize(renderer, width, height);
     SDL_RenderSetScale(renderer, scale, scale);
 
-    // TODO: CHANGE TO USE WIDTH AND HEIGHT !
+    // DONE: CHANGE TO USE WIDTH AND HEIGHT !
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 }
 

@@ -5,7 +5,7 @@ CPU::CPU() {
     fill(begin(memory), end(memory), 0);
 
     PC = 0x0000;
-    SP = 0x00;
+    SP = 0xFF;
 
     accumulator = 0;
 
@@ -13,7 +13,7 @@ CPU::CPU() {
     Y = 0;
 
     absolute_address = 0x0000;
-    // TODO: CONTINUE FIXING THIS LOOKUP TABLE STUFF
+    // DONE: CONTINUE FIXING THIS LOOKUP TABLE STUFF
     op_lookup = {
         // opcode / opFunction / opmode / opcycles
 		{ 0x00, &CPU::BRK, IMP, 7 },{ 0x01, &CPU::ORA, IZX, 6 },{ 0x02, &CPU::UNK, IMP, 2 },{ 0x03, &CPU::UNK, IMP, 8 },{ 0x04, &CPU::NOP, ZPN, 3 },{ 0x05, &CPU::ORA, ZPN, 3 },{ 0x06, &CPU::ASL, ZPN, 5 },{ 0x07, &CPU::UNK, IMP, 5 },{ 0x08, &CPU::PHP, IMP, 3 },{ 0x09, &CPU::ORA, IMM, 2 },{ 0x0A, &CPU::ASL, IMP, 2 },{ 0x0B, &CPU::UNK, IMP, 2 },{ 0x0C, &CPU::NOP, ABS, 4 },{ 0x0D, &CPU::ORA, ABS, 4 },{ 0x0E, &CPU::ASL, ABS, 6 },{ 0x0F, &CPU::UNK, IMP, 6 },
@@ -43,11 +43,10 @@ bool CPU::executeCycle() {
     // Execute a single cycle.
     if (cycles == 0) {
         // If opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
-        // TODO: FIX THE PRINTING OF OPCODES AND THE LOADING OF ROMS !!!
+        // DONE: FIX THE PRINTING OF OPCODES AND THE LOADING OF ROMS !!!
         opcode = memory[PC];
-        // cout << "OPCODE: ";
-        // cout << hex << opcode;
-        // cout << endl;
+        printf("OPCODE: %02x        PC: %04x\n", opcode, PC);
+        
         PC += 1;
         mode = op_lookup[opcode].opmode;
         cycles = op_lookup[opcode].opcycles;
@@ -55,6 +54,7 @@ bool CPU::executeCycle() {
         (this->*op_lookup[opcode].opFunction)();
     }
     cycles -= 1;
+    total_cycles += 1;
     return 0;
 }
 
@@ -69,19 +69,19 @@ bool CPU::readAddress() {
         case ZPN:
             // The absolute address is just 1 byte.
             byte1 = memory[PC];
-            absolute_address = byte1;
+            absolute_address = (uint16_t)byte1 & 0x00FF;
             PC += 1;
             break;
         case ZPX:
             // The absolute address is 1 byte plus X.
             byte1 = memory[PC];
-            absolute_address = (byte1 + X) % 0x0100;
+            absolute_address = ((uint16_t)byte1 + (uint16_t)X) % 0x0100;
             PC += 1;
             break;
         case ZPY:
             // The absolute address is 1 byte plus Y.
             byte1 = memory[PC];
-            absolute_address = (byte1 + Y) % 0x0100;
+            absolute_address = ((uint16_t)byte1 + (uint16_t)Y) % 0x0100;
             PC += 1;
             break;
         
@@ -89,14 +89,14 @@ bool CPU::readAddress() {
             // The absolute address is 2 bytes swapped around.
             byte1 = memory[PC];
             byte2 = memory[PC + 1];
-            absolute_address = (byte2 << 8) | (byte1);
+            absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 2;
             break;
         case ABX:
             // The absolute address is 2 bytes swapped around plus X.
             byte1 = memory[PC];
             byte2 = memory[PC + 1];
-            absolute_address = ((byte2 << 8) | (byte1)) + X;
+            absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)X;
             // Add extra cycle since it crosses a page boundary.
             if ((absolute_address & 0xFF00) != (byte2 << 8)) {
                 cycles += 1;
@@ -107,7 +107,7 @@ bool CPU::readAddress() {
             // The absolute address is 2 bytes swapped around plus Y.
             byte1 = memory[PC];
             byte2 = memory[PC + 1];
-            absolute_address = ((byte2 << 8) | (byte1)) + Y;
+            absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             // Add extra cycle since it crosses a page boundary.
             if ((absolute_address & 0xFF00) != (byte2 << 8)) {
                 cycles += 1;
@@ -129,7 +129,7 @@ bool CPU::readAddress() {
                 byte1 = memory[indirect_address];
                 byte2 = memory[indirect_address + 1];
             }
-            absolute_address = ((byte2 << 8) | (byte1)) + Y;
+            absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             PC += 2;
             break;
         case IZX:
@@ -137,7 +137,7 @@ bool CPU::readAddress() {
             indirect_address = memory[PC] + X;
             byte1 = memory[indirect_address % 0x0100];
             byte2 = memory[(indirect_address + 1) % 0x0100];
-            absolute_address = (byte2 << 8) | (byte1);
+            absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 1;
             break;
         case IZY: // A little like Indirect_Y.
@@ -145,14 +145,14 @@ bool CPU::readAddress() {
             indirect_address = memory[PC];
             byte1 = memory[indirect_address % 0x0100];
             byte2 = memory[(indirect_address + 1) % 0x0100];
-            absolute_address = ((byte2 << 8) | (byte1)) + Y;
+            absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             // Add extra cycle since it crosses a page boundary.
             if ((absolute_address & 0xFF00) != (byte2 << 8)) {
                 cycles += 1;
             }
             PC += 1;
             break;
-        
+
         case IMP:
             // Does not require any address in memory.
             absolute_address = 0x0000;
@@ -164,11 +164,13 @@ bool CPU::readAddress() {
         case IMM:
             // Uses supplied byte(s) as a constant.
             absolute_address = PC;
+            // immediate_value = memory[PC];
+            PC += 1;
             break;
         case REL:
             // Adds an offset to the PC if a condition is true.
-            // The offset part is done in the branch instructions themselves.
-            absolute_address = PC;
+            relative_offset = (int8_t)memory[PC];
+            PC += 1;
             break;
         default:
             break;
@@ -178,24 +180,33 @@ bool CPU::readAddress() {
 }
 
 
-bool CPU::loadRom() {
-    ifstream romFile("roms/nestest.nes", ios::in | ios::binary);
-    int i = 0;
-    unsigned char curr_char = 0;
+bool CPU::loadRom(char* romName) {
+    ifstream romFile(romName, ios::in | ios::binary);
 
     if (romFile.fail()) {
-        cout << "Error: Could not open ROM file!\n";
         return 1;
     }
+    romFile.read(reinterpret_cast<char*>(rom.h.full), 0x0010);
+    
+    uint16_t buff_size = rom.h.prg_rom_size * 0x4000;
+    uint8_t buff[buff_size];
+    romFile.read(reinterpret_cast<char*>(buff), buff_size);
+    memcpy(&memory[0x8000], buff, buff_size * sizeof(char));
 
-    romFile.seekg (0x0010);
-    vector<char> prog((istreambuf_iterator<char>(romFile)), istreambuf_iterator<char>());
+    if (rom.h.prg_rom_size == 1) {
+        memcpy(&memory[0xC000], buff, buff_size * sizeof(char));
+    }
 
-    copy(prog.begin(), prog.end(), &memory[0x8000]);
-    // copy(prog.begin(), prog.end(), &memory[0xC000]);
-
+    reset();
     romFile.close();
     return 0;
+}
+
+
+void CPU::reset() {
+    // TODO: FOR NOW IT JUST JUMPS TO THE START, BUT MAKE IT NON-HARDCODED LATER !!!
+    // PC = (memory[0xFFFD] << 8) | memory[0xFFFC];
+    PC = 0xC000;
 }
 
 
@@ -208,53 +219,85 @@ bool CPU::loadRom() {
 */
 
 bool CPU::ADC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    // TODO: CHECK IF THIS REALLY NEEDS TO BE + CARRY
+    temp = (uint16_t)accumulator + (uint16_t)memory[absolute_address] + (uint16_t)status.carry;
+    
+    status.carry =      temp > 0xFF;
+    status.overflow =   (accumulator ^ memory[absolute_address]) & (temp ^ memory[absolute_address]) & 0x80;
+    status.zero =       temp == 0;
+    status.negative =   temp & 0x80;
 
+    accumulator = temp & 0x00FF;
     return 0;
 }
 
 bool CPU::AND() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator &= memory[absolute_address];
+    
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::ASL() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    temp = (uint16_t)accumulator << 1;
+    
+    status.carry =      temp > 0xFF;
+    status.zero =       temp == 0;
+    status.negative =   temp & 0x80;
+
+    accumulator = temp & 0x00FF;
+    return 0;
+}
+
+bool CPU::checkBranch(bool flag) {
+    if (flag) {
+        temp = PC + relative_offset;
+        if ((temp & 0xFF00) != (PC & 0xFF00)) {
+            cycles += 1;
+        }
+        PC = temp;
+        cycles += 1;
+    }
     return 0;
 }
 
 bool CPU::BCC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(!status.carry);
     return 0;
 }
 
 bool CPU::BCS() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(status.carry);
     return 0;
 }
 
 bool CPU::BEQ() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(status.zero);
     return 0;
 }
 
 bool CPU::BIT() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    temp = (uint16_t)accumulator & (uint16_t)memory[absolute_address];
+
+    status.zero =       (temp & 0x00FF) == 0;
+    status.negative =   memory[absolute_address] & 0x80;
+    status.overflow =   memory[absolute_address] & 0x40;
     return 0;
 }
 
 bool CPU::BMI() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(status.negative);
     return 0;
 }
 
 bool CPU::BNE() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(!status.zero);
     return 0;
 }
 
 bool CPU::BPL() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(!status.negative);
     return 0;
 }
 
@@ -264,231 +307,358 @@ bool CPU::BRK() {
 }
 
 bool CPU::BVC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(!status.overflow);
     return 0;
 }
 
 bool CPU::BVS() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    checkBranch(status.overflow);
     return 0;
 }
 
 bool CPU::CLC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.carry = 0;
     return 0;
 }
 
 bool CPU::CLD() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.decimal_mode = 0;
     return 0;
 }
 
 bool CPU::CLI() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.interrupt_disabled = 0;
     return 0;
 }
 
 bool CPU::CLV() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.overflow = 0;
     return 0;
 }
 
 bool CPU::CMP() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    temp = (uint16_t)accumulator - (uint16_t)memory[absolute_address];
+
+    status.carry =      accumulator >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.zero =       accumulator == memory[absolute_address];
+    status.negative =   temp & 0x0080;
     return 0;
 }
 
 bool CPU::CPX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    temp = (uint16_t)X - (uint16_t)memory[absolute_address];
+
+    status.carry =      X >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.zero =       X == memory[absolute_address];
+    status.negative =   temp & 0x0080;
     return 0;
 }
 
 bool CPU::CPY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    temp = (uint16_t)Y - (uint16_t)memory[absolute_address];
+
+    status.carry =      Y >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.zero =       Y == memory[absolute_address];
+    status.negative =   temp & 0x0080;
     return 0;
 }
 
 bool CPU::DEC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (memory[absolute_address] == 0) {
+        memory[absolute_address] = 0xFF;
+    }
+    else {
+        memory[absolute_address] -= 1;
+    }
+
+    status.zero =       memory[absolute_address] == 0;
+    status.negative =   memory[absolute_address] & 0x80;
     return 0;
 }
 
 bool CPU::DEX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (X == 0) {
+        X = 0xFF;
+    }
+    else {
+        X -= 1;
+    }
+
+    status.zero =       X == 0;
+    status.negative =   X & 0x80;
     return 0;
 }
 
 bool CPU::DEY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (Y == 0) {
+        Y = 0xFF;
+    }
+    else {
+        Y -= 1;
+    }
+
+    status.zero =       Y == 0;
+    status.negative =   Y & 0x80;
     return 0;
 }
 
 bool CPU::EOR() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator ^= memory[absolute_address];
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::INC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (memory[absolute_address] == 0xFF) {
+        memory[absolute_address] = 0;
+    }
+    else {
+        memory[absolute_address] += 1;
+    }
+
+    status.zero =       memory[absolute_address] == 0;
+    status.negative =   memory[absolute_address] & 0x80;
     return 0;
 }
 
 bool CPU::INX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (X == 0xFF) {
+        X = 0;
+    }
+    else {
+        X += 1;
+    }
+
+    status.zero =       X == 0;
+    status.negative =   X & 0x80;
     return 0;
 }
 
 bool CPU::INY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (Y == 0xFF) {
+        Y = 0;
+    }
+    else {
+        Y += 1;
+    }
+
+    status.zero =       Y == 0;
+    status.negative =   Y & 0x80;
     return 0;
 }
 
 bool CPU::JMP() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    PC = absolute_address;
     return 0;
 }
 
 bool CPU::JSR() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    SP -= 1;
+    memory[SP + 0x0100] = (PC >> 8) & 0x00FF;
+    SP -= 1;
+    memory[SP + 0x0100] = PC & 0x00FF;
+
+    PC = absolute_address;
     return 0;
 }
 
 bool CPU::LDA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator = memory[absolute_address];
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::LDX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    X = memory[absolute_address];
+
+    status.zero =       X == 0;
+    status.negative =   X & 0x80;
     return 0;
 }
 
 bool CPU::LDY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    Y = memory[absolute_address];
+
+    status.zero =       Y == 0;
+    status.negative =   Y & 0x80;
     return 0;
 }
 
 bool CPU::LSR() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    if (mode == ACC) {
+        temp = (uint16_t)accumulator >> 1;
+        status.carry =      accumulator & 0x01;
+    }
+    else {
+        temp = (uint16_t)memory[absolute_address] >> 1;
+        status.carry =      memory[absolute_address] & 0x01;
+    }
+
+    status.zero =       temp == 0;
+    status.negative =   temp & 0x80;
+
+    if (mode == ACC) {
+        accumulator = temp & 0x00FF;
+    }
+    else {
+        memory[absolute_address] = temp & 0x00FF;
+    }
     return 0;
 }
 
 bool CPU::NOP() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    // Does nothing.
     return 0;
 }
 
 bool CPU::ORA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator |= memory[absolute_address];
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::PHA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    SP -= 1;
+    memory[SP + 0x0100] = accumulator;
     return 0;
 }
 
 bool CPU::PHP() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    SP -= 1;
+    memory[SP + 0x0100] = status.full;
     return 0;
 }
 
 bool CPU::PLA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator = memory[SP + 0x0100];
+    SP += 1;
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::PLP() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.full = memory[SP + 0x0100];
+    SP += 1;
     return 0;
 }
 
 bool CPU::ROL() {
     // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    printf("NOT IMPLEMENTED!\n");
     return 0;
 }
 
 bool CPU::ROR() {
     // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    printf("NOT IMPLEMENTED!\n");
     return 0;
 }
 
 bool CPU::RTI() {
     // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    printf("NOT IMPLEMENTED!\n");
     return 0;
 }
 
 bool CPU::RTS() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    PC = (memory[(SP + 1) + 0x0100] << 8) | memory[SP + 0x0100];
+    SP += 2;
     return 0;
 }
 
 bool CPU::SBC() {
     // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    printf("NOT IMPLEMENTED!\n");
     return 0;
 }
 
 bool CPU::SEC() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.carry = 1;
     return 0;
 }
 
 bool CPU::SED() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.decimal_mode = 1;
     return 0;
 }
 
 bool CPU::SEI() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    status.interrupt_disabled = 1;
     return 0;
 }
 
 bool CPU::STA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    memory[absolute_address] = accumulator;
     return 0;
 }
 
 bool CPU::STX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    memory[absolute_address] = X;
     return 0;
 }
 
 bool CPU::STY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    memory[absolute_address] = Y;
     return 0;
 }
 
 bool CPU::TAX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    X = accumulator;
+
+    status.zero =       X == 0;
+    status.negative =   X & 0x80;
     return 0;
 }
 
 bool CPU::TAY() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    Y = accumulator;
+
+    status.zero =       Y == 0;
+    status.negative =   Y & 0x80;
     return 0;
 }
 
 bool CPU::TSX() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    X = SP;
+
+    status.zero =       X == 0;
+    status.negative =   X & 0x80;
     return 0;
 }
 
 bool CPU::TXA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator = X;
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::TXS() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    SP = X;
+
+    status.zero =       SP == 0;
+    status.negative =   SP & 0x80;
     return 0;
 }
 
 bool CPU::TYA() {
-    // TODO: IMPLEMENT THIS AND EVERYTHING ELSE THAT REQUIRES SPECIFIC ADDRESSING MODES.
+    accumulator = Y;
+
+    status.zero =       accumulator == 0;
+    status.negative =   accumulator & 0x80;
     return 0;
 }
 
 bool CPU::UNK() {
-    cout << "Error: Unknown operation!";
+    printf("Error: Unknown operation!\n");
     return 0;
 }
