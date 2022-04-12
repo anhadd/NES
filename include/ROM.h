@@ -30,21 +30,21 @@ The format of the header is as follows:
 
 union flags6 {
     struct {
-        uint8_t mapper_lower : 4;
-        uint8_t ignore_mirroring : 1;
-        uint8_t trainer_present : 1;
-        uint8_t persistent_memory : 1;
         uint8_t mirroring : 1;              // 0 = horizontal, 1 = vertical.
+        uint8_t persistent_memory : 1;
+        uint8_t trainer_present : 1;
+        uint8_t ignore_mirroring : 1;
+        uint8_t mapper_lower : 4;
     };
     uint8_t full;
 };
 
 union flags7 {
     struct {
-        uint8_t mapper_upper : 4;
-        uint8_t nes2 : 2;                   // If == 2, use NES 2.0 format.
-        uint8_t playchoice10 : 1;
         uint8_t vs_unisystem : 1;
+        uint8_t playchoice10 : 1;
+        uint8_t nes2 : 2;                   // If == 2, use NES 2.0 format.
+        uint8_t mapper_upper : 4;
     };
     uint8_t full;
 };
@@ -53,19 +53,19 @@ union flags7 {
 
 union flags9 {
     struct {
-        uint8_t reserved_zero : 7;
         uint8_t tv_system : 1;          // 0 = NTSC, 1 = PAL
+        uint8_t reserved_zero : 7;
     };
     uint8_t full;
 };
 
 union flags10 {
     struct {
-        uint8_t unused1 : 2;
-        uint8_t bus_conflicts : 1;
-        uint8_t prg_ram_present : 1;    // 0 = present, 1 = not present
-        uint8_t unused2 : 2;
         uint8_t tv_system : 2;          // 0 = NTSC, 2 = PAL, 1 or 3 = dual compatible
+        uint8_t unused2 : 2;
+        uint8_t prg_ram_present : 1;    // 0 = present, 1 = not present
+        uint8_t bus_conflicts : 1;
+        uint8_t unused1 : 2;
     };
     uint8_t full;
 };

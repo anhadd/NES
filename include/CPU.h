@@ -38,14 +38,14 @@ using namespace std;
 // A register with status bits which can be set.
 union status_register {
     struct {
-        uint8_t negative : 1;               // N
-        uint8_t overflow : 1;               // V
-        uint8_t unused : 1;                 // Unused
-        uint8_t break_command : 1;          // B
-        uint8_t decimal_mode : 1;           // D: Not implemented in NES
-        uint8_t interrupt_disabled : 1;     // I
-        uint8_t zero : 1;                   // Z
         uint8_t carry : 1;                  // C
+        uint8_t zero : 1;                   // Z
+        uint8_t interrupt_disabled : 1;     // I
+        uint8_t decimal_mode : 1;           // D: Not implemented in NES
+        uint8_t break_command : 1;          // B
+        uint8_t unused : 1;                 // Unused
+        uint8_t overflow : 1;               // V
+        uint8_t negative : 1;               // N
     };
     uint8_t full;
 };
@@ -111,6 +111,7 @@ class CPU {
                                     // Jumps to the address located at $FFFA and $FFFB
         void reset();               // Reset interrupt, on startup and when the reset button is pressed.
                                     // jumps to the address located at $FFFC and $FFFD
+        void decrementSP();         // Decrements the stack pointer (SP);
         
         // enum addressing_mode mode;
 

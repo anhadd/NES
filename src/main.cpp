@@ -19,6 +19,9 @@ int main(int argc, char *argv[])
 {
     CPU cpu;
     ROM rom;
+
+    remove("nes_error.log");
+    freopen("nes_error.log", "w", stderr);
     
     //set up SDL
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -26,14 +29,14 @@ int main(int argc, char *argv[])
     GUI gui(height, width, scale);
     
     bool quit = false;
-    int FPS = 20;
+    int FPS = 2000;
 
     SDL_ShowWindow(gui.window);
     printf("Window Opened!\n");
 
     // DONE: LOAD ROM HERE, FOR NOW JUST LOADS NESTEST
     if (cpu.loadRom(argv[1]) != 0) {
-        printf("Error: Could not open ROM file!\n");
+        fprintf(stderr, "Error: Could not open ROM file!\n");
         return 0;
     }
     printf("Rom Loaded!\n");
