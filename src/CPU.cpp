@@ -248,8 +248,11 @@ bool CPU::ADC() {
     temp = (uint16_t)accumulator + (uint16_t)memory[absolute_address] + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    status.overflow =   ((accumulator ^ memory[absolute_address]) & (temp ^ memory[absolute_address]) & 0x80) != 0;
-    status.zero =       temp == 0;
+    // TODO: CHECK IF THIS IS CORRECT, CURRENTLY NOT THE SAME AS NESLOG (MIGHT BE CAUSE OF SMTHING ELSE).
+    // status.overflow =   ((~(accumulator ^ memory[absolute_address])) & (accumulator ^ temp) & 0x80) != 0;
+    status.overflow =   ((accumulator & 0x80) && (memory[absolute_address] & 0x80) && !(temp & 0x80)) 
+                    || (!(accumulator & 0x80) && !(memory[absolute_address] & 0x80) && (temp & 0x80));
+    status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & 0x80) != 0;
 
     accumulator = temp & 0x00FF;
@@ -268,7 +271,7 @@ bool CPU::ASL() {
     temp = (uint16_t)accumulator << 1;
     
     status.carry =      temp > 0xFF;
-    status.zero =       temp == 0;
+    status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & 0x80) != 0;
 
     accumulator = temp & 0x00FF;
@@ -495,6 +498,11 @@ bool CPU::JSR() {
 }
 
 bool CPU::LDA() {
+    // TODO: FIX THIS !!!
+    // THE STACK CURRENTLY POINTS AT THE FULL SPACES, PROB NEEDS TO POINT AT THE NEXT EMPTY ONE?? (PROB UNNECESSARY)
+    // 0180 SHOULD BE 33, BUT IT IS 0 RN. COMES FROM THE STACK THAT PUSHES 33 ONTO THE STACK.
+    fprintf(stderr, "ABS_ADDR: %04x\n", absolute_address);
+    fprintf(stderr, "MEM_DATA: %04x\n", memory[absolute_address]);
     accumulator = memory[absolute_address];
 
     status.zero =       accumulator == 0;
@@ -528,7 +536,7 @@ bool CPU::LSR() {
         status.carry =      (memory[absolute_address] & 0x01) != 0;
     }
 
-    status.zero =       temp == 0;
+    status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & 0x80) != 0;
 
     if (mode == ACC) {
@@ -649,8 +657,10 @@ bool CPU::SBC() {
     temp = (uint16_t)accumulator + (uint16_t)inverted + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    status.overflow =   ((accumulator ^ memory[absolute_address]) & (temp ^ memory[absolute_address]) & 0x80) != 0;
-    status.zero =       temp == 0;
+    // status.overflow =   (~(accumulator ^ memory[absolute_address]) & (accumulator ^ temp) & 0x80) != 0;
+    status.overflow =   ((accumulator & 0x80) && (inverted & 0x80) && !(temp & 0x80)) 
+                    || (!(accumulator & 0x80) && !(inverted & 0x80) && (temp & 0x80));
+    status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & 0x80) != 0;
 
     accumulator = temp & 0x00FF;
@@ -721,9 +731,6 @@ bool CPU::TXA() {
 
 bool CPU::TXS() {
     SP = X;
-
-    status.zero =       SP == 0;
-    status.negative =   (SP & 0x80) != 0;
     return 0;
 }
 
