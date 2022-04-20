@@ -29,11 +29,24 @@ a total of 151 valid opcodes out of the possible 256.
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
-#include <fstream>
 
 #include "ROM.h"
 
 using namespace std;
+
+
+#define CARRY_MASK 0x01
+#define ZERO_MASK 0x02
+#define INTERRUPT_DISABLED_MASK 0x04
+#define DECIMAL_MODE_MASK 0x08
+#define BREAK_COMMAND_MASK 0x10
+#define UNUSED_MASK 0x20
+#define OVERFLOW_MASK 0x40
+#define NEGATIVE_MASK 0x80
+
+#define ZERO_PAGE_SIZE 0x0100
+#define STACK_START ZERO_PAGE_SIZE
+
 
 // A register with status bits which can be set.
 union status_register {
@@ -112,6 +125,7 @@ class CPU {
         void reset();               // Reset interrupt, on startup and when the reset button is pressed.
                                     // jumps to the address located at $FFFC and $FFFD
         void decrementSP();         // Decrements the stack pointer (SP);
+        void incrementSP();         // Increments the stack pointer (SP);
         
         // enum addressing_mode mode;
 
@@ -126,12 +140,13 @@ class CPU {
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
         bool UNK(); // For unknown opcodes.
 
-        // Helper function for branches.
+        // Helper functions.
         bool checkBranch(bool flag);
+        bool pushPCToStack();
+        bool pushStatusToStack();
 
         bool readAddress();
         bool executeCycle();
-        bool loadRom(char* romName);
 
         // Constructor / Decstructor
         CPU();

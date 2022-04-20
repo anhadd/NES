@@ -14,7 +14,6 @@ CPU::CPU() {
     Y = 0;
 
     absolute_address = 0x0000;
-    // DONE: CONTINUE FIXING THIS LOOKUP TABLE STUFF
     op_lookup = {
         // opcode / opFunction / opmode / opcycles
 		{ 0x00, &CPU::BRK, IMP, 7 },{ 0x01, &CPU::ORA, IZX, 6 },{ 0x02, &CPU::UNK, IMP, 2 },{ 0x03, &CPU::UNK, IMP, 8 },{ 0x04, &CPU::NOP, ZPN, 3 },{ 0x05, &CPU::ORA, ZPN, 3 },{ 0x06, &CPU::ASL, ZPN, 5 },{ 0x07, &CPU::UNK, IMP, 5 },{ 0x08, &CPU::PHP, IMP, 3 },{ 0x09, &CPU::ORA, IMM, 2 },{ 0x0A, &CPU::ASL, ACC, 2 },{ 0x0B, &CPU::UNK, IMP, 2 },{ 0x0C, &CPU::NOP, ABS, 4 },{ 0x0D, &CPU::ORA, ABS, 4 },{ 0x0E, &CPU::ASL, ABS, 6 },{ 0x0F, &CPU::UNK, IMP, 6 },
@@ -40,14 +39,45 @@ CPU::~CPU() {
     // Destructor.
 }
 
+void CPU::reset() {
+    status.full = 0x24; // TODO: CHECK IF STATUS SHOULD BE RESET LIKE THIS
+    SP = 0xFD;
+    total_cycles = 7;
+
+    PC = 0xC000; // For nestest.
+    // PC = (memory[0xFFFD] << 8) | memory[0xFFFC]; // For normal ROMs.
+}
+
+void CPU::IRQ() {
+    if (!status.interrupt_disabled) {
+        pushPCToStack();
+
+        status.break_command = 0;
+        status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
+        pushStatusToStack();
+
+        PC = (memory[0xFFFF] << 8) | memory[0xFFFE];
+        cycles = 7;
+    }
+}
+
+void CPU::NMI() {
+    pushPCToStack();
+
+    status.break_command = 0;
+    status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
+	pushStatusToStack();
+
+	PC = (memory[0xFFFB] << 8) | memory[0xFFFA];
+	cycles = 8;
+}
+
 bool CPU::executeCycle() {
     // Execute a single cycle.
     if (cycles == 0) {
-        // If opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
-        // DONE: FIX THE PRINTING OF OPCODES AND THE LOADING OF ROMS !!!
+        // Set opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
         opcode = memory[PC];
-        // fprintf(stderr, "OPCODE: %02x        PC: %04x\n", opcode, PC);
-        fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x\n", PC, opcode, accumulator, X, Y, status.full, SP);
+        fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
 
         PC += 1;
         mode = op_lookup[opcode].opmode;
@@ -77,13 +107,13 @@ bool CPU::readAddress() {
         case ZPX:
             // The absolute address is 1 byte plus X.
             byte1 = memory[PC];
-            absolute_address = ((uint16_t)byte1 + (uint16_t)X) % 0x0100;
+            absolute_address = ((uint16_t)byte1 + (uint16_t)X) % ZERO_PAGE_SIZE;
             PC += 1;
             break;
         case ZPY:
             // The absolute address is 1 byte plus Y.
             byte1 = memory[PC];
-            absolute_address = ((uint16_t)byte1 + (uint16_t)Y) % 0x0100;
+            absolute_address = ((uint16_t)byte1 + (uint16_t)Y) % ZERO_PAGE_SIZE;
             PC += 1;
             break;
         
@@ -137,16 +167,16 @@ bool CPU::readAddress() {
         case IZX:
             // Take 1 byte + X, and take the address from there (with wraparound).
             indirect_address = memory[PC] + X;
-            byte1 = memory[indirect_address % 0x0100];
-            byte2 = memory[(indirect_address + 1) % 0x0100];
+            byte1 = memory[indirect_address % ZERO_PAGE_SIZE];
+            byte2 = memory[(indirect_address + 1) % ZERO_PAGE_SIZE];
             absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 1;
             break;
         case IZY: // A little like Indirect_Y.
             // Take 1 byte, and take the address from there (with wraparound). Finally add Y.
             indirect_address = memory[PC];
-            byte1 = memory[indirect_address % 0x0100];
-            byte2 = memory[(indirect_address + 1) % 0x0100];
+            byte1 = memory[indirect_address % ZERO_PAGE_SIZE];
+            byte2 = memory[(indirect_address + 1) % ZERO_PAGE_SIZE];
             absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             // Add extra cycle since it crosses a page boundary.
             if ((absolute_address & 0xFF00) != (byte2 << 8)) {
@@ -180,39 +210,6 @@ bool CPU::readAddress() {
     return 0;
 }
 
-
-bool CPU::loadRom(char* romName) {
-    ifstream romFile(romName, ios::in | ios::binary);
-
-    if (romFile.fail()) {
-        return 1;
-    }
-    romFile.read(reinterpret_cast<char*>(rom.h.full), 0x0010);
-    
-    uint16_t buff_size = rom.h.prg_rom_size * 0x4000;
-    uint8_t buff[buff_size];
-    romFile.read(reinterpret_cast<char*>(buff), buff_size);
-    memcpy(&memory[0x8000], buff, buff_size * sizeof(char));
-
-    if (rom.h.prg_rom_size == 1) {
-        memcpy(&memory[0xC000], buff, buff_size * sizeof(char));
-    }
-
-    reset();
-    romFile.close();
-    return 0;
-}
-
-
-void CPU::reset() {
-    // TODO: FOR NOW IT JUST JUMPS TO THE START, BUT MAKE IT NON-HARDCODED LATER !!!
-    // PC = (memory[0xFFFD] << 8) | memory[0xFFFC];
-    status.full = 0x24; // TODO: CHECK IF STATUS SHOULD BE RESET LIKE THIS
-
-    PC = 0xC000;
-    SP = 0xFD; // TODO: CHECK IF THIS SHOULD BE 0xFF
-}
-
 // Helper function for branches.
 bool CPU::checkBranch(bool flag) {
     if (flag) {
@@ -236,6 +233,31 @@ void CPU::decrementSP() {
     }
 }
 
+// Decrements the stack pointer (SP).
+void CPU::incrementSP() {
+    if (SP == 0xFF) {
+        SP = 0x00;
+    }
+    else {
+        SP += 1;
+    }
+}
+
+// Pushes PC to Stack.
+bool CPU::pushPCToStack() {
+    memory[SP + STACK_START] = (PC >> 8) & 0x00FF;
+    decrementSP();
+    memory[SP + STACK_START] = PC & 0x00FF;
+    decrementSP();
+    return 0;
+}
+
+// Pushes status register to Stack.
+bool CPU::pushStatusToStack() {
+    memory[SP + STACK_START] = status.full | UNUSED_MASK | BREAK_COMMAND_MASK ;
+    decrementSP();
+    return 0;
+}
 
 /*
 ========================================================================
@@ -244,16 +266,13 @@ void CPU::decrementSP() {
 */
 
 bool CPU::ADC() {
-    // TODO: CHECK IF THIS REALLY NEEDS TO BE + CARRY
     temp = (uint16_t)accumulator + (uint16_t)memory[absolute_address] + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    // TODO: CHECK IF THIS IS CORRECT, CURRENTLY NOT THE SAME AS NESLOG (MIGHT BE CAUSE OF SMTHING ELSE).
-    // status.overflow =   ((~(accumulator ^ memory[absolute_address])) & (accumulator ^ temp) & 0x80) != 0;
-    status.overflow =   ((accumulator & 0x80) && (memory[absolute_address] & 0x80) && !(temp & 0x80)) 
-                    || (!(accumulator & 0x80) && !(memory[absolute_address] & 0x80) && (temp & 0x80));
+    status.overflow =   ((accumulator & NEGATIVE_MASK) && (memory[absolute_address] & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
+                    || (!(accumulator & NEGATIVE_MASK) && !(memory[absolute_address] & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (temp & 0x80) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
 
     accumulator = temp & 0x00FF;
     return 0;
@@ -263,7 +282,7 @@ bool CPU::AND() {
     accumulator &= memory[absolute_address];
     
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -277,7 +296,7 @@ bool CPU::ASL() {
     
     status.carry =      temp > 0xFF;
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (temp & 0x80) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
 
     if (mode == ACC) {
         accumulator = temp & 0x00FF;
@@ -307,8 +326,8 @@ bool CPU::BIT() {
     temp = (uint16_t)accumulator & (uint16_t)memory[absolute_address];
 
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (memory[absolute_address] & 0x80) != 0;
-    status.overflow =   (memory[absolute_address] & 0x40) != 0;
+    status.negative =   (memory[absolute_address] & NEGATIVE_MASK) != 0;
+    status.overflow =   (memory[absolute_address] & OVERFLOW_MASK) != 0;
 
     return 0;
 }
@@ -329,15 +348,10 @@ bool CPU::BPL() {
 }
 
 bool CPU::BRK() {
-    memory[SP + 0x0100] = (PC >> 8) & 0x00FF;
-    decrementSP();
-    memory[SP + 0x0100] = PC & 0x00FF;
-    decrementSP();
+    pushPCToStack();
 
     status.interrupt_disabled = 1;
-
-    memory[SP + 0x0100] = status.full | 0x30;
-    decrementSP();
+    pushStatusToStack();
 
     PC = (memory[0xFFFF] << 8) | memory[0xFFFE];
     return 0;
@@ -376,27 +390,27 @@ bool CPU::CLV() {
 bool CPU::CMP() {
     temp = (uint16_t)accumulator - (uint16_t)memory[absolute_address];
 
-    status.carry =      accumulator >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.carry =      accumulator >= memory[absolute_address];
     status.zero =       accumulator == memory[absolute_address];
-    status.negative =   (temp & 0x0080) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::CPX() {
     temp = (uint16_t)X - (uint16_t)memory[absolute_address];
 
-    status.carry =      X >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.carry =      X >= memory[absolute_address];
     status.zero =       X == memory[absolute_address];
-    status.negative =   (temp & 0x0080) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::CPY() {
     temp = (uint16_t)Y - (uint16_t)memory[absolute_address];
 
-    status.carry =      Y >= memory[absolute_address]; // TODO: TRY ONLY > HERE LATER
+    status.carry =      Y >= memory[absolute_address];
     status.zero =       Y == memory[absolute_address];
-    status.negative =   (temp & 0x0080) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -409,7 +423,7 @@ bool CPU::DEC() {
     }
 
     status.zero =       memory[absolute_address] == 0;
-    status.negative =   (memory[absolute_address] & 0x80) != 0;
+    status.negative =   (memory[absolute_address] & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -422,7 +436,7 @@ bool CPU::DEX() {
     }
 
     status.zero =       X == 0;
-    status.negative =   (X & 0x80) != 0;
+    status.negative =   (X & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -435,7 +449,7 @@ bool CPU::DEY() {
     }
 
     status.zero =       Y == 0;
-    status.negative =   (Y & 0x80) != 0;
+    status.negative =   (Y & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -443,7 +457,7 @@ bool CPU::EOR() {
     accumulator ^= memory[absolute_address];
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -456,7 +470,7 @@ bool CPU::INC() {
     }
 
     status.zero =       memory[absolute_address] == 0;
-    status.negative =   (memory[absolute_address] & 0x80) != 0;
+    status.negative =   (memory[absolute_address] & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -469,7 +483,7 @@ bool CPU::INX() {
     }
 
     status.zero =       X == 0;
-    status.negative =   (X & 0x80) != 0;
+    status.negative =   (X & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -482,7 +496,7 @@ bool CPU::INY() {
     }
 
     status.zero =       Y == 0;
-    status.negative =   (Y & 0x80) != 0;
+    status.negative =   (Y & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -493,25 +507,17 @@ bool CPU::JMP() {
 
 bool CPU::JSR() {
     PC -= 1;
-    memory[SP + 0x0100] = (PC >> 8) & 0x00FF;
-    decrementSP();
-    memory[SP + 0x0100] = PC & 0x00FF;
-    decrementSP();
+    pushPCToStack();
 
     PC = absolute_address;
     return 0;
 }
 
 bool CPU::LDA() {
-    // TODO: FIX THIS !!!
-    // THE STACK CURRENTLY POINTS AT THE FULL SPACES, PROB NEEDS TO POINT AT THE NEXT EMPTY ONE?? (PROB UNNECESSARY)
-    // 0180 SHOULD BE 33, BUT IT IS 0 RN. COMES FROM THE STACK THAT PUSHES 33 ONTO THE STACK.
-    // fprintf(stderr, "ABS_ADDR: %04x\n", absolute_address);
-    // fprintf(stderr, "MEM_DATA: %04x\n", memory[absolute_address]);
     accumulator = memory[absolute_address];
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -519,7 +525,7 @@ bool CPU::LDX() {
     X = memory[absolute_address];
 
     status.zero =       X == 0;
-    status.negative =   (X & 0x80) != 0;
+    status.negative =   (X & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -527,22 +533,22 @@ bool CPU::LDY() {
     Y = memory[absolute_address];
 
     status.zero =       Y == 0;
-    status.negative =   (Y & 0x80) != 0;
+    status.negative =   (Y & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::LSR() {
     if (mode == ACC) {
         temp = accumulator >> 1;
-        status.carry =      (accumulator & 0x01) != 0;
+        status.carry =      (accumulator & CARRY_MASK) != 0;
     }
     else {
         temp = memory[absolute_address] >> 1;
-        status.carry =      (memory[absolute_address] & 0x01) != 0;
+        status.carry =      (memory[absolute_address] & CARRY_MASK) != 0;
     }
 
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (temp & 0x80) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
 
     if (mode == ACC) {
         accumulator = temp & 0x00FF;
@@ -562,34 +568,33 @@ bool CPU::ORA() {
     accumulator |= memory[absolute_address];
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::PHA() {
-    memory[SP + 0x0100] = accumulator;
+    memory[SP + STACK_START] = accumulator;
     decrementSP();
     return 0;
 }
 
 bool CPU::PHP() {
-    memory[SP + 0x0100] = status.full | 0x30;
-    decrementSP();
+    pushStatusToStack();
     return 0;
 }
 
 bool CPU::PLA() {
-    SP += 1;
-    accumulator = memory[SP + 0x0100];
+    incrementSP();
+    accumulator = memory[SP + STACK_START];
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::PLP() {
-    SP += 1;
-    status.full = memory[SP + 0x0100] | 0x20;
+    incrementSP();
+    status.full = memory[SP + STACK_START] | UNUSED_MASK;
     status.break_command = 0;
     return 0;
 }
@@ -597,21 +602,21 @@ bool CPU::PLP() {
 bool CPU::ROL() {
     if (mode == ACC) {
         temp = ((uint16_t)accumulator << 1) | status.carry;
-        status.carry =      (accumulator & 0x80) != 0;
+        status.carry =      (accumulator & NEGATIVE_MASK) != 0;
 
         accumulator = temp & 0x00FF;
 
         status.zero =       accumulator == 0;
-        status.negative =   (accumulator & 0x80) != 0;
+        status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
         temp = ((uint16_t)memory[absolute_address] << 1) | status.carry;
-        status.carry =      (memory[absolute_address] & 0x80) != 0;
+        status.carry =      (memory[absolute_address] & NEGATIVE_MASK) != 0;
 
         memory[absolute_address] = temp & 0x00FF;
         
         status.zero =       memory[absolute_address] == 0;
-        status.negative =   (memory[absolute_address] & 0x80) != 0;
+        status.negative =   (memory[absolute_address] & NEGATIVE_MASK) != 0;
     }
     return 0;
 }
@@ -619,56 +624,54 @@ bool CPU::ROL() {
 bool CPU::ROR() {
     if (mode == ACC) {
         temp = ((uint16_t)accumulator >> 1) | ((uint16_t)status.carry << 7);
-        status.carry =      (accumulator & 0x01) != 0;
+        status.carry =      (accumulator & CARRY_MASK) != 0;
 
         accumulator = temp & 0x00FF;
 
         status.zero =       accumulator == 0;
-        status.negative =   (accumulator & 0x80) != 0;
+        status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
         temp = ((uint16_t)memory[absolute_address] >> 1) | ((uint16_t)status.carry << 7);
-        status.carry =      (memory[absolute_address] & 0x01) != 0;
+        status.carry =      (memory[absolute_address] & CARRY_MASK) != 0;
 
         memory[absolute_address] = temp & 0x00FF;
 
         status.zero =       memory[absolute_address] == 0;
-        status.negative =   (memory[absolute_address] & 0x80) != 0;
+        status.negative =   (memory[absolute_address] & NEGATIVE_MASK) != 0;
     }
     return 0;
 }
 
 bool CPU::RTI() {
-    SP += 1;
+    incrementSP();
     // TODO: CHECK IF THE UNUSED FLAG SHOULD REALLY BE SET HERE!
-    status.full = memory[SP + 0x0100] | 0x20;
+    status.full = memory[SP + STACK_START] | UNUSED_MASK;
+    incrementSP();
     
-    SP += 1;
-    PC = (memory[(SP + 1) + 0x0100] << 8) | memory[SP + 0x0100];
-    SP += 1;
+    PC = (memory[(SP + 1) + STACK_START] << 8) | memory[SP + STACK_START];
+    incrementSP();
     return 0;
 }
 
 bool CPU::RTS() {
-    SP += 1;
-    PC = (memory[(SP + 1) + 0x0100] << 8) | memory[SP + 0x0100];
+    incrementSP();
+    PC = (memory[(SP + 1) + STACK_START] << 8) | memory[SP + STACK_START];
     PC += 1;
-    SP += 1;
+    incrementSP();
     return 0;
 }
 
 bool CPU::SBC() {
     uint8_t inverted = memory[absolute_address] ^ 0xFF;
 
-    // TODO: CHECK IF THIS REALLY NEEDS TO BE + CARRY
     temp = (uint16_t)accumulator + (uint16_t)inverted + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    // status.overflow =   (~(accumulator ^ memory[absolute_address]) & (accumulator ^ temp) & 0x80) != 0;
-    status.overflow =   ((accumulator & 0x80) && (inverted & 0x80) && !(temp & 0x80)) 
-                    || (!(accumulator & 0x80) && !(inverted & 0x80) && (temp & 0x80));
+    status.overflow =   ((accumulator & NEGATIVE_MASK) && (inverted & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
+                    || (!(accumulator & NEGATIVE_MASK) && !(inverted & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (temp & 0x80) != 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
 
     accumulator = temp & 0x00FF;
     return 0;
@@ -708,7 +711,7 @@ bool CPU::TAX() {
     X = accumulator;
 
     status.zero =       X == 0;
-    status.negative =   (X & 0x80) != 0;
+    status.negative =   (X & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -716,7 +719,7 @@ bool CPU::TAY() {
     Y = accumulator;
 
     status.zero =       Y == 0;
-    status.negative =   (Y & 0x80) != 0;
+    status.negative =   (Y & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -724,7 +727,7 @@ bool CPU::TSX() {
     X = SP;
 
     status.zero =       X == 0;
-    status.negative =   (X & 0x80) != 0;
+    status.negative =   (X & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -732,7 +735,7 @@ bool CPU::TXA() {
     accumulator = X;
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -745,7 +748,7 @@ bool CPU::TYA() {
     accumulator = Y;
 
     status.zero =       accumulator == 0;
-    status.negative =   (accumulator & 0x80) != 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     return 0;
 }
 

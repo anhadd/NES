@@ -2,6 +2,12 @@
 #define ROM_H
 
 #include <SDL2/SDL.h>
+#include <fstream>
+
+using namespace std;
+
+#define ROM_HEADER_SIZE 0x0010
+#define PRG_BLOCK_SIZE 0x4000
 
 /*
 (Taken from: https://www.nesdev.org/wiki/INES)
@@ -92,6 +98,8 @@ class ROM {
 
         ROM();
         ~ROM();
+
+        bool loadRom(char* romName, uint8_t (&memory)[65536]);
 };
 
 

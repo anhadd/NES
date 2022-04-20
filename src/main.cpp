@@ -34,13 +34,13 @@ int main(int argc, char *argv[])
     SDL_ShowWindow(gui.window);
     printf("Window Opened!\n");
 
-    // DONE: LOAD ROM HERE, FOR NOW JUST LOADS NESTEST
-    if (cpu.loadRom(argv[1]) != 0) {
+    if (rom.loadRom(argv[1], cpu.memory) != 0) {
         fprintf(stderr, "Error: Could not open ROM file!\n");
         return 0;
     }
     printf("Rom Loaded!\n");
 
+    cpu.reset();
     while (!quit) {
         quit = handleInput(quit, gui.sdlevent, cpu, FPS);
         SDL_Delay(1000/FPS);
