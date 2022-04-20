@@ -17,13 +17,13 @@ CPU::CPU() {
     // DONE: CONTINUE FIXING THIS LOOKUP TABLE STUFF
     op_lookup = {
         // opcode / opFunction / opmode / opcycles
-		{ 0x00, &CPU::BRK, IMP, 7 },{ 0x01, &CPU::ORA, IZX, 6 },{ 0x02, &CPU::UNK, IMP, 2 },{ 0x03, &CPU::UNK, IMP, 8 },{ 0x04, &CPU::NOP, ZPN, 3 },{ 0x05, &CPU::ORA, ZPN, 3 },{ 0x06, &CPU::ASL, ZPN, 5 },{ 0x07, &CPU::UNK, IMP, 5 },{ 0x08, &CPU::PHP, IMP, 3 },{ 0x09, &CPU::ORA, IMM, 2 },{ 0x0A, &CPU::ASL, IMP, 2 },{ 0x0B, &CPU::UNK, IMP, 2 },{ 0x0C, &CPU::NOP, ABS, 4 },{ 0x0D, &CPU::ORA, ABS, 4 },{ 0x0E, &CPU::ASL, ABS, 6 },{ 0x0F, &CPU::UNK, IMP, 6 },
+		{ 0x00, &CPU::BRK, IMP, 7 },{ 0x01, &CPU::ORA, IZX, 6 },{ 0x02, &CPU::UNK, IMP, 2 },{ 0x03, &CPU::UNK, IMP, 8 },{ 0x04, &CPU::NOP, ZPN, 3 },{ 0x05, &CPU::ORA, ZPN, 3 },{ 0x06, &CPU::ASL, ZPN, 5 },{ 0x07, &CPU::UNK, IMP, 5 },{ 0x08, &CPU::PHP, IMP, 3 },{ 0x09, &CPU::ORA, IMM, 2 },{ 0x0A, &CPU::ASL, ACC, 2 },{ 0x0B, &CPU::UNK, IMP, 2 },{ 0x0C, &CPU::NOP, ABS, 4 },{ 0x0D, &CPU::ORA, ABS, 4 },{ 0x0E, &CPU::ASL, ABS, 6 },{ 0x0F, &CPU::UNK, IMP, 6 },
 		{ 0x10, &CPU::BPL, REL, 2 },{ 0x11, &CPU::ORA, IZY, 5 },{ 0x12, &CPU::UNK, IMP, 2 },{ 0x13, &CPU::UNK, IMP, 8 },{ 0x14, &CPU::NOP, ZPX, 4 },{ 0x15, &CPU::ORA, ZPX, 4 },{ 0x16, &CPU::ASL, ZPX, 6 },{ 0x17, &CPU::UNK, IMP, 6 },{ 0x18, &CPU::CLC, IMP, 2 },{ 0x19, &CPU::ORA, ABY, 4 },{ 0x1A, &CPU::NOP, IMP, 2 },{ 0x1B, &CPU::UNK, IMP, 7 },{ 0x1C, &CPU::NOP, ABX, 4 },{ 0x1D, &CPU::ORA, ABX, 4 },{ 0x1E, &CPU::ASL, ABX, 7 },{ 0x1F, &CPU::UNK, IMP, 7 },
-		{ 0x20, &CPU::JSR, ABS, 6 },{ 0x21, &CPU::AND, IZX, 6 },{ 0x22, &CPU::UNK, IMP, 2 },{ 0x23, &CPU::UNK, IMP, 8 },{ 0x24, &CPU::BIT, ZPN, 3 },{ 0x25, &CPU::AND, ZPN, 3 },{ 0x26, &CPU::ROL, ZPN, 5 },{ 0x27, &CPU::UNK, IMP, 5 },{ 0x28, &CPU::PLP, IMP, 4 },{ 0x29, &CPU::AND, IMM, 2 },{ 0x2A, &CPU::ROL, IMP, 2 },{ 0x2B, &CPU::UNK, IMP, 2 },{ 0x2C, &CPU::BIT, ABS, 4 },{ 0x2D, &CPU::AND, ABS, 4 },{ 0x2E, &CPU::ROL, ABS, 6 },{ 0x2F, &CPU::UNK, IMP, 6 },
+		{ 0x20, &CPU::JSR, ABS, 6 },{ 0x21, &CPU::AND, IZX, 6 },{ 0x22, &CPU::UNK, IMP, 2 },{ 0x23, &CPU::UNK, IMP, 8 },{ 0x24, &CPU::BIT, ZPN, 3 },{ 0x25, &CPU::AND, ZPN, 3 },{ 0x26, &CPU::ROL, ZPN, 5 },{ 0x27, &CPU::UNK, IMP, 5 },{ 0x28, &CPU::PLP, IMP, 4 },{ 0x29, &CPU::AND, IMM, 2 },{ 0x2A, &CPU::ROL, ACC, 2 },{ 0x2B, &CPU::UNK, IMP, 2 },{ 0x2C, &CPU::BIT, ABS, 4 },{ 0x2D, &CPU::AND, ABS, 4 },{ 0x2E, &CPU::ROL, ABS, 6 },{ 0x2F, &CPU::UNK, IMP, 6 },
 		{ 0x30, &CPU::BMI, REL, 2 },{ 0x31, &CPU::AND, IZY, 5 },{ 0x32, &CPU::UNK, IMP, 2 },{ 0x33, &CPU::UNK, IMP, 8 },{ 0x34, &CPU::NOP, ZPX, 4 },{ 0x35, &CPU::AND, ZPX, 4 },{ 0x36, &CPU::ROL, ZPX, 6 },{ 0x37, &CPU::UNK, IMP, 6 },{ 0x38, &CPU::SEC, IMP, 2 },{ 0x39, &CPU::AND, ABY, 4 },{ 0x3A, &CPU::NOP, IMP, 2 },{ 0x3B, &CPU::UNK, IMP, 7 },{ 0x3C, &CPU::NOP, ABX, 4 },{ 0x3D, &CPU::AND, ABX, 4 },{ 0x3E, &CPU::ROL, ABX, 7 },{ 0x3F, &CPU::UNK, IMP, 7 },
-		{ 0x40, &CPU::RTI, IMP, 6 },{ 0x41, &CPU::EOR, IZX, 6 },{ 0x42, &CPU::UNK, IMP, 2 },{ 0x43, &CPU::UNK, IMP, 8 },{ 0x44, &CPU::NOP, ZPN, 3 },{ 0x45, &CPU::EOR, ZPN, 3 },{ 0x46, &CPU::LSR, ZPN, 5 },{ 0x47, &CPU::UNK, IMP, 5 },{ 0x48, &CPU::PHA, IMP, 3 },{ 0x49, &CPU::EOR, IMM, 2 },{ 0x4A, &CPU::LSR, IMP, 2 },{ 0x4B, &CPU::UNK, IMP, 2 },{ 0x4C, &CPU::JMP, ABS, 3 },{ 0x4D, &CPU::EOR, ABS, 4 },{ 0x4E, &CPU::LSR, ABS, 6 },{ 0x4F, &CPU::UNK, IMP, 6 },
+		{ 0x40, &CPU::RTI, IMP, 6 },{ 0x41, &CPU::EOR, IZX, 6 },{ 0x42, &CPU::UNK, IMP, 2 },{ 0x43, &CPU::UNK, IMP, 8 },{ 0x44, &CPU::NOP, ZPN, 3 },{ 0x45, &CPU::EOR, ZPN, 3 },{ 0x46, &CPU::LSR, ZPN, 5 },{ 0x47, &CPU::UNK, IMP, 5 },{ 0x48, &CPU::PHA, IMP, 3 },{ 0x49, &CPU::EOR, IMM, 2 },{ 0x4A, &CPU::LSR, ACC, 2 },{ 0x4B, &CPU::UNK, IMP, 2 },{ 0x4C, &CPU::JMP, ABS, 3 },{ 0x4D, &CPU::EOR, ABS, 4 },{ 0x4E, &CPU::LSR, ABS, 6 },{ 0x4F, &CPU::UNK, IMP, 6 },
 		{ 0x50, &CPU::BVC, REL, 2 },{ 0x51, &CPU::EOR, IZY, 5 },{ 0x52, &CPU::UNK, IMP, 2 },{ 0x53, &CPU::UNK, IMP, 8 },{ 0x54, &CPU::NOP, ZPX, 4 },{ 0x55, &CPU::EOR, ZPX, 4 },{ 0x56, &CPU::LSR, ZPX, 6 },{ 0x57, &CPU::UNK, IMP, 6 },{ 0x58, &CPU::CLI, IMP, 2 },{ 0x59, &CPU::EOR, ABY, 4 },{ 0x5A, &CPU::NOP, IMP, 2 },{ 0x5B, &CPU::UNK, IMP, 7 },{ 0x5C, &CPU::NOP, ABX, 4 },{ 0x5D, &CPU::EOR, ABX, 4 },{ 0x5E, &CPU::LSR, ABX, 7 },{ 0x5F, &CPU::UNK, IMP, 7 },
-		{ 0x60, &CPU::RTS, IMP, 6 },{ 0x61, &CPU::ADC, IZX, 6 },{ 0x62, &CPU::UNK, IMP, 2 },{ 0x63, &CPU::UNK, IMP, 8 },{ 0x64, &CPU::NOP, ZPN, 3 },{ 0x65, &CPU::ADC, ZPN, 3 },{ 0x66, &CPU::ROR, ZPN, 5 },{ 0x67, &CPU::UNK, IMP, 5 },{ 0x68, &CPU::PLA, IMP, 4 },{ 0x69, &CPU::ADC, IMM, 2 },{ 0x6A, &CPU::ROR, IMP, 2 },{ 0x6B, &CPU::UNK, IMP, 2 },{ 0x6C, &CPU::JMP, IND, 5 },{ 0x6D, &CPU::ADC, ABS, 4 },{ 0x6E, &CPU::ROR, ABS, 6 },{ 0x6F, &CPU::UNK, IMP, 6 },
+		{ 0x60, &CPU::RTS, IMP, 6 },{ 0x61, &CPU::ADC, IZX, 6 },{ 0x62, &CPU::UNK, IMP, 2 },{ 0x63, &CPU::UNK, IMP, 8 },{ 0x64, &CPU::NOP, ZPN, 3 },{ 0x65, &CPU::ADC, ZPN, 3 },{ 0x66, &CPU::ROR, ZPN, 5 },{ 0x67, &CPU::UNK, IMP, 5 },{ 0x68, &CPU::PLA, IMP, 4 },{ 0x69, &CPU::ADC, IMM, 2 },{ 0x6A, &CPU::ROR, ACC, 2 },{ 0x6B, &CPU::UNK, IMP, 2 },{ 0x6C, &CPU::JMP, IND, 5 },{ 0x6D, &CPU::ADC, ABS, 4 },{ 0x6E, &CPU::ROR, ABS, 6 },{ 0x6F, &CPU::UNK, IMP, 6 },
 		{ 0x70, &CPU::BVS, REL, 2 },{ 0x71, &CPU::ADC, IZY, 5 },{ 0x72, &CPU::UNK, IMP, 2 },{ 0x73, &CPU::UNK, IMP, 8 },{ 0x74, &CPU::NOP, ZPX, 4 },{ 0x75, &CPU::ADC, ZPX, 4 },{ 0x76, &CPU::ROR, ZPX, 6 },{ 0x77, &CPU::UNK, IMP, 6 },{ 0x78, &CPU::SEI, IMP, 2 },{ 0x79, &CPU::ADC, ABY, 4 },{ 0x7A, &CPU::NOP, IMP, 2 },{ 0x7B, &CPU::UNK, IMP, 7 },{ 0x7C, &CPU::NOP, ABX, 4 },{ 0x7D, &CPU::ADC, ABX, 4 },{ 0x7E, &CPU::ROR, ABX, 7 },{ 0x7F, &CPU::UNK, IMP, 7 },
 		{ 0x80, &CPU::NOP, IMM, 2 },{ 0x81, &CPU::STA, IZX, 6 },{ 0x82, &CPU::NOP, IMM, 2 },{ 0x83, &CPU::UNK, IMP, 6 },{ 0x84, &CPU::STY, ZPN, 3 },{ 0x85, &CPU::STA, ZPN, 3 },{ 0x86, &CPU::STX, ZPN, 3 },{ 0x87, &CPU::UNK, IMP, 3 },{ 0x88, &CPU::DEY, IMP, 2 },{ 0x89, &CPU::NOP, IMM, 2 },{ 0x8A, &CPU::TXA, IMP, 2 },{ 0x8B, &CPU::UNK, IMP, 2 },{ 0x8C, &CPU::STY, ABS, 4 },{ 0x8D, &CPU::STA, ABS, 4 },{ 0x8E, &CPU::STX, ABS, 4 },{ 0x8F, &CPU::UNK, IMP, 4 },
 		{ 0x90, &CPU::BCC, REL, 2 },{ 0x91, &CPU::STA, IZY, 6 },{ 0x92, &CPU::UNK, IMP, 2 },{ 0x93, &CPU::UNK, IMP, 6 },{ 0x94, &CPU::STY, ZPX, 4 },{ 0x95, &CPU::STA, ZPX, 4 },{ 0x96, &CPU::STX, ZPY, 4 },{ 0x97, &CPU::UNK, IMP, 4 },{ 0x98, &CPU::TYA, IMP, 2 },{ 0x99, &CPU::STA, ABY, 5 },{ 0x9A, &CPU::TXS, IMP, 2 },{ 0x9B, &CPU::UNK, IMP, 5 },{ 0x9C, &CPU::UNK, IMP, 5 },{ 0x9D, &CPU::STA, ABX, 5 },{ 0x9E, &CPU::UNK, IMP, 5 },{ 0x9F, &CPU::UNK, IMP, 5 },
@@ -268,13 +268,23 @@ bool CPU::AND() {
 }
 
 bool CPU::ASL() {
-    temp = (uint16_t)accumulator << 1;
+    if (mode == ACC) {
+        temp = (uint16_t)accumulator << 1;
+    }
+    else {
+        temp = (uint16_t)memory[absolute_address] << 1;
+    }
     
     status.carry =      temp > 0xFF;
     status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & 0x80) != 0;
 
-    accumulator = temp & 0x00FF;
+    if (mode == ACC) {
+        accumulator = temp & 0x00FF;
+    }
+    else {
+        memory[absolute_address] = temp & 0x00FF;
+    }
     return 0;
 }
 
@@ -319,21 +329,15 @@ bool CPU::BPL() {
 }
 
 bool CPU::BRK() {
-    decrementSP();
     memory[SP + 0x0100] = (PC >> 8) & 0x00FF;
     decrementSP();
     memory[SP + 0x0100] = PC & 0x00FF;
+    decrementSP();
 
     status.interrupt_disabled = 1;
 
-    status.break_command = 1;
-    status.unused = 1;
-
+    memory[SP + 0x0100] = status.full | 0x30;
     decrementSP();
-    memory[SP + 0x0100] = status.full;
-
-    status.break_command = 0;
-    status.unused = 0;
 
     PC = (memory[0xFFFF] << 8) | memory[0xFFFE];
     return 0;
@@ -465,7 +469,7 @@ bool CPU::INX() {
     }
 
     status.zero =       X == 0;
-    status.negative =   X & 0x80;
+    status.negative =   (X & 0x80) != 0;
     return 0;
 }
 
@@ -478,7 +482,7 @@ bool CPU::INY() {
     }
 
     status.zero =       Y == 0;
-    status.negative =   Y & 0x80;
+    status.negative =   (Y & 0x80) != 0;
     return 0;
 }
 
@@ -488,10 +492,11 @@ bool CPU::JMP() {
 }
 
 bool CPU::JSR() {
-    decrementSP();
+    PC -= 1;
     memory[SP + 0x0100] = (PC >> 8) & 0x00FF;
     decrementSP();
     memory[SP + 0x0100] = PC & 0x00FF;
+    decrementSP();
 
     PC = absolute_address;
     return 0;
@@ -501,8 +506,8 @@ bool CPU::LDA() {
     // TODO: FIX THIS !!!
     // THE STACK CURRENTLY POINTS AT THE FULL SPACES, PROB NEEDS TO POINT AT THE NEXT EMPTY ONE?? (PROB UNNECESSARY)
     // 0180 SHOULD BE 33, BUT IT IS 0 RN. COMES FROM THE STACK THAT PUSHES 33 ONTO THE STACK.
-    fprintf(stderr, "ABS_ADDR: %04x\n", absolute_address);
-    fprintf(stderr, "MEM_DATA: %04x\n", memory[absolute_address]);
+    // fprintf(stderr, "ABS_ADDR: %04x\n", absolute_address);
+    // fprintf(stderr, "MEM_DATA: %04x\n", memory[absolute_address]);
     accumulator = memory[absolute_address];
 
     status.zero =       accumulator == 0;
@@ -528,11 +533,11 @@ bool CPU::LDY() {
 
 bool CPU::LSR() {
     if (mode == ACC) {
-        temp = (uint16_t)accumulator >> 1;
+        temp = accumulator >> 1;
         status.carry =      (accumulator & 0x01) != 0;
     }
     else {
-        temp = (uint16_t)memory[absolute_address] >> 1;
+        temp = memory[absolute_address] >> 1;
         status.carry =      (memory[absolute_address] & 0x01) != 0;
     }
 
@@ -562,20 +567,20 @@ bool CPU::ORA() {
 }
 
 bool CPU::PHA() {
-    decrementSP();
     memory[SP + 0x0100] = accumulator;
+    decrementSP();
     return 0;
 }
 
 bool CPU::PHP() {
+    memory[SP + 0x0100] = status.full | 0x30;
     decrementSP();
-    memory[SP + 0x0100] = status.full | 0x10;
     return 0;
 }
 
 bool CPU::PLA() {
-    accumulator = memory[SP + 0x0100];
     SP += 1;
+    accumulator = memory[SP + 0x0100];
 
     status.zero =       accumulator == 0;
     status.negative =   (accumulator & 0x80) != 0;
@@ -583,9 +588,9 @@ bool CPU::PLA() {
 }
 
 bool CPU::PLP() {
+    SP += 1;
     status.full = memory[SP + 0x0100] | 0x20;
     status.break_command = 0;
-    SP += 1;
     return 0;
 }
 
@@ -634,19 +639,21 @@ bool CPU::ROR() {
 }
 
 bool CPU::RTI() {
-    status.full = memory[SP + 0x0100];
-    status.break_command = 0;
-    status.unused = 0;
+    SP += 1;
+    // TODO: CHECK IF THE UNUSED FLAG SHOULD REALLY BE SET HERE!
+    status.full = memory[SP + 0x0100] | 0x20;
     
     SP += 1;
     PC = (memory[(SP + 1) + 0x0100] << 8) | memory[SP + 0x0100];
-    SP += 2;
+    SP += 1;
     return 0;
 }
 
 bool CPU::RTS() {
+    SP += 1;
     PC = (memory[(SP + 1) + 0x0100] << 8) | memory[SP + 0x0100];
-    SP += 2;
+    PC += 1;
+    SP += 1;
     return 0;
 }
 
