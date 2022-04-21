@@ -44,7 +44,7 @@ uint8_t CPU::cpuRead(uint16_t address) {
         return memory[address & 0x07FF];
     }
     else if (address <= 0x3FFF) {
-        return memory[address & 0x0007];
+        return memory[0x2000 + (address & 0x0007)];
     }
     else {
         return memory[address];
@@ -56,7 +56,7 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
         memory[address & 0x07FF] = value;
     }
     else if (address <= 0x3FFF) {
-        memory[address & 0x0007] = value;
+        memory[0x2000 + (address & 0x0007)] = value;
     }
     else {
         memory[address] = value;
@@ -780,5 +780,6 @@ bool CPU::TYA() {
 bool CPU::UNK() {
     fprintf(stderr, "Error: Unknown operation!\n");
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
+    exit(0); // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
     return 0;
 }
