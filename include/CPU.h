@@ -9,7 +9,7 @@ The 2A03 had a 16-bit address bus, so it supports 64 KB of memory ($0000-$FFFF)
     - Zero Page: $0000-$00FF
     - Memory locations $0000-$07FF are mirrored three times at $0800-$1FFF. 
       For example, any data written to $0000 will also be written to $0800, $1000 and $1800.
-      Memory Mapped IO: $2000-$401F
+    - Memory Mapped IO: $2000-$401F
     - Locations $2000-$2007 are mirrored every 8 bytes in the region $2008-$3FFF 
       The remaining registers follow this mirroring. 
     - SRAM (WRAM) is the Save RAM, the addresses used to access RAM in the cartridges for storing save
@@ -89,7 +89,7 @@ class CPU {
         uint8_t opcode;             // Stores the current opcode.
 
         // union cpu_memory memory;
-        uint8_t memory[0x10000];
+        uint8_t memory[0x10000];    // TODO: add "-" to remove the mirroring parts of memory.
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -109,6 +109,7 @@ class CPU {
         int8_t relative_offset;
         // Used to store the amount of cycles that an instruction took.
         uint8_t cycles;
+        bool additional_cycle;      // Used to store whether an instruction might take an extra cycle.
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
         
         enum addressing_mode mode;  // Used to store the current addressing mode.
@@ -148,6 +149,9 @@ class CPU {
         bool readAddress();
         bool executeCycle();
 
+        uint8_t cpuRead(uint16_t address);
+        uint8_t cpuWrite(uint16_t address, uint8_t value);
+
         // Constructor / Decstructor
         CPU();
         ~CPU();
@@ -159,6 +163,7 @@ struct instruction {
     bool (CPU::*opFunction)(void);
     enum addressing_mode opmode;
     uint8_t opcycles;
+    bool extra_cycle;
 };
 
 #endif

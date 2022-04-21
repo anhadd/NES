@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -lSDL2
 DEPS = /include/*
-OBJECTS = /src/ROM.o /src/input.o /src/GUI.o /src/CPU.o /src/main.o
+OBJECTS = /src/PPU.o /src/ROM.o /src/input.o /src/GUI.o /src/CPU.o /src/main.o
 
 
 all: 
