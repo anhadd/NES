@@ -5,6 +5,7 @@
 NES::NES() {
     // Constructor
     cpu.passBUS(&bus);
+    ppu.passBUS(&bus);
 }
 
 

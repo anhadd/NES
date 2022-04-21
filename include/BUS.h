@@ -9,7 +9,7 @@ using namespace std;
 
 class BUS {
     public:
-        uint8_t memory[0x10000];    // TODO: add "-" to remove the mirroring parts of memory.
+        uint8_t memory[0x10000];    // TODO: add "-" to remove the mirroring parts of memory for space.
         
         BUS();
         ~BUS();

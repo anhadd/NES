@@ -4,11 +4,11 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-#include "../include/GUI.h"
-#include "../include/CPU.h"
-#include "../include/ROM.h"
-#include "../include/PPU.h"
-#include "../include/BUS.h"
+#include "GUI.h"
+#include "CPU.h"
+#include "ROM.h"
+#include "PPU.h"
+#include "BUS.h"
 
 using namespace std;
 
@@ -18,6 +18,7 @@ class NES {
         CPU cpu;
         ROM rom;
         BUS bus;
+        PPU ppu;
 
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 
