@@ -1,10 +1,8 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 
-#include "../include/GUI.h"
-#include "../include/CPU.h"
+#include "../include/NES.h"
 #include "../include/input.h"
-#include "../include/ROM.h"
 
 
 using namespace std;
@@ -17,8 +15,7 @@ using namespace std;
 // DONE: check 8xy5 and 8xy6? Just try to pass the test_opcode rom. <- WAS WITH SIGNEDNESS AND SHIFTING
 int main(int argc, char *argv[])
 {
-    CPU cpu;
-    ROM rom;
+    NES nes;
 
     remove("nes_error.log");
     freopen("nes_error.log", "w", stderr);
@@ -34,18 +31,15 @@ int main(int argc, char *argv[])
     SDL_ShowWindow(gui.window);
     printf("Window Opened!\n");
 
-    if (rom.loadRom(argv[1], cpu.memory) != 0) {
+    if (nes.initialize(argv[1]) != 0) {
         fprintf(stderr, "Error: Could not open ROM file!\n");
         return 0;
     }
-    printf("Rom Loaded!\n");
-
-    cpu.reset();
     while (!quit) {
-        quit = handleInput(quit, gui.sdlevent, cpu, FPS);
+        quit = handleInput(quit, gui.sdlevent, nes, FPS);
         SDL_Delay(1000/FPS);
 
-        cpu.executeCycle();
+        nes.executeCycle();
     }
 
     SDL_Quit();

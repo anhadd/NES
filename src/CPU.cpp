@@ -2,7 +2,6 @@
 
 
 CPU::CPU() {
-    fill(begin(memory), end(memory), 0);
     status.full = 0x24;
 
     PC = 0x0000;
@@ -39,28 +38,16 @@ CPU::~CPU() {
     // Destructor.
 }
 
+void CPU::passBUS(BUS* nesBUS) {
+    bus = nesBUS;
+}
+
 uint8_t CPU::cpuRead(uint16_t address) {
-    if (address <= 0x1FFF) {
-        return memory[address & 0x07FF];
-    }
-    else if (address <= 0x3FFF) {
-        return memory[0x2000 + (address & 0x0007)];
-    }
-    else {
-        return memory[address];
-    }
+    return bus->busRead(address);
 }
 
 uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
-    if (address <= 0x1FFF) {
-        memory[address & 0x07FF] = value;
-    }
-    else if (address <= 0x3FFF) {
-        memory[0x2000 + (address & 0x0007)] = value;
-    }
-    else {
-        memory[address] = value;
-    }
+    bus->busWrite(address, value);
     return 0;
 }
 

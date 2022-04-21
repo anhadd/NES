@@ -1,7 +1,7 @@
 #include "../include/input.h"
 
 
-bool handleInput(bool quit, SDL_Event sdlevent, CPU &cpu, int &FPS) {
+bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
     while (SDL_PollEvent(&sdlevent)){
         if (sdlevent.type == SDL_QUIT){
             quit = true;
