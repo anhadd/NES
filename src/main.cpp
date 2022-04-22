@@ -9,10 +9,6 @@ using namespace std;
 
 
 
-// DONE: ADDED 9 AND 0 TO DECREASE / INCREASE SPEED
-// DONE: SDL2 DOESNT WORK YET -> THE COMPILER FLAGS WERE WRONG OR SOMETHING
-// DONE: FIXED BREAKOUT, APPARENTLY THE ROM WAS BROKEN
-// DONE: check 8xy5 and 8xy6? Just try to pass the test_opcode rom. <- WAS WITH SIGNEDNESS AND SHIFTING
 int main(int argc, char *argv[])
 {
     NES nes;
