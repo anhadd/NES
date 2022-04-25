@@ -11,8 +11,8 @@ class BUS {
     public:
         // TODO: add "-" to remove the mirroring parts of memory for space.
         uint8_t memory[0x10000];        // CPU memory.
-        // uint8_t v_ram[0x10000];         // PPU memory
-        // uint8_t spr_ram[0x100];           // Stores sprite attributes.
+        uint8_t v_ram[0x10000];         // PPU memory
+        uint8_t spr_ram[0x100];           // Stores sprite attributes.
         
         BUS();
         ~BUS();
