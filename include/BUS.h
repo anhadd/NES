@@ -9,7 +9,10 @@ using namespace std;
 
 class BUS {
     public:
-        uint8_t memory[0x10000];    // TODO: add "-" to remove the mirroring parts of memory for space.
+        // TODO: add "-" to remove the mirroring parts of memory for space.
+        uint8_t memory[0x10000];        // CPU memory.
+        // uint8_t v_ram[0x10000];         // PPU memory
+        // uint8_t spr_ram[0x100];           // Stores sprite attributes.
         
         BUS();
         ~BUS();
@@ -17,7 +20,6 @@ class BUS {
         uint8_t busRead(uint16_t address);
         uint8_t busWrite(uint16_t address, uint8_t value);
 };
-
 
 
 #endif

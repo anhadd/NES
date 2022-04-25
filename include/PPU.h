@@ -12,6 +12,7 @@ using namespace std;
 class PPU {
     public:
         BUS* bus;
+        
 
         PPU();
         ~PPU();

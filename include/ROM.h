@@ -8,6 +8,8 @@ using namespace std;
 
 #define ROM_HEADER_SIZE 0x0010
 #define PRG_BLOCK_SIZE 0x4000
+#define TRAINER_SIZE 512
+#define MEMORY_ARRAY_SIZE 0x10000
 
 /*
 (Taken from: https://www.nesdev.org/wiki/INES)
