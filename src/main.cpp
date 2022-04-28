@@ -11,31 +11,31 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    //set up SDL
+    SDL_Init(SDL_INIT_EVERYTHING);
+    
     NES nes;
 
     remove("nes_error.log");
     freopen("nes_error.log", "w", stderr);
     
-    //set up SDL
-    SDL_Init(SDL_INIT_EVERYTHING);
-    const int height = 240, width = 256, scale = 2;
-    GUI gui(height, width, scale);
-    
     bool quit = false;
-    int FPS = 2000;
+    int FPS = 60;
 
-    SDL_ShowWindow(gui.window);
+    SDL_ShowWindow(nes.gui.window);
     printf("Window Opened!\n");
 
     if (nes.initialize(argv[1]) != 0) {
         fprintf(stderr, "Error: Could not open ROM file!\n");
         return 0;
     }
+    printf("Rom Loaded!\n");
+
     while (!quit) {
-        quit = handleInput(quit, gui.sdlevent, nes, FPS);
+        quit = handleInput(quit, nes.gui.sdlevent, nes, FPS);
         SDL_Delay(1000/FPS);
 
-        nes.executeCycle();
+        nes.executeFrame();
     }
 
     SDL_Quit();

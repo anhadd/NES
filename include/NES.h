@@ -19,6 +19,7 @@ class NES {
         ROM rom;
         BUS bus;
         PPU ppu;
+        GUI gui;
 
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 
@@ -26,7 +27,7 @@ class NES {
         ~NES();
 
         uint8_t initialize(char* romName);
-        void executeCycle();
+        void executeFrame();
 };
 
 

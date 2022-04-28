@@ -3,6 +3,11 @@
 
 #include <SDL2/SDL.h>
 
+#define GUI_WIDTH 256
+#define GUI_HEIGHT 240
+#define GUI_SCALE 3
+
+
 
 class GUI {
     public:
@@ -11,7 +16,7 @@ class GUI {
         SDL_Texture *texture;
         SDL_Event sdlevent;
 
-        GUI(const int height = 32, const int width = 64, const int scale = 10);
+        GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();
 };
 

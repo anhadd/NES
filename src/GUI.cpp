@@ -2,7 +2,7 @@
 
 
 
-GUI::GUI(const int height, const int width, const int scale) {
+GUI::GUI(int width, int height, int scale) {
     // Constructor
     window = SDL_CreateWindow("NES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width*scale, height*scale, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, 0);

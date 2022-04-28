@@ -41,24 +41,47 @@ SRAM offset:
 
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <vector>
 
 #include "BUS.h"
+#include "GUI.h"
 
 using namespace std;
+
+
+struct color {
+    uint16_t index;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+};
 
 
 class PPU {
     public:
         BUS* bus;
+        GUI* gui;
         
+        uint16_t cycles;
+        uint16_t scanlines;
+        bool finished;
+
+        struct color curr_color;
+        vector<struct color> palette_lookup;
+
 
         PPU();
         ~PPU();
 
+        void reset();
         void passBUS(BUS* nesBUS);
+        void passGUI(GUI* nesGUI);
 
         uint8_t ppuRead(uint16_t address);
         uint8_t ppuWrite(uint16_t address, uint8_t value);
+
+        void drawPixel(uint16_t x, uint16_t y, uint16_t color_index);
 
         bool executeCycle();
 };
