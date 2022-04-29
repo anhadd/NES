@@ -101,7 +101,7 @@ class ROM {
         ROM();
         ~ROM();
 
-        bool loadRom(char* romName, uint8_t (&memory)[65536]);
+        bool loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE]);
 };
 
 

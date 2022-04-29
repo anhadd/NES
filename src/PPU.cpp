@@ -7,6 +7,8 @@ PPU::PPU() {
     cycles = 0;
     scanlines = 0;
     finished = false;
+    // TODO: SET TO FALSE LATER !!!
+    v_blank = true;
 
     palette_lookup = {
         { 0x00, 84, 84, 84, 255 },
@@ -106,11 +108,11 @@ void PPU::passGUI(GUI* nesGUI) {
 }
 
 uint8_t PPU::ppuRead(uint16_t address) {
-    return bus->busRead(address);
+    return bus->busReadCPU(address);
 }
 
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
-    bus->busWrite(address, value);
+    bus->busWriteCPU(address, value);
     return 0;
 }
 
@@ -123,8 +125,19 @@ void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
 bool PPU::executeCycle() {
     // Execute a single cycle.
     // TODO: IMPLEMENT THIS !!!
+    if (scanlines == 241 && cycles == 1) {
+        v_blank = true;
+    }
+    else if (scanlines == -1 && cycles == 1) {
+        v_blank = false;
+    }
+
+
     // TODO: Use the correct color, not just a random one.
-    drawPixel(cycles - 1, scanlines, rand() % 0x3F);
+    // drawPixel(cycles - 1, scanlines, rand() % 0x3F);
+    if (scanlines > -1  && scanlines <= 240 && cycles > 0 && cycles <= 256) {
+        drawPixel(cycles - 1, scanlines, bus->busReadPPU((cycles - 1)));
+    }
     cycles += 1;
 
     /*  - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
@@ -135,12 +148,12 @@ bool PPU::executeCycle() {
     // The PPU renders 262 scanlines per frame. Each scanline lasts for 341 PPU clock cycles
     // Cycles and scanlines go off screen (> width and height) because the remainder is the V-blank period.
     // During V-blank is usually when stuff is updated, because it is not visible.
-    if (cycles >= 341)
+    if (cycles >= MAX_COLUMNS)
 	{
 		cycles = 0;
 		
         scanlines += 1;
-		if (scanlines >= 261)
+		if (scanlines >= MAX_SCANLINES)
 		{
 			scanlines = -1;
 			finished = true;

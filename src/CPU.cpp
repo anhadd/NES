@@ -43,11 +43,11 @@ void CPU::passBUS(BUS* nesBUS) {
 }
 
 uint8_t CPU::cpuRead(uint16_t address) {
-    return bus->busRead(address);
+    return bus->busReadCPU(address);
 }
 
 uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
-    bus->busWrite(address, value);
+    bus->busWriteCPU(address, value);
     return 0;
 }
 
@@ -56,8 +56,8 @@ void CPU::reset() {
     SP = 0xFD;
     total_cycles = 7;
 
-    PC = 0xC000; // For nestest.
-    // PC = (memory[0xFFFD] << 8) | memory[0xFFFC]; // For normal ROMs.
+    // PC = 0xC000; // For nestest.
+    PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 }
 
 void CPU::IRQ() {
@@ -89,7 +89,7 @@ bool CPU::executeCycle() {
     if (cycles == 0) {
         // Set opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
         opcode = cpuRead(PC);
-        // fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
+        fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
 
         PC += 1;
         mode = op_lookup[opcode].opmode;
@@ -765,8 +765,8 @@ bool CPU::TYA() {
 }
 
 bool CPU::UNK() {
-    // fprintf(stderr, "Error: Unknown operation!\n");
-    // fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
+    fprintf(stderr, "Error: Unknown operation!\n");
+    fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     // exit(0); // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
     return 0;
 }

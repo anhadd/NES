@@ -48,6 +48,9 @@ SRAM offset:
 
 using namespace std;
 
+#define MAX_COLUMNS 341
+#define MAX_SCANLINES 261
+
 
 struct color {
     uint16_t index;
@@ -64,12 +67,15 @@ class PPU {
         GUI* gui;
         
         uint16_t cycles;
-        uint16_t scanlines;
+        int16_t scanlines;
         bool finished;
+        bool v_blank;
 
         struct color curr_color;
         vector<struct color> palette_lookup;
 
+        uint8_t OAM[0xFF];
+        uint8_t secondary_OAM[0x20];
 
         PPU();
         ~PPU();

@@ -13,7 +13,7 @@ BUS::~BUS() {
     
 }
 
-uint8_t BUS::busRead(uint16_t address) {
+uint8_t BUS::busReadCPU(uint16_t address) {
     if (address <= 0x1FFF) {
         return memory[address & 0x07FF];
     }
@@ -25,7 +25,7 @@ uint8_t BUS::busRead(uint16_t address) {
     }
 }
 
-uint8_t BUS::busWrite(uint16_t address, uint8_t value) {
+uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     if (address <= 0x1FFF) {
         memory[address & 0x07FF] = value;
     }
@@ -34,6 +34,31 @@ uint8_t BUS::busWrite(uint16_t address, uint8_t value) {
     }
     else {
         memory[address] = value;
+    }
+    return 0;
+}
+
+uint8_t BUS::busReadPPU(uint16_t address) {
+    if (address <= 0x1FFF) {
+        return ppu_patterntable[address];
+    }
+    else if (address <= 0x3EFF) {
+        return ppu_nametable[address & 0x2FFF];
+    }
+    else {
+        return ppu_palette[address & 0x3F1F];
+    }
+}
+
+uint8_t BUS::busWritePPU(uint16_t address, uint8_t value) {
+    if (address <= 0x1FFF) {
+        ppu_patterntable[address] = value;
+    }
+    else if (address <= 0x3EFF) {
+        ppu_nametable[address & 0x2FFF] = value;
+    }
+    else {
+        ppu_palette[address & 0x3F1F] = value;
     }
     return 0;
 }

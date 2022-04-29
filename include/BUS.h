@@ -13,14 +13,18 @@ class BUS {
         // TODO: FIGURE OUT HOW I WANNA IMPLEMENT THE MEMORY STUFF (SEPARATE OR RANGES ?) 
         uint8_t memory[0x10000];        // CPU memory
         
-        // uint8_t v_ram[0x10000];         // PPU memory
-        // uint8_t spr_ram[0x100];           // Stores sprite attributes.
+        uint8_t ppu_patterntable[0x2000];       // PPU memory
+        uint8_t ppu_nametable[0x1000];          // PPU memory
+        uint8_t ppu_palette[0x0020];          // PPU memory
         
         BUS();
         ~BUS();
 
-        uint8_t busRead(uint16_t address);
-        uint8_t busWrite(uint16_t address, uint8_t value);
+        uint8_t busReadCPU(uint16_t address);
+        uint8_t busWriteCPU(uint16_t address, uint8_t value);
+
+        uint8_t busReadPPU(uint16_t address);
+        uint8_t busWritePPU(uint16_t address, uint8_t value);
 };
 
 
