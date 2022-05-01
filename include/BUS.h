@@ -4,21 +4,22 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-#include "CPU.h"
 #include "PPU.h"
 
 using namespace std;
 
 class BUS {
     public:
-        CPU* cpu;
+        // TODO: add "-" to remove the mirroring parts of memory for space.
+        // TODO: FIGURE OUT HOW I WANNA IMPLEMENT THE MEMORY STUFF (SEPARATE OR RANGES ?) 
+        uint8_t memory[0x10000];        // CPU memory
+
         PPU* ppu;
         
         BUS();
         ~BUS();
 
         void passPPU(PPU* nesPPU);
-        void passCPU(CPU* nesCPU);
 
         uint8_t busReadCPU(uint16_t address);
         uint8_t busWriteCPU(uint16_t address, uint8_t value);

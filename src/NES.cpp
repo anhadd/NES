@@ -6,8 +6,8 @@ NES::NES() {
     // Constructor
     ppu.passGUI(&gui);
 
-    bus.passCPU(&cpu);
     bus.passPPU(&ppu);
+    cpu.passBUS(&bus);
 }
 
 
@@ -16,7 +16,7 @@ NES::~NES() {
 }
 
 uint8_t NES::initialize(char* romName) {
-    if (rom.loadRom(romName, cpu.memory, ppu.ppu_patterntable) != 0) {
+    if (rom.loadRom(romName, bus.memory, ppu.ppu_patterntable) != 0) {
         return 1;
     }
 

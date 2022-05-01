@@ -144,6 +144,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
 }
 
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
+    // TODO: THIS DOESNT WORK FOR SOME REASON, FIX IT (Everything gets bg color ??)
     if (address > 0x3FFF) {
         address &= 0x3FFF;
     }
@@ -163,17 +164,22 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
 uint8_t PPU::readRegister(uint16_t address) {
     // TODO: Deal with PPU registers.
     uint16_t real_address = 0x2000 + (address & 0x0007);
+    uint8_t temp;
     switch (real_address) {
         case CONTROL:
         case MASK:
             // No reading allowed.
             break;
         case STATUS:
-            // ppu_status.v_blank = 1; // TODO: REMOVE THIS AFTER TESTING
+            // fprintf(stderr, "PPU STATUS: %02x\n", ppu_status.full);
+
+            // TODO: REMOVE THIS SETTING VBLANK TO 1 AFTER TESTING.
+            ppu_status.v_blank = 1;
+            temp = ppu_status.full & 0xE0; // TODO: Add   | (data_read_buffer & 0x1F)   for the noise ??
             ppu_status.v_blank = 0;
             address_latch = false;
-            fprintf(stderr, "PPU STATUS: %02x\n", ppu_status.full);
-            return (ppu_status.full & 0xE0); // TODO: Add   | (data_read_buffer & 0x1F)   for the noise ??
+
+            return temp;
         case OAM_ADDR:
             // No reading allowed.
             break;
@@ -262,7 +268,9 @@ void PPU::showPatterntablePixel() {
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
-        drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
+        // TODO: SWITCH THIS FOR THE GET COLOR ONE.
+        drawPixel(cycles, scanlines, (curr_palette * 4) + pixel);
+        // drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
 }
 
@@ -275,7 +283,6 @@ bool PPU::executeCycle() {
     else if (scanlines == -1 && cycles == 1) {
         ppu_status.v_blank = 0;
     }
-
 
     // TODO: Use the correct color, not just a random one.
     // drawPixel(cycles - 1, scanlines, rand() % 0x3F);
