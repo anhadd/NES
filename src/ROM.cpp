@@ -14,7 +14,7 @@ ROM::~ROM() {
 }
 
 
-bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE]) {
+bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (&ppu_patterntable)[0x2000]) {
     ifstream romFile(romName, ios::in | ios::binary);
 
     if (romFile.fail()) {
@@ -35,6 +35,12 @@ bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE]) {
     if (h.prg_rom_size == 1) {
         memcpy(&memory[0xC000], buff, buff_size * sizeof(char));
     }
+
+    uint16_t buff_size2 = h.chr_rom_size * CHR_BLOCK_SIZE;
+    uint8_t buff2[buff_size2];
+
+    romFile.read(reinterpret_cast<char*>(buff2), buff_size2);
+    memcpy(&ppu_patterntable[0], buff2, buff_size2 * sizeof(char));
 
     romFile.close();
     return 0;

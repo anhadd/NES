@@ -10,6 +10,9 @@ PPU::PPU() {
     // TODO: SET TO FALSE LATER !!!
     v_blank = true;
 
+    fill(begin(OAM), end(OAM), 0);
+    fill(begin(secondary_OAM), end(secondary_OAM), 0);
+
     palette_lookup = {
         { 0x00, 84, 84, 84, 255 },
         { 0x01, 0, 30, 116, 255 },
@@ -108,11 +111,11 @@ void PPU::passGUI(GUI* nesGUI) {
 }
 
 uint8_t PPU::ppuRead(uint16_t address) {
-    return bus->busReadCPU(address);
+    return bus->busReadPPU(address);
 }
 
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
-    bus->busWriteCPU(address, value);
+    bus->busWritePPU(address, value);
     return 0;
 }
 
@@ -120,6 +123,16 @@ void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
     SDL_SetRenderDrawColor(gui->renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
     SDL_RenderDrawPoint(gui->renderer, x, y);
+}
+
+void PPU::showPatterntablePixel() {
+    // For now from: https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
+    // For debugging only.
+    if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
+        uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
+        uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
+        drawPixel(cycles, scanlines, pixel);
+    }
 }
 
 bool PPU::executeCycle() {
@@ -135,10 +148,7 @@ bool PPU::executeCycle() {
 
     // TODO: Use the correct color, not just a random one.
     // drawPixel(cycles - 1, scanlines, rand() % 0x3F);
-    if (scanlines > -1  && scanlines <= 240 && cycles > 0 && cycles <= 256) {
-        drawPixel(cycles - 1, scanlines, bus->busReadPPU((cycles - 1)));
-    }
-    cycles += 1;
+    showPatterntablePixel();
 
     /*  - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
             each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
@@ -148,6 +158,8 @@ bool PPU::executeCycle() {
     // The PPU renders 262 scanlines per frame. Each scanline lasts for 341 PPU clock cycles
     // Cycles and scanlines go off screen (> width and height) because the remainder is the V-blank period.
     // During V-blank is usually when stuff is updated, because it is not visible.
+    cycles += 1;
+
     if (cycles >= MAX_COLUMNS)
 	{
 		cycles = 0;

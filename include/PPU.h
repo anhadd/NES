@@ -88,6 +88,7 @@ class PPU {
         uint8_t ppuWrite(uint16_t address, uint8_t value);
 
         void drawPixel(uint16_t x, uint16_t y, uint16_t color_index);
+        void showPatterntablePixel();
 
         bool executeCycle();
 };

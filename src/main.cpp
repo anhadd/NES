@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     printf("Window Opened!\n");
 
     if (nes.initialize(argv[1]) != 0) {
-        fprintf(stderr, "Error: Could not open ROM file!\n");
+        printf("Error: Could not open ROM file!\n");
         return 0;
     }
     printf("Rom Loaded!\n");
