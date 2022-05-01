@@ -2,6 +2,8 @@
 
 
 CPU::CPU() {
+    fill(begin(memory), end(memory), 0);
+
     status.full = 0x24;
 
     PC = 0x0000;
@@ -38,16 +40,22 @@ CPU::~CPU() {
     // Destructor.
 }
 
-void CPU::passBUS(BUS* nesBUS) {
-    bus = nesBUS;
-}
-
 uint8_t CPU::cpuRead(uint16_t address) {
-    return bus->busReadCPU(address);
+    if (address <= 0x1FFF) {
+        return memory[address & 0x07FF];
+    }
+    else {
+        return memory[address];
+    }
 }
 
 uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
-    bus->busWriteCPU(address, value);
+    if (address <= 0x1FFF) {
+        memory[address & 0x07FF] = value;
+    }
+    else {
+        memory[address] = value;
+    }
     return 0;
 }
 
@@ -56,6 +64,7 @@ void CPU::reset() {
     SP = 0xFD;
     total_cycles = 7;
 
+    // TODO: SWITCH TO THE CPUREAD WAY, THIS C000 IS ONLY FOR NESTEST TESTING
     // PC = 0xC000; // For nestest.
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 }
@@ -89,7 +98,7 @@ bool CPU::executeCycle() {
     if (cycles == 0) {
         // Set opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
         opcode = cpuRead(PC);
-        // fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
+        fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
 
         PC += 1;
         mode = op_lookup[opcode].opmode;

@@ -30,8 +30,6 @@ a total of 151 valid opcodes out of the possible 256.
 #include <iostream>
 #include <vector>
 
-#include "BUS.h"
-
 using namespace std;
 
 
@@ -85,6 +83,10 @@ struct instruction;
 // DONE: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
 class CPU {
     public:
+        // TODO: add "-" to remove the mirroring parts of memory for space.
+        // TODO: FIGURE OUT HOW I WANNA IMPLEMENT THE MEMORY STUFF (SEPARATE OR RANGES ?) 
+        uint8_t memory[0x10000];        // CPU memory
+
         vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
@@ -112,8 +114,6 @@ class CPU {
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
         
         enum addressing_mode mode;  // Used to store the current addressing mode.
-
-        BUS* bus;                   // The BUS that takes care of memory reads and writes.
         uint16_t rom_address;       // Address to start of the rom.
 
         // Interrupt priority: reset > NMI > IRQ
@@ -150,8 +150,6 @@ class CPU {
 
         uint8_t cpuRead(uint16_t address);
         uint8_t cpuWrite(uint16_t address, uint8_t value);
-
-        void passBUS(BUS* nesBUS);
 
         // Constructor / Decstructor
         CPU();

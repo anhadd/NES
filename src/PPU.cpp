@@ -7,11 +7,26 @@ PPU::PPU() {
     cycles = 0;
     scanlines = 0;
     finished = false;
-    // TODO: SET TO FALSE LATER !!!
-    v_blank = true;
+    address_latch = false;
+
+    fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
+    fill(begin(ppu_nametable), end(ppu_nametable), 0);
+    fill(begin(ppu_palette), end(ppu_palette), 0);
+
+    ppu_ctrl.full = 0x00;
+    ppu_mask.full = 0x00;
+    ppu_status.full = 0x00;
+    oam_addr = 0x00;
+    oam_data = 0x00;
+    ppu_scroll = 0x00;
+    ppu_addr = 0x00;
+    ppu_data = 0x00;
 
     fill(begin(OAM), end(OAM), 0);
     fill(begin(secondary_OAM), end(secondary_OAM), 0);
+
+    data_read_buffer = 0x00;
+    curr_palette = 0x00;
 
     palette_lookup = {
         { 0x00, 84, 84, 84, 255 },
@@ -102,25 +117,141 @@ void PPU::reset() {
     SDL_RenderClear(gui->renderer);
 }
 
-void PPU::passBUS(BUS* nesBUS) {
-    bus = nesBUS;
-}
-
 void PPU::passGUI(GUI* nesGUI) {
     gui = nesGUI;
 }
 
+void PPU::incrementPPUAddr() {
+    if (ppu_ctrl.ppu_increment) {
+        ppu_addr += 32;
+    }
+    else {
+        ppu_addr += 1;
+    }
+    ppu_addr &= 0x3FFF;
+}
+
 uint8_t PPU::ppuRead(uint16_t address) {
-    return bus->busReadPPU(address);
+    if (address <= 0x1FFF) {
+        return ppu_patterntable[address];
+    }
+    else if (address <= 0x3EFF) {
+        return ppu_nametable[address & 0x2FFF];
+    }
+    else {
+        return ppu_palette[address & 0x001F];
+    }
 }
 
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
-    bus->busWritePPU(address, value);
+    if (address > 0x3FFF) {
+        address &= 0x3FFF;
+    }
+
+    if (address <= 0x1FFF) {
+        ppu_patterntable[address] = value;
+    }
+    else if (address <= 0x3EFF) {
+        ppu_nametable[address & 0x2FFF] = value;
+    }
+    else {
+        ppu_palette[address & 0x001F] = value;
+    }
     return 0;
 }
 
+uint8_t PPU::readRegister(uint16_t address) {
+    // TODO: Deal with PPU registers.
+    uint16_t real_address = 0x2000 + (address & 0x0007);
+    switch (real_address) {
+        case CONTROL:
+        case MASK:
+            // No reading allowed.
+            break;
+        case STATUS:
+            // ppu_status.v_blank = 1; // TODO: REMOVE THIS AFTER TESTING
+            ppu_status.v_blank = 0;
+            address_latch = false;
+            fprintf(stderr, "PPU STATUS: %02x\n", ppu_status.full);
+            return (ppu_status.full & 0xE0); // TODO: Add   | (data_read_buffer & 0x1F)   for the noise ??
+        case OAM_ADDR:
+            // No reading allowed.
+            break;
+        case OAM_DATA:
+            return OAM[oam_addr];
+        case SCROLL:
+        case PPU_ADDR:
+            // No reading allowed.
+            break;
+        case PPU_DATA:
+            if (ppu_addr <= 0x3EFF) {
+                // Reading is buffered.
+                uint8_t temp_data = data_read_buffer;
+                data_read_buffer = ppuRead(ppu_addr);
+                incrementPPUAddr();
+                return temp_data;
+            }
+            else {
+                // Reading from palettes is instant.
+                data_read_buffer = ppuRead(ppu_addr);
+                incrementPPUAddr();
+                return data_read_buffer;
+            }
+    }
+    return 0x00;
+}
+
+uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
+    // TODO: Deal with PPU registers.
+    uint16_t real_address = 0x2000 + (address & 0x0007);
+    switch (real_address) {
+        case CONTROL:
+            ppu_ctrl.full = value;
+            break;
+        case MASK:
+            ppu_mask.full = value;
+            break;
+        case STATUS:
+            // No writing allowed.
+            break;
+        case OAM_ADDR:
+            oam_addr = value;
+            break;
+        case OAM_DATA:
+            OAM[oam_addr] = value;
+            break;
+        case SCROLL:
+            // TOOD: IMPLEMENT THIS
+            break;
+        case PPU_ADDR:
+            // TODO: IMPLEMENT THIS
+            if (address_latch) {
+                // Write to high bytes.
+                ppu_addr = (ppu_addr & 0xFF00) | value;
+                address_latch = true;
+            }
+            else {
+                // Write to low bytes.
+                ppu_addr = (ppu_addr & 0x00FF) | (uint16_t)(value << 8);
+                address_latch = false;
+            }
+            ppu_addr &= 0x3FFF;
+            break;
+        case PPU_DATA:
+            ppuWrite(ppu_addr, value);
+            incrementPPUAddr();
+            break;
+    }
+    // memory[real_address] = value;
+    return 0;
+}
+
+uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
+    return ppuRead(0x3F00 + ((palette * 4) + index));
+}
+
 void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
-    curr_color = palette_lookup[color_index];
+    curr_color = palette_lookup[color_index & 0x3F];
     SDL_SetRenderDrawColor(gui->renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
     SDL_RenderDrawPoint(gui->renderer, x, y);
 }
@@ -131,7 +262,7 @@ void PPU::showPatterntablePixel() {
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
-        drawPixel(cycles, scanlines, pixel);
+        drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
 }
 
@@ -139,10 +270,10 @@ bool PPU::executeCycle() {
     // Execute a single cycle.
     // TODO: IMPLEMENT THIS !!!
     if (scanlines == 241 && cycles == 1) {
-        v_blank = true;
+        ppu_status.v_blank = 1;
     }
     else if (scanlines == -1 && cycles == 1) {
-        v_blank = false;
+        ppu_status.v_blank = 0;
     }
 
 

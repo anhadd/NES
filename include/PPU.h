@@ -36,6 +36,8 @@ SRAM offset:
 
 
 
+
+
 #ifndef PPU_H
 #define PPU_H
 
@@ -43,13 +45,21 @@ SRAM offset:
 #include <iostream>
 #include <vector>
 
-#include "BUS.h"
 #include "GUI.h"
 
 using namespace std;
 
 #define MAX_COLUMNS 341
 #define MAX_SCANLINES 261
+
+#define CONTROL     0x2000
+#define MASK        0x2001
+#define STATUS      0x2002
+#define OAM_ADDR    0x2003
+#define OAM_DATA    0x2004
+#define SCROLL      0x2005
+#define PPU_ADDR    0x2006
+#define PPU_DATA    0x2007
 
 
 struct color {
@@ -59,36 +69,95 @@ struct color {
     uint8_t b;
     uint8_t a;
 };
+union PPUCTRL {
+    struct {
+        uint8_t nametable_addr : 2;
+        uint8_t ppu_increment : 1;
+        uint8_t ptrn_addr : 1;
+        uint8_t bgr_addr : 1;
+        uint8_t sprite_size : 1;
+        uint8_t master_slave : 1;
+        uint8_t generate_nmi : 1;
+    };
+    uint8_t full;
+};
+
+union PPUMASK {
+    struct {
+        uint8_t greyscale : 1;
+        uint8_t showbg_left : 1;
+        uint8_t showsprites_left : 1;
+        uint8_t showbg : 1;
+        uint8_t showsprites : 1;
+        uint8_t emph_r : 1;
+        uint8_t emph_g : 1;
+        uint8_t emph_b : 1;
+    };
+    uint8_t full;
+};
+
+union PPUSTATUS {
+    struct {
+        uint8_t prev_lsb : 5;
+        uint8_t sprite_overflow : 1;
+        uint8_t sprite_zerohit : 1;
+        uint8_t v_blank : 1;
+    };
+    uint8_t full;
+};
+
+
+
+
 
 
 class PPU {
     public:
-        BUS* bus;
         GUI* gui;
         
         uint16_t cycles;
         int16_t scanlines;
         bool finished;
-        bool v_blank;
+        bool address_latch;
 
         struct color curr_color;
         vector<struct color> palette_lookup;
 
+        uint8_t ppu_patterntable[0x2000];       // PPU memory
+        uint8_t ppu_nametable[0x1000];          // PPU memory
+        uint8_t ppu_palette[0x0020];            // PPU memory
+        
+        PPUCTRL ppu_ctrl;
+        PPUMASK ppu_mask;
+        PPUSTATUS ppu_status;
+        uint8_t oam_addr;
+        uint8_t oam_data;
+        uint8_t ppu_scroll;
+        uint16_t ppu_addr;
+        uint8_t ppu_data;
+
         uint8_t OAM[0xFF];
         uint8_t secondary_OAM[0x20];
+
+        uint8_t data_read_buffer;
+        uint8_t curr_palette;
 
         PPU();
         ~PPU();
 
         void reset();
-        void passBUS(BUS* nesBUS);
         void passGUI(GUI* nesGUI);
 
         uint8_t ppuRead(uint16_t address);
         uint8_t ppuWrite(uint16_t address, uint8_t value);
 
+        uint8_t readRegister(uint16_t address);
+        uint8_t writeRegister(uint16_t address, uint8_t value);
+
+        uint16_t getColorIndex(uint8_t palette, uint8_t index);
         void drawPixel(uint16_t x, uint16_t y, uint16_t color_index);
         void showPatterntablePixel();
+        void incrementPPUAddr();
 
         bool executeCycle();
 };
