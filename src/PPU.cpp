@@ -136,7 +136,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
         return ppu_patterntable[address];
     }
     else if (address <= 0x3EFF) {
-        return ppu_nametable[address & 0x2FFF];
+        return ppu_nametable[address & 0x0FFF];
     }
     else {
         return ppu_palette[address & 0x001F];
@@ -153,7 +153,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
-        ppu_nametable[address & 0x2FFF] = value;
+        ppu_nametable[address & 0x0FFF] = value;
     }
     else {
         ppu_palette[address & 0x001F] = value;
@@ -174,11 +174,10 @@ uint8_t PPU::readRegister(uint16_t address) {
             // fprintf(stderr, "PPU STATUS: %02x\n", ppu_status.full);
 
             // TODO: REMOVE THIS SETTING VBLANK TO 1 AFTER TESTING.
-            ppu_status.v_blank = 1;
+            // ppu_status.v_blank = 1;
             temp = ppu_status.full & 0xE0; // TODO: Add   | (data_read_buffer & 0x1F)   for the noise ??
             ppu_status.v_blank = 0;
             address_latch = false;
-
             return temp;
         case OAM_ADDR:
             // No reading allowed.
@@ -232,14 +231,14 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
         case PPU_ADDR:
             // TODO: IMPLEMENT THIS
             if (address_latch) {
-                // Write to high bytes.
+                // Write to low bytes.
                 ppu_addr = (ppu_addr & 0xFF00) | value;
-                address_latch = true;
+                address_latch = false;
             }
             else {
-                // Write to low bytes.
+                // Write to high bytes.
                 ppu_addr = (ppu_addr & 0x00FF) | (uint16_t)(value << 8);
-                address_latch = false;
+                address_latch = true;
             }
             ppu_addr &= 0x3FFF;
             break;
@@ -248,16 +247,18 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             incrementPPUAddr();
             break;
     }
-    // memory[real_address] = value;
     return 0;
 }
 
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
-    return ppuRead(0x3F00 + ((palette * 4) + index));
+    // if ((ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F) != 0) {
+    //     printf("HEX COLOR: %02x\n", ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F);
+    // }
+    return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
 void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
-    curr_color = palette_lookup[color_index & 0x3F];
+    curr_color = palette_lookup[color_index];
     SDL_SetRenderDrawColor(gui->renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
     SDL_RenderDrawPoint(gui->renderer, x, y);
 }
@@ -269,8 +270,8 @@ void PPU::showPatterntablePixel() {
         uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
         // TODO: SWITCH THIS FOR THE GET COLOR ONE.
-        drawPixel(cycles, scanlines, (curr_palette * 4) + pixel);
-        // drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
+        // drawPixel(cycles, scanlines, (curr_palette * 4) + pixel);
+        drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
 }
 
@@ -287,6 +288,12 @@ bool PPU::executeCycle() {
     // TODO: Use the correct color, not just a random one.
     // drawPixel(cycles - 1, scanlines, rand() % 0x3F);
     showPatterntablePixel();
+
+    // TODO: Remove this at the end, prints the full ppu_palette for debugging.
+    // for (int i = 0; i < 32; i++) {
+    //     fprintf(stderr, "%02x ", ppu_palette[i]);
+    // }
+    // fprintf(stderr, "\n");
 
     /*  - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
             each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
