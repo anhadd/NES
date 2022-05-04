@@ -117,6 +117,7 @@ class PPU {
         
         uint16_t cycles;
         int16_t scanlines;
+        bool signal_nmi;
         bool finished;
         bool address_latch;
 

@@ -14,12 +14,31 @@ ROM::~ROM() {
 }
 
 
+void ROM::dumpContents(ifstream* romFile) {
+    uint8_t x = 0;
+    uint32_t counter = 0;
+
+    fprintf(stderr, "ROM CONTENTS: \n");
+    while (*romFile >> x) {
+        fprintf(stderr, "%02x ", x);
+        counter += 1;
+        if (counter % 16 == 0) {
+            fprintf(stderr, "\n");
+        }
+    }
+
+    romFile->clear();
+    romFile->seekg(0);
+}
+
+
 bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (&ppu_patterntable)[0x2000]) {
     ifstream romFile(romName, ios::in | ios::binary);
 
     if (romFile.fail()) {
         return 1;
     }
+
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
     // TODO: Check what to do with the trainer, right now it is just skipped.

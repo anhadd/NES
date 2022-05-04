@@ -54,6 +54,12 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
 void CPU::reset() {
     status.full = 0x24;
     SP = 0xFD;
+
+    accumulator = 0;
+    X = 0;
+    Y = 0;
+
+    absolute_address = 0x0000;
     total_cycles = 7;
 
     // TODO: SWITCH TO THE CPUREAD WAY, THIS C000 IS ONLY FOR NESTEST TESTING
@@ -766,8 +772,8 @@ bool CPU::TYA() {
 }
 
 bool CPU::UNK() {
-    // fprintf(stderr, "Error: Unknown operation!\n");
-    // fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
+    fprintf(stderr, "Error: Unknown operation!\n");
+    fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
     // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
     // exit(0);

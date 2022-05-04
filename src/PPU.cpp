@@ -170,6 +170,8 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case STATUS:
+            // TODO: REMOVE THIS SETTING VBLANK TO 1 AFTER FINISHING TESTING.
+            // ppu_status.v_blank = 1;
             // TODO: Maybe add "| (data_read_buffer & 0x1F)"  for the noise stuff ??
             temp = ppu_status.full & 0xE0;
             ppu_status.v_blank = 0;
@@ -247,9 +249,15 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
 }
 
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
+    // TODO: REMOVE THESE DEBUG PRINTING.
     // if ((ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F) != 0) {
     //     printf("HEX COLOR: %02x\n", ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F);
     // }
+    // for (int i = 0; i < 32; i++) {
+    //     fprintf(stderr, "%02x ", ppu_palette[i]);
+    // }
+    // fprintf(stderr, "\n");
+    
     return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
@@ -262,6 +270,8 @@ void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
 void PPU::showPatterntablePixel() {
     // For now from: https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
     // For debugging only.
+    // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
+    // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
@@ -274,6 +284,9 @@ bool PPU::executeCycle() {
     // TODO: IMPLEMENT THIS !!!
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
+        if (ppu_ctrl.generate_nmi) {
+            signal_nmi = true;
+        }
     }
     else if (scanlines == -1 && cycles == 1) {
         ppu_status.v_blank = 0;

@@ -31,6 +31,12 @@ void NES::executeFrame() {
         if (total_cycles % 3 == 0) {
             cpu.executeCycle();
         }
+
+        if (ppu.signal_nmi) {
+            ppu.signal_nmi = false;
+            cpu.NMI();
+        }
+
         total_cycles += 1;
     }
     ppu.finished = false;
