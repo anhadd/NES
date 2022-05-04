@@ -13,3 +13,6 @@ Then run the created main binary with:
 The speed of the running ROM can also be changed with:  
 `9`: Decrease speed.  
 `0`: Increase speed.
+
+To change the current color palette use:
+`P`: Cycle though palettes.
