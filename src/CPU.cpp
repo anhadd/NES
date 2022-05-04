@@ -52,7 +52,7 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
 }
 
 void CPU::reset() {
-    status.full = 0x24; // TODO: CHECK IF STATUS SHOULD BE RESET LIKE THIS
+    status.full = 0x24;
     SP = 0xFD;
     total_cycles = 7;
 
@@ -768,6 +768,8 @@ bool CPU::TYA() {
 bool CPU::UNK() {
     // fprintf(stderr, "Error: Unknown operation!\n");
     // fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
-    // exit(0); // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
+    
+    // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
+    // exit(0);
     return 0;
 }

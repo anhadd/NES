@@ -10,8 +10,7 @@ using namespace std;
 
 class BUS {
     public:
-        // TODO: add "-" to remove the mirroring parts of memory for space.
-        // TODO: FIGURE OUT HOW I WANNA IMPLEMENT THE MEMORY STUFF (SEPARATE OR RANGES ?) 
+        // TODO: lower the size to remove the mirroring parts of memory for space.
         uint8_t memory[0x10000];        // CPU memory
 
         PPU* ppu;
