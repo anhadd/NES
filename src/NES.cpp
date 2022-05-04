@@ -22,6 +22,8 @@ uint8_t NES::initialize(char* romName) {
 
     cpu.reset();
     ppu.reset();
+
+    ppu.vertical_mirorring = rom.h.f6.mirroring;
     return 0;
 }
 

@@ -32,6 +32,6 @@
 *.app
 
 /.vscode/*
-/roms/*
+**/.DS_Store
 main
 nes_error.log

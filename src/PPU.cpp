@@ -136,10 +136,34 @@ uint8_t PPU::ppuRead(uint16_t address) {
         return ppu_patterntable[address];
     }
     else if (address <= 0x3EFF) {
-        return ppu_nametable[address & 0x0FFF];
+        address &= 0x1EFF;
+        if (vertical_mirorring) {
+            if (address < 0x0400) {
+                return ppu_nametable[address & 0x03FF];
+            }
+            else if (address < 0x0800) {
+                return ppu_nametable[0x0400 + (address & 0x03FF)];
+            }
+            else  if (address < 0x0C00) {
+                return ppu_nametable[address & 0x03FF];
+            }
+            else {
+                return ppu_nametable[0x0400 + (address & 0x03FF)];
+            }
+            // ppu_nametable[address & 0x0FFF] = value;
+        }
+        else {
+            return ppu_nametable[address & 0x07FF];
+        }
+        // return ppu_nametable[address & 0x0FFF];
     }
     else {
-        return ppu_palette[address & 0x001F];
+        address &= 0x001F;
+        // TODO: Check if this mirroring s necessary.
+        // if (address % 4 == 0) {
+        //     address = 0x0000;
+        // }
+        return ppu_palette[address];
     }
 }
 
@@ -152,10 +176,29 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
-        ppu_nametable[address & 0x0FFF] = value;
+        address &= 0x1EFF;
+        if (vertical_mirorring) {
+            if (address < 0x0400) {
+                ppu_nametable[address & 0x03FF] = value;
+            }
+            else if (address < 0x0800) {
+                ppu_nametable[0x0400 + (address & 0x03FF)] = value;
+            }
+            else  if (address < 0x0C00) {
+                ppu_nametable[address & 0x03FF] = value;
+            }
+            else {
+                ppu_nametable[0x0400 + (address & 0x03FF)] = value;
+            }
+            // ppu_nametable[address & 0x0FFF] = value;
+        }
+        else {
+            ppu_nametable[address & 0x0FFF] = value;
+        }
     }
     else {
-        ppu_palette[address & 0x001F] = value;
+        address &= 0x001F;
+        ppu_palette[address] = value;
     }
     return 0;
 }
@@ -271,10 +314,10 @@ void PPU::showPatterntablePixel() {
     // For now from: https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
     // For debugging only.
     // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
-    // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
+        // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
-        uint16_t adr = (scanlines / 8 * 0x100) + (scanlines % 8) + (cycles / 8) * 0x10;
-        uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 1) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 1) * 2;
+        uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
+        uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
         drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
 }
@@ -282,6 +325,7 @@ void PPU::showPatterntablePixel() {
 bool PPU::executeCycle() {
     // Execute a single cycle.
     // TODO: IMPLEMENT THIS !!!
+    // Continue with adding functinality for every cycle and scanline and stuff.
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {

@@ -69,6 +69,7 @@ struct color {
     uint8_t b;
     uint8_t a;
 };
+
 union PPUCTRL {
     struct {
         uint8_t nametable_addr : 2;
@@ -109,8 +110,6 @@ union PPUSTATUS {
 
 
 
-
-
 class PPU {
     public:
         GUI* gui;
@@ -120,12 +119,13 @@ class PPU {
         bool signal_nmi;
         bool finished;
         bool address_latch;
+        bool vertical_mirorring;         // 0: Horizontal / 1: Vertical
 
         struct color curr_color;
         vector<struct color> palette_lookup;
 
         uint8_t ppu_patterntable[0x2000];       // PPU memory
-        uint8_t ppu_nametable[0x1000];          // PPU memory
+        uint8_t ppu_nametable[0x0800];          // PPU memory
         uint8_t ppu_palette[0x0020];            // PPU memory
         
         PPUCTRL ppu_ctrl;
