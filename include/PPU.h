@@ -119,7 +119,7 @@ union loopy_register {
         uint8_t padding : 1;
     };
     uint16_t full;
-}
+};
 
 
 

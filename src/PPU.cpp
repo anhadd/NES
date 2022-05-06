@@ -286,14 +286,14 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             // TODO: IMPLEMENT THIS
             if (address_latch) {
                 // Write to low bytes.
-                ppu_addr.coarse_x = (value >> 3) & 0x1F;
-                fine_x = value & 0x07;
+                ppu_buff.coarse_y = (value >> 3) & 0x1F;
+                ppu_buff.fine_y = value & 0x07;
                 address_latch = false;
             }
             else {
                 // Write to high bytes.
-                ppu_addr.coarse_y = (value >> 3) & 0x1F;
-                ppu_addr.fine_y = value & 0x07;
+                ppu_buff.coarse_x = (value >> 3) & 0x1F;
+                fine_x = value & 0x07;
                 address_latch = true;
             }
             ppu_buff.full &= 0x3FFF;
@@ -303,8 +303,8 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             if (address_latch) {
                 // Write to low bytes.
                 ppu_buff.full = (ppu_buff.full & 0xFF00) | value;
+                ppu_addr.full = ppu_buff.full & 0x3FFF;
                 address_latch = false;
-                ppu_addr.full = ppu_buff.full;
             }
             else {
                 // Write to high bytes.
@@ -314,7 +314,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             ppu_buff.full &= 0x3FFF;
             break;
         case PPU_DATA:
-            ppuWrite(ppu_buff.full, value);
+            ppuWrite(ppu_addr.full, value);
             incrementPPUAddr();
             break;
     }
