@@ -349,7 +349,7 @@ void PPU::showPatterntablePixel() {
     // For debugging only.
     // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
         // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
-    if (scanlines >= 0 && scanlines < 128 && cycles >= 0 && cycles < 256) {
+    if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
         drawPixel(gui->pattern_renderer, cycles, scanlines, getColorIndex(curr_palette, pixel));
