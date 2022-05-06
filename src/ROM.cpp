@@ -4,7 +4,6 @@
 
 ROM::ROM() {
     // Constructor
-    mirroring = 0;
 }
 
 
@@ -60,8 +59,6 @@ bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (
 
     romFile.read(reinterpret_cast<char*>(buff2), buff_size2);
     memcpy(&ppu_patterntable[0], buff2, buff_size2 * sizeof(char));
-
-    mirroring = h.f6.mirroring;
 
     romFile.close();
     return 0;

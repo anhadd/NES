@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     freopen("nes_error.log", "w", stderr);
     
     bool quit = false;
-    int FPS = 60;
+    int FPS = 20; // TODO: Should be 60 at the end
 
     SDL_ShowWindow(nes.gui.window);
     printf("Window Opened!\n");

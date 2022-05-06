@@ -138,6 +138,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else if (address <= 0x3EFF) {
         address &= 0x1EFF;
         if (vertical_mirorring) {
+            printf("VERTICAL!\n");
             if (address < 0x0400) {
                 return ppu_nametable[address & 0x03FF];
             }
@@ -304,10 +305,10 @@ uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
     return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
-void PPU::drawPixel(uint16_t x, uint16_t y, uint16_t color_index) {
+void PPU::drawPixel(SDL_Renderer *renderer, uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
-    SDL_SetRenderDrawColor(gui->renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
-    SDL_RenderDrawPoint(gui->renderer, x, y);
+    SDL_SetRenderDrawColor(renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
+    SDL_RenderDrawPoint(renderer, x, y);
 }
 
 void PPU::showPatterntablePixel() {
@@ -318,7 +319,7 @@ void PPU::showPatterntablePixel() {
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
-        drawPixel(cycles, scanlines, getColorIndex(curr_palette, pixel));
+        drawPixel(gui->pattern_renderer, cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
 }
 
@@ -364,6 +365,7 @@ bool PPU::executeCycle() {
 			scanlines = -1;
 			finished = true;
             SDL_RenderPresent(gui->renderer);
+            SDL_RenderPresent(gui->pattern_renderer);
 		}
 	}
     
