@@ -2,6 +2,9 @@
 
 
 
+
+// TODO: Check why some roms are acting weird with pattern memory, or if it should act like that.
+
 PPU::PPU() {
     // Constructor
     cycles = 0;
