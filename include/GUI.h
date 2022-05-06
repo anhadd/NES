@@ -17,6 +17,9 @@ class GUI {
         SDL_Window *pattern_window;
         SDL_Renderer *pattern_renderer;
 
+        SDL_Window *palette_window;
+        SDL_Renderer *palette_renderer;
+
         // SDL_Texture *texture;
         SDL_Event sdlevent;
 

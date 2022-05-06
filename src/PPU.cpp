@@ -19,7 +19,12 @@ PPU::PPU() {
     oam_addr = 0x00;
     oam_data = 0x00;
     ppu_scroll = 0x00;
-    ppu_addr = 0x00;
+
+    // ppu_addr = 0x00;
+    ppu_addr.full = 0x0000;
+    ppu_buff.full = 0x0000;
+    fine_x = 0x00;
+
     ppu_data = 0x00;
 
     fill(begin(OAM), end(OAM), 0);
@@ -123,12 +128,12 @@ void PPU::passGUI(GUI* nesGUI) {
 
 void PPU::incrementPPUAddr() {
     if (ppu_ctrl.ppu_increment) {
-        ppu_addr += 32;
+        ppu_addr.full += 32;
     }
     else {
-        ppu_addr += 1;
+        ppu_addr.full += 1;
     }
-    ppu_addr &= 0x3FFF;
+    ppu_addr.full &= 0x3FFF;
 }
 
 uint8_t PPU::ppuRead(uint16_t address) {
@@ -138,7 +143,6 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else if (address <= 0x3EFF) {
         address &= 0x1EFF;
         if (vertical_mirorring) {
-            printf("VERTICAL!\n");
             if (address < 0x0400) {
                 return ppu_nametable[address & 0x03FF];
             }
@@ -161,10 +165,13 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else {
         address &= 0x001F;
         // TODO: Check if this mirroring s necessary.
-        // if (address % 4 == 0) {
-        //     address = 0x0000;
-        // }
-        return ppu_palette[address];
+            // The mirroring of the 4ths and the modulo 4
+        if (address == 0x0010) address = 0x0000;
+        else if (address == 0x0014) address = 0x0004;
+        else if (address == 0x0018) address = 0x0008;
+        else if (address == 0x001C) address = 0x000C;
+
+        return ppu_palette[address % 0x04];
     }
 }
 
@@ -199,6 +206,12 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     }
     else {
         address &= 0x001F;
+        // TODO: Check if this mirroring s necessary.
+        if (address == 0x0010) address = 0x0000;
+        else if (address == 0x0014) address = 0x0004;
+        else if (address == 0x0018) address = 0x0008;
+        else if (address == 0x001C) address = 0x000C;
+
         ppu_palette[address] = value;
     }
     return 0;
@@ -231,16 +244,16 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case PPU_DATA:
-            if (ppu_addr <= 0x3EFF) {
+            if (ppu_addr.full <= 0x3EFF) {
                 // Reading is buffered.
                 uint8_t temp_data = data_read_buffer;
-                data_read_buffer = ppuRead(ppu_addr);
+                data_read_buffer = ppuRead(ppu_addr.full);
                 incrementPPUAddr();
                 return temp_data;
             }
             else {
                 // Reading from palettes is instant.
-                data_read_buffer = ppuRead(ppu_addr);
+                data_read_buffer = ppuRead(ppu_addr.full);
                 incrementPPUAddr();
                 return data_read_buffer;
             }
@@ -254,6 +267,8 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
     switch (real_address) {
         case CONTROL:
             ppu_ctrl.full = value;
+            ppu_buff.nametable_x = ppu_ctrl.nametable_x;
+            ppu_buff.nametable_y = ppu_ctrl.nametable_y;
             break;
         case MASK:
             ppu_mask.full = value;
@@ -268,24 +283,38 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             OAM[oam_addr] = value;
             break;
         case SCROLL:
-            // TOOD: IMPLEMENT THIS
+            // TODO: IMPLEMENT THIS
+            if (address_latch) {
+                // Write to low bytes.
+                ppu_addr.coarse_x = (value >> 3) & 0x1F;
+                fine_x = value & 0x07;
+                address_latch = false;
+            }
+            else {
+                // Write to high bytes.
+                ppu_addr.coarse_y = (value >> 3) & 0x1F;
+                ppu_addr.fine_y = value & 0x07;
+                address_latch = true;
+            }
+            ppu_buff.full &= 0x3FFF;
             break;
         case PPU_ADDR:
             // TODO: IMPLEMENT THIS
             if (address_latch) {
                 // Write to low bytes.
-                ppu_addr = (ppu_addr & 0xFF00) | value;
+                ppu_buff.full = (ppu_buff.full & 0xFF00) | value;
                 address_latch = false;
+                ppu_addr.full = ppu_buff.full;
             }
             else {
                 // Write to high bytes.
-                ppu_addr = (ppu_addr & 0x00FF) | (uint16_t)(value << 8);
+                ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8);
                 address_latch = true;
             }
-            ppu_addr &= 0x3FFF;
+            ppu_buff.full &= 0x3FFF;
             break;
         case PPU_DATA:
-            ppuWrite(ppu_addr, value);
+            ppuWrite(ppu_buff.full, value);
             incrementPPUAddr();
             break;
     }
@@ -316,10 +345,14 @@ void PPU::showPatterntablePixel() {
     // For debugging only.
     // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
         // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
-    if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
+    if (scanlines >= 0 && scanlines < 128 && cycles >= 0 && cycles < 256) {
         uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
         drawPixel(gui->pattern_renderer, cycles, scanlines, getColorIndex(curr_palette, pixel));
+    }
+    // Also shows the palette memory colors.
+    if (scanlines >= 0 && scanlines < 1 && cycles >= 0 && cycles < 32) {
+        drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
     }
 }
 
@@ -339,11 +372,10 @@ bool PPU::executeCycle() {
 
     showPatterntablePixel();
 
-    // TODO: Remove this at the end, prints the full ppu_palette for debugging.
-    // for (int i = 0; i < 32; i++) {
-    //     fprintf(stderr, "%02x ", ppu_palette[i]);
-    // }
-    // fprintf(stderr, "\n");
+    // TODO: CONTINUE HERE WITH RENDERING THE ACTUAL GAME STUFF.
+        // PREPARE EVERY 8 PIXELS AHEAD OF TIME, THEN UPDATE THE STUFF DEPENDING ON WHATEVER IS NECESSARY
+        // INFO IN THE NESDEV FRAME TIMING TABLE (The colored squares thing)
+        // https://www.nesdev.org/wiki/File:Ntsc_timing.png
 
     /*  - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
             each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
@@ -366,6 +398,7 @@ bool PPU::executeCycle() {
 			finished = true;
             SDL_RenderPresent(gui->renderer);
             SDL_RenderPresent(gui->pattern_renderer);
+            SDL_RenderPresent(gui->palette_renderer);
 		}
 	}
     

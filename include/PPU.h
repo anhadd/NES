@@ -72,7 +72,8 @@ struct color {
 
 union PPUCTRL {
     struct {
-        uint8_t nametable_addr : 2;
+        uint8_t nametable_x : 1;
+        uint8_t nametable_y : 1;
         uint8_t ppu_increment : 1;
         uint8_t ptrn_addr : 1;
         uint8_t bgr_addr : 1;
@@ -108,6 +109,19 @@ union PPUSTATUS {
 };
 
 
+union loopy_register {
+    struct {
+        uint8_t coarse_x : 5;
+        uint8_t coarse_y : 5;
+        uint8_t nametable_x : 1;
+        uint8_t nametable_y : 1;
+        uint8_t fine_y : 1;
+        uint8_t padding : 1;
+    };
+    uint16_t full;
+}
+
+
 
 
 class PPU {
@@ -134,7 +148,12 @@ class PPU {
         uint8_t oam_addr;
         uint8_t oam_data;
         uint8_t ppu_scroll;
-        uint16_t ppu_addr;
+
+        // uint16_t ppu_addr;
+        union loopy_register ppu_addr;
+        union loopy_register ppu_buff;
+        uint8_t fine_x;
+
         uint8_t ppu_data;
 
         uint8_t OAM[0xFF];

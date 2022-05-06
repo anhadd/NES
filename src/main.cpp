@@ -20,9 +20,11 @@ int main(int argc, char *argv[])
     freopen("nes_error.log", "w", stderr);
     
     bool quit = false;
-    int FPS = 20; // TODO: Should be 60 at the end
+    int FPS = 60; // TODO: Should be 60 at the end
 
     SDL_ShowWindow(nes.gui.window);
+    SDL_ShowWindow(nes.gui.pattern_window);
+    SDL_ShowWindow(nes.gui.palette_window);
     printf("Window Opened!\n");
 
     if (nes.initialize(argv[1]) != 0) {
