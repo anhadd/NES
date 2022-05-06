@@ -166,6 +166,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
         address &= 0x001F;
         // TODO: Check if this mirroring s necessary.
             // The mirroring of the 4ths and the modulo 4
+            // It also makes all palettes the same color, which might be incorrect.
         if (address == 0x0010) address = 0x0000;
         else if (address == 0x0014) address = 0x0004;
         else if (address == 0x0018) address = 0x0008;
