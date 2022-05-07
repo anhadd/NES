@@ -13,7 +13,8 @@ PPU::PPU() {
     address_latch = false;
 
     fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
-    fill(begin(ppu_nametable), end(ppu_nametable), 0);
+    // fill(begin(ppu_nametable), end(ppu_nametable), 0);
+    fill_n(&ppu_nametable[0][0], 2, 0x0400);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
     ppu_ctrl.full = 0x00;
@@ -35,6 +36,17 @@ PPU::PPU() {
 
     data_read_buffer = 0x00;
     curr_palette = 0x00;
+
+    // Background rendering variables
+    bg_shifter_high = 0x0000;
+    bg_shifter_low = 0x0000;
+    att_shifter_high = 0x00;
+    att_shifter_low = 0x00;
+
+    bg_nametable = 0x00;
+    bg_attribute = 0x00;
+    bg_low = 0x00;
+    bg_high = 0x00;
 
     palette_lookup = {
         { 0x00, 84, 84, 84, 255 },
@@ -144,26 +156,23 @@ uint8_t PPU::ppuRead(uint16_t address) {
         return ppu_patterntable[address];
     }
     else if (address <= 0x3EFF) {
-        address &= 0x1EFF;
+        address &= 0x0FFF;
         if (vertical_mirorring) {
-            if (address < 0x0400) {
-                return ppu_nametable[address & 0x03FF];
-            }
-            else if (address < 0x0800) {
-                return ppu_nametable[0x0400 + (address & 0x03FF)];
-            }
-            else  if (address < 0x0C00) {
-                return ppu_nametable[address & 0x03FF];
+            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+                return ppu_nametable[0][address & 0x03FF];
             }
             else {
-                return ppu_nametable[0x0400 + (address & 0x03FF)];
+                return ppu_nametable[1][address & 0x03FF];
             }
-            // ppu_nametable[address & 0x0FFF] = value;
         }
         else {
-            return ppu_nametable[address & 0x07FF];
+            if (address >= 0 && address < 0x0800) {
+                return ppu_nametable[0][address & 0x03FF];
+            }
+            else {
+                return ppu_nametable[1][address & 0x03FF];
+            }
         }
-        // return ppu_nametable[address & 0x0FFF];
     }
     else {
         address &= 0x001F;
@@ -189,23 +198,22 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     }
     else if (address <= 0x3EFF) {
         address &= 0x1EFF;
+        address &= 0x0FFF;
         if (vertical_mirorring) {
-            if (address < 0x0400) {
-                ppu_nametable[address & 0x03FF] = value;
-            }
-            else if (address < 0x0800) {
-                ppu_nametable[0x0400 + (address & 0x03FF)] = value;
-            }
-            else  if (address < 0x0C00) {
-                ppu_nametable[address & 0x03FF] = value;
+            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+                ppu_nametable[0][address & 0x03FF] = value;
             }
             else {
-                ppu_nametable[0x0400 + (address & 0x03FF)] = value;
+                ppu_nametable[1][address & 0x03FF] = value;
             }
-            // ppu_nametable[address & 0x0FFF] = value;
         }
         else {
-            ppu_nametable[address & 0x0FFF] = value;
+            if (address >= 0 && address < 0x0800) {
+                ppu_nametable[0][address & 0x03FF] = value;
+            }
+            else {
+                ppu_nametable[1][address & 0x03FF] = value;
+            }
         }
     }
     else {
@@ -378,14 +386,57 @@ bool PPU::executeCycle() {
         // https://www.nesdev.org/wiki/File:Ntsc_timing.png
         // Continue with adding functinality for every cycle and scanline and stuff.
 
-    if (scanlines == 241 && cycles == 1) {
+    if (scanlines >= -1 && scanlines <= 239) {
+        if (scanlines == -1 && cycles == 0) { // TODO: MIGHT BE SCANLINE 0 INSTEAD OF -1
+            cycles += 1;
+            ppu_status.v_blank = 0;
+        }
+        // if (scanlines == -1 && cycles == 1) {
+        //     ppu_status.v_blank = 0;
+        // }
+
+        if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
+            uint16_t byte_addr = 0x0000;
+            switch ((cycles - 1) % 8) {
+                case 0:
+                    // uint16_t nametable_id_addr = 0x2000 + (ppu_addr.nametable_x * 0x0400) + (ppu_addr.nametable_y * 0x0800); // + coarse_x + coarse_y
+                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO: Check if this needs an offset.
+                    break;
+                case 2:
+                    byte_addr = 0x23C0
+                            + (ppu_addr.nametable_y * 2048)
+                            + (ppu_addr.nametable_x * 1024)
+                            + ((ppu_addr.coarse_y >> 2) * 8)
+                            + (ppu_addr.coarse_x >> 2);
+                    bg_attribute = ppuRead(byte_addr);
+                    if ((ppu_addr.coarse_y % 4) < 2) {
+                        // Top half of attribute 2x2 tile.
+                        // Shifts the bg_attribute 4 bits to the right to get there.
+                        bg_attribute >>= 4;
+                    }
+                    if (ppu_addr.coarse_x % 4 < 2) {
+                        // Left half of attribute 2x2 tile.
+                        bg_attribute >>= 2;
+                    }
+                    bg_attribute &= 0x03;
+                    break;
+                case 4:
+                    // TODO: CONTINUE HERE!
+                    break;
+                case 6:
+                    break;
+                case 7:
+                    break;
+            }
+        }
+
+
+    }
+    else if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
             signal_nmi = true;
         }
-    }
-    else if (scanlines == -1 && cycles == 1) {
-        ppu_status.v_blank = 0;
     }
 
     showPatterntablePixel();

@@ -139,7 +139,7 @@ class PPU {
         vector<struct color> palette_lookup;
 
         uint8_t ppu_patterntable[0x2000];       // PPU memory
-        uint8_t ppu_nametable[0x0800];          // PPU memory
+        uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables
         uint8_t ppu_palette[0x0020];            // PPU memory
         
         PPUCTRL ppu_ctrl;
@@ -161,6 +161,17 @@ class PPU {
 
         uint8_t data_read_buffer;
         uint8_t curr_palette;
+
+        // Background rendering variables
+        uint16_t bg_shifter_high;
+        uint16_t bg_shifter_low;
+        uint8_t att_shifter_high;
+        uint8_t att_shifter_low;
+
+        uint8_t bg_nametable;
+        uint8_t bg_attribute;
+        uint8_t bg_low;
+        uint8_t bg_high;
 
         PPU();
         ~PPU();
