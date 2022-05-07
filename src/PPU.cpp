@@ -362,8 +362,22 @@ void PPU::showPatterntablePixel() {
 
 bool PPU::executeCycle() {
     // Execute a single cycle.
-    // TODO: IMPLEMENT THIS !!!
-    // Continue with adding functinality for every cycle and scanline and stuff.
+    /*  
+        - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
+            each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
+        - With rendering enabled, each odd PPU frame is one PPU clock shorter than normal. 
+            This is done by skipping the first idle tick on the first visible scanline.
+        - The PPU renders 262 scanlines per frame. Each scanline lasts for 341 PPU clock cycles
+        - Cycles and scanlines go off screen (> width and height) because the remainder is the V-blank period.
+        - During V-blank is usually when stuff is updated, because it is not visible.
+    */
+
+    // TODO: CONTINUE HERE WITH RENDERING THE ACTUAL GAME STUFF.
+        // PREPARE EVERY 8 PIXELS AHEAD OF TIME, THEN UPDATE THE STUFF DEPENDING ON WHATEVER IS NECESSARY
+        // INFO IN THE NESDEV FRAME TIMING TABLE (The colored squares thing)
+        // https://www.nesdev.org/wiki/File:Ntsc_timing.png
+        // Continue with adding functinality for every cycle and scanline and stuff.
+
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
@@ -375,20 +389,7 @@ bool PPU::executeCycle() {
     }
 
     showPatterntablePixel();
-
-    // TODO: CONTINUE HERE WITH RENDERING THE ACTUAL GAME STUFF.
-        // PREPARE EVERY 8 PIXELS AHEAD OF TIME, THEN UPDATE THE STUFF DEPENDING ON WHATEVER IS NECESSARY
-        // INFO IN THE NESDEV FRAME TIMING TABLE (The colored squares thing)
-        // https://www.nesdev.org/wiki/File:Ntsc_timing.png
-
-    /*  - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
-            each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
-        - With rendering enabled, each odd PPU frame is one PPU clock shorter than normal. 
-            This is done by skipping the first idle tick on the first visible scanline.
-    */
-    // The PPU renders 262 scanlines per frame. Each scanline lasts for 341 PPU clock cycles
-    // Cycles and scanlines go off screen (> width and height) because the remainder is the V-blank period.
-    // During V-blank is usually when stuff is updated, because it is not visible.
+    
     cycles += 1;
 
     if (cycles >= MAX_COLUMNS)
