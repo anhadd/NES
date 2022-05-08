@@ -165,8 +165,8 @@ class PPU {
         // Background rendering variables
         uint16_t bg_shifter_high;
         uint16_t bg_shifter_low;
-        uint8_t att_shifter_high;
-        uint8_t att_shifter_low;
+        uint16_t att_shifter_high;
+        uint16_t att_shifter_low;
 
         uint8_t bg_nametable;
         uint8_t bg_attribute;

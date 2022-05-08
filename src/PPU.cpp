@@ -14,7 +14,7 @@ PPU::PPU() {
 
     fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
     // fill(begin(ppu_nametable), end(ppu_nametable), 0);
-    fill_n(&ppu_nametable[0][0], 2, 0x0400);
+    fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
     ppu_ctrl.full = 0x00;
@@ -47,7 +47,7 @@ PPU::PPU() {
     bg_attribute = 0x00;
     bg_low = 0x00;
     bg_high = 0x00;
-
+    
     palette_lookup = {
         { 0x00, 84, 84, 84, 255 },
         { 0x01, 0, 30, 116, 255 },
@@ -157,22 +157,26 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
-        if (vertical_mirorring) {
-            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
-                return ppu_nametable[0][address & 0x03FF];
-            }
-            else {
-                return ppu_nametable[1][address & 0x03FF];
-            }
-        }
-        else {
-            if (address >= 0 && address < 0x0800) {
-                return ppu_nametable[0][address & 0x03FF];
-            }
-            else {
-                return ppu_nametable[1][address & 0x03FF];
-            }
-        }
+        // if (vertical_mirorring) {
+        //     if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+        //         return ppu_nametable[0][address & 0x03FF];
+        //     }
+        //     else {
+        //         return ppu_nametable[1][address & 0x03FF];
+        //     }
+        // }
+        // else {
+        //     if (address >= 0 && address < 0x0800) {
+        //         return ppu_nametable[0][address & 0x03FF];
+        //     }
+        //     else {
+        //         return ppu_nametable[1][address & 0x03FF];
+        //     }
+        // }
+        // if (ppu_nametable[0][address & 0x03FF] == 0x20 || ppu_nametable[0][address & 0x03FF] == 0x00) {
+        //     return 0x10;
+        // }
+        return 0x0F;
     }
     else {
         address &= 0x001F;
@@ -183,8 +187,15 @@ uint8_t PPU::ppuRead(uint16_t address) {
         else if (address == 0x0014) address = 0x0004;
         else if (address == 0x0018) address = 0x0008;
         else if (address == 0x001C) address = 0x000C;
-
-        return ppu_palette[address % 0x04];
+        // if (address % 4 == 0) {
+        //     return ppu_palette[0x00];
+        // }
+        // else {
+        //     return ppu_palette[address];
+        // }
+        
+        // return ppu_palette[address];
+        return ppu_palette[address];
     }
 }
 
@@ -197,24 +208,23 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
-        address &= 0x1EFF;
-        address &= 0x0FFF;
-        if (vertical_mirorring) {
-            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
-                ppu_nametable[0][address & 0x03FF] = value;
-            }
-            else {
-                ppu_nametable[1][address & 0x03FF] = value;
-            }
-        }
-        else {
-            if (address >= 0 && address < 0x0800) {
-                ppu_nametable[0][address & 0x03FF] = value;
-            }
-            else {
-                ppu_nametable[1][address & 0x03FF] = value;
-            }
-        }
+        // address &= 0x0FFF;
+        // if (vertical_mirorring) {
+        //     if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+        //         ppu_nametable[0][address & 0x03FF] = value;
+        //     }
+        //     else {
+        //         ppu_nametable[1][address & 0x03FF] = value;
+        //     }
+        // }
+        // else {
+        //     if (address >= 0 && address < 0x0800) {
+        //         ppu_nametable[0][address & 0x03FF] = value;
+        //     }
+        //     else {
+        //         ppu_nametable[1][address & 0x03FF] = value;
+        //     }
+        // }
     }
     else {
         address &= 0x001F;
@@ -334,15 +344,6 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
 }
 
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
-    // TODO: REMOVE THESE DEBUG PRINTING.
-    // if ((ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F) != 0) {
-    //     printf("HEX COLOR: %02x\n", ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F);
-    // }
-    // for (int i = 0; i < 32; i++) {
-    //     fprintf(stderr, "%02x ", ppu_palette[i]);
-    // }
-    // fprintf(stderr, "\n");
-    
     return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
@@ -357,6 +358,7 @@ void PPU::showPatterntablePixel() {
     // For debugging only.
     // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
         // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
+    
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
@@ -365,6 +367,30 @@ void PPU::showPatterntablePixel() {
     // Also shows the palette memory colors.
     if (scanlines >= 0 && scanlines < 1 && cycles >= 0 && cycles < 32) {
         drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
+    }
+    // Show the nametables (kinda)
+    if (scanlines == 256 && cycles == 0) {
+        // fprintf(stderr, "\n\nNEXT:\n");
+        for (int i = 0; i < 32; i++) {
+            for (int j = 0; j < 32; j++) {
+                uint8_t pattern_id = ppu_nametable[0][i*32 + j];
+                uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
+
+                // fprintf(stderr, "%02x ", pattern_id);
+                for (int k = 0; k < 8; k++) {
+                    for (int l = 0; l < 8; l++) {
+                        uint16_t adr = (((i*8+k) / 8) * 0x0100) + ((i*8+k) % 8) + ((j*8+l) / 8) * 0x10 + (pattern_id*8);
+                        uint8_t pixel = ((ppuRead(adr) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
+                        drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
+
+                        uint16_t adr2 = (((i*8+k) / 8) * 0x0100) + ((i*8+k) % 8) + ((j*8+l) / 8) * 0x10 + (pattern_id*8);
+                        uint8_t pixel2 = ((ppuRead(adr2 + 0x1000) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr2 + 0x1000 + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
+                        drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
+                    }
+                }
+            }
+            // fprintf(stderr,"\n");
+        }
     }
 }
 
@@ -387,26 +413,42 @@ bool PPU::executeCycle() {
         // Continue with adding functinality for every cycle and scanline and stuff.
 
     if (scanlines >= -1 && scanlines <= 239) {
-        if (scanlines == -1 && cycles == 0) { // TODO: MIGHT BE SCANLINE 0 INSTEAD OF -1
+        if (scanlines == 0 && cycles == 0) {
             cycles += 1;
+        }
+        else if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
         }
-        // if (scanlines == -1 && cycles == 1) {
-        //     ppu_status.v_blank = 0;
-        // }
 
         if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
+
+            bg_shifter_high <<= 1;
+            bg_shifter_low <<= 1;
+            att_shifter_high <<= 1;
+            att_shifter_low <<= 1;
+
+
+            // fprintf(stderr, "CYCLES: %u\n", cycles);
+
             switch ((cycles - 1) % 8) {
                 case 0:
+                    // fprintf(stderr, "0\n");
+                    bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
+                    bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
+
+                    att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
+                    att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
                     // uint16_t nametable_id_addr = 0x2000 + (ppu_addr.nametable_x * 0x0400) + (ppu_addr.nametable_y * 0x0800); // + coarse_x + coarse_y
-                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO: Check if this needs an offset.
+                    // TODO: Check if this needs an offset.
+                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
+                    // fprintf(stderr, "2\n");
                     byte_addr = 0x23C0
-                            + (ppu_addr.nametable_y * 2048)
-                            + (ppu_addr.nametable_x * 1024)
-                            + ((ppu_addr.coarse_y >> 2) * 8)
+                            + (ppu_addr.nametable_y * 0x0800)
+                            + (ppu_addr.nametable_x * 0x0400)
+                            + ((ppu_addr.coarse_y >> 2) * 0x08)
                             + (ppu_addr.coarse_x >> 2);
                     bg_attribute = ppuRead(byte_addr);
                     if ((ppu_addr.coarse_y % 4) < 2) {
@@ -421,18 +463,69 @@ bool PPU::executeCycle() {
                     bg_attribute &= 0x03;
                     break;
                 case 4:
-                    // TODO: CONTINUE HERE!
+                    // fprintf(stderr, "4\n");
+                    byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
+                            + (bg_nametable * 0x10)
+                            + ppu_addr.fine_y;
+                    bg_low = ppuRead(byte_addr);
                     break;
                 case 6:
+                    // fprintf(stderr, "6\n");
+                    byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
+                            + (bg_nametable * 0x10)
+                            + ppu_addr.fine_y 
+                            + 8;
+                    bg_high = ppuRead(byte_addr);
                     break;
                 case 7:
+                    // fprintf(stderr, "7\n");
+                    ppu_addr.coarse_x += 1;
+                    if (ppu_addr.coarse_x >= 32) {
+                        ppu_addr.coarse_x = 0;
+                        // TODO: check if this actually toggles for single bit fields.
+                        // fprintf(stderr, "BEFORE: %u\n", ppu_addr.nametable_x);
+                        ppu_addr.nametable_x ^= 1;
+                        // fprintf(stderr, "AFTER: %u\n\n", ppu_addr.nametable_x);
+                    }
+                    break;
+                default:
+                    // fprintf(stderr, "def\n");
                     break;
             }
         }
+        
+        if (cycles == 256) {
+            ppu_addr.fine_y += 1;
+            if (ppu_addr.fine_y == 8) {
+                ppu_addr.fine_y = 0;
+                ppu_addr.coarse_y += 1;
 
+                if (ppu_addr.coarse_y == 30) {
+                    ppu_addr.coarse_y = 0;
+                    // TODO: check if this actually toggles for single bit fields.
+                    ppu_addr.nametable_y ^= 1;
+                }
+            }
+        }
+        else if (cycles == 257) {
+            // TODO: CHECK IF THIS NEEDS TO BE HERE FOR LOADING THE NEXT PART   
+            bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
+            bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
 
+            att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
+            att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
+            
+            ppu_addr.nametable_x = ppu_buff.nametable_x;
+			ppu_addr.coarse_x = ppu_buff.coarse_x;
+        }
+        else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
+            ppu_addr.nametable_y = ppu_buff.nametable_y;
+			ppu_addr.coarse_y = ppu_buff.coarse_y;
+            ppu_addr.fine_y = ppu_buff.fine_y;
+        }
     }
-    else if (scanlines == 241 && cycles == 1) {
+    
+    if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
             signal_nmi = true;
@@ -440,6 +533,19 @@ bool PPU::executeCycle() {
     }
 
     showPatterntablePixel();
+
+    uint8_t pixel = 0x00;
+    uint8_t palette = 0x00;
+
+    uint8_t pixel_low = (bg_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
+    uint8_t pixel_high = (bg_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+    pixel = (pixel_high << 1) | pixel_low;
+
+    uint8_t palette_low = (att_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
+    uint8_t palette_high = (att_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+    palette = (palette_high << 1) | palette_low;
+
+    drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
     
     cycles += 1;
 
@@ -455,6 +561,7 @@ bool PPU::executeCycle() {
             SDL_RenderPresent(gui->renderer);
             SDL_RenderPresent(gui->pattern_renderer);
             SDL_RenderPresent(gui->palette_renderer);
+            SDL_RenderPresent(gui->nametable_renderer);
 		}
 	}
     
