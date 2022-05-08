@@ -4,6 +4,9 @@
 
 
 // TODO: Check why some roms are acting weird with pattern memory, or if it should act like that.
+// TODO: Continue with fixing the nametable and palette
+    // Currently the nametable is incorrect
+    // The palette is also incorrect, probably with how reading and writing is done, check the nes_error.log
 
 PPU::PPU() {
     // Constructor
@@ -157,26 +160,26 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
-        // if (vertical_mirorring) {
-        //     if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
-        //         return ppu_nametable[0][address & 0x03FF];
-        //     }
-        //     else {
-        //         return ppu_nametable[1][address & 0x03FF];
-        //     }
-        // }
-        // else {
-        //     if (address >= 0 && address < 0x0800) {
-        //         return ppu_nametable[0][address & 0x03FF];
-        //     }
-        //     else {
-        //         return ppu_nametable[1][address & 0x03FF];
-        //     }
-        // }
+        if (vertical_mirorring) {
+            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+                return ppu_nametable[0][address & 0x03FF];
+            }
+            else {
+                return ppu_nametable[1][address & 0x03FF];
+            }
+        }
+        else {
+            if (address >= 0 && address < 0x0800) {
+                return ppu_nametable[0][address & 0x03FF];
+            }
+            else {
+                return ppu_nametable[1][address & 0x03FF];
+            }
+        }
         // if (ppu_nametable[0][address & 0x03FF] == 0x20 || ppu_nametable[0][address & 0x03FF] == 0x00) {
         //     return 0x10;
         // }
-        return 0x0F;
+        // return 0x0F;
     }
     else {
         address &= 0x001F;
@@ -208,31 +211,32 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
-        // address &= 0x0FFF;
-        // if (vertical_mirorring) {
-        //     if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
-        //         ppu_nametable[0][address & 0x03FF] = value;
-        //     }
-        //     else {
-        //         ppu_nametable[1][address & 0x03FF] = value;
-        //     }
-        // }
-        // else {
-        //     if (address >= 0 && address < 0x0800) {
-        //         ppu_nametable[0][address & 0x03FF] = value;
-        //     }
-        //     else {
-        //         ppu_nametable[1][address & 0x03FF] = value;
-        //     }
-        // }
+        address &= 0x0FFF;
+        if (vertical_mirorring) {
+            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+                ppu_nametable[0][address & 0x03FF] = value;
+            }
+            else {
+                ppu_nametable[1][address & 0x03FF] = value;
+            }
+        }
+        else {
+            if (address >= 0 && address < 0x0800) {
+                ppu_nametable[0][address & 0x03FF] = value;
+            }
+            else {
+                ppu_nametable[1][address & 0x03FF] = value;
+            }
+        }
     }
     else {
         address &= 0x001F;
+        fprintf(stderr, "WRITE TO PALETTE: ADDR: %04x   -     %02x -> %02x\n", address, ppu_palette[address], value);
         // TODO: Check if this mirroring s necessary.
-        if (address == 0x0010) address = 0x0000;
-        else if (address == 0x0014) address = 0x0004;
-        else if (address == 0x0018) address = 0x0008;
-        else if (address == 0x001C) address = 0x000C;
+        // if (address == 0x0010) address = 0x0000;
+        // else if (address == 0x0014) address = 0x0004;
+        // else if (address == 0x0018) address = 0x0008;
+        // else if (address == 0x001C) address = 0x000C;
 
         ppu_palette[address] = value;
     }
