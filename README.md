@@ -15,4 +15,7 @@ The speed of the running ROM can also be changed with:
 `0`: Increase speed.
 
 To change the current color palette use:
-`P`: Cycle though palettes.
+`P`: Cycle through palettes.
+
+To quit the emulator use:
+`ESC`: Closes the emulator.

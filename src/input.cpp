@@ -17,11 +17,11 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
             switch (sdlevent.key.keysym.sym) {
                 case SDLK_p:
                     // TODO: Remove the color hex printing.
-                    fprintf(stderr, "   PALETTE MEMORY: ");
-                    for (int i = 0; i < 32; i++) {
-                        fprintf(stderr, "%02x ", nes.ppu.ppu_palette[i]);
-                    }
-                    fprintf(stderr, "\n");
+                    // fprintf(stderr, "   PALETTE MEMORY: ");
+                    // for (int i = 0; i < 32; i++) {
+                    //     fprintf(stderr, "%02x ", nes.ppu.ppu_palette[i]);
+                    // }
+                    // fprintf(stderr, "\n");
 
                     if (nes.ppu.curr_palette >= 7) {
                         nes.ppu.curr_palette = 0;
