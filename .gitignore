@@ -37,3 +37,4 @@
 /roms/*
 main
 nes_error.log
+nes_error_backup.log

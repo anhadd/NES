@@ -27,7 +27,6 @@ PPU::PPU() {
     oam_data = 0x00;
     ppu_scroll = 0x00;
 
-    // ppu_addr = 0x00;
     ppu_addr.full = 0x0000;
     ppu_buff.full = 0x0000;
     fine_x = 0x00;
@@ -151,10 +150,12 @@ void PPU::incrementPPUAddr() {
     else {
         ppu_addr.full += 1;
     }
-    ppu_addr.full &= 0x3FFF;
+    // ppu_addr.full &= 0x3FFF;
 }
 
 uint8_t PPU::ppuRead(uint16_t address) {
+    address &= 0x3FFF;
+
     if (address <= 0x1FFF) {
         return ppu_patterntable[address];
     }
@@ -191,26 +192,21 @@ uint8_t PPU::ppuRead(uint16_t address) {
         else if (address == 0x0018) address = 0x0008;
         else if (address == 0x001C) address = 0x000C;
         // if (address % 4 == 0) {
-        //     return ppu_palette[0x00];
+        //     address = 0x0000;
         // }
-        // else {
-        //     return ppu_palette[address];
-        // }
-        
-        // return ppu_palette[address];
+    
         return ppu_palette[address];
     }
 }
 
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
-    if (address > 0x3FFF) {
-        address &= 0x3FFF;
-    }
+    address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
+        // fprintf(stderr, "NAMETABLE WRITE! ADDR: %04x       %02x\n", address, value);
         address &= 0x0FFF;
         if (vertical_mirorring) {
             if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
@@ -233,10 +229,10 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         address &= 0x001F;
         fprintf(stderr, "WRITE TO PALETTE: ADDR: %04x   -     %02x -> %02x\n", address, ppu_palette[address], value);
         // TODO: Check if this mirroring s necessary.
-        // if (address == 0x0010) address = 0x0000;
-        // else if (address == 0x0014) address = 0x0004;
-        // else if (address == 0x0018) address = 0x0008;
-        // else if (address == 0x001C) address = 0x000C;
+        if (address == 0x0010) address = 0x0000;
+        else if (address == 0x0014) address = 0x0004;
+        else if (address == 0x0018) address = 0x0008;
+        else if (address == 0x001C) address = 0x000C;
 
         ppu_palette[address] = value;
     }
@@ -254,7 +250,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             break;
         case STATUS:
             // TODO: REMOVE THIS SETTING VBLANK TO 1 AFTER FINISHING TESTING.
-            // ppu_status.v_blank = 1;
+            ppu_status.v_blank = 1;
             // TODO: Maybe add "| (data_read_buffer & 0x1F)"  for the noise stuff ??
             temp = ppu_status.full & 0xE0;
             ppu_status.v_blank = 0;
@@ -264,6 +260,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case OAM_DATA:
+            // TODO: check if this is correct.
             return OAM[oam_addr];
         case SCROLL:
         case PPU_ADDR:
@@ -311,13 +308,13 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
         case SCROLL:
             // TODO: IMPLEMENT THIS
             if (address_latch) {
-                // Write to low bytes.
+                // Get the fine_y and coarse_y values.
                 ppu_buff.coarse_y = (value >> 3) & 0x1F;
                 ppu_buff.fine_y = value & 0x07;
                 address_latch = false;
             }
             else {
-                // Write to high bytes.
+                // Get the fine_x and coarse_x values.
                 ppu_buff.coarse_x = (value >> 3) & 0x1F;
                 fine_x = value & 0x07;
                 address_latch = true;
@@ -329,7 +326,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             if (address_latch) {
                 // Write to low bytes.
                 ppu_buff.full = (ppu_buff.full & 0xFF00) | value;
-                ppu_addr.full = ppu_buff.full & 0x3FFF;
+                ppu_addr.full = ppu_buff.full; // TODO: Check if this is necessary:  & 0x3FFF
                 address_latch = false;
             }
             else {
@@ -337,7 +334,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
                 ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8);
                 address_latch = true;
             }
-            ppu_buff.full &= 0x3FFF;
+            // ppu_buff.full &= 0x3FFF;
             break;
         case PPU_DATA:
             ppuWrite(ppu_addr.full, value);
@@ -363,23 +360,25 @@ void PPU::showPatterntablePixel() {
     // TODO: FIX THAT THE SPRITE COLOR ISNT CHANGING WHEN SWITCHING PALETTES.
         // PROB HAS TO DO WITH THE SPRITE MEMORY AREA IN PPU PALETTE.
     
+    // Show the pattern tables.
     if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
         uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
         uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
         drawPixel(gui->pattern_renderer, cycles, scanlines, getColorIndex(curr_palette, pixel));
     }
-    // Also shows the palette memory colors.
+
+    // Also show the palette memory colors.
     if (scanlines >= 0 && scanlines < 1 && cycles >= 0 && cycles < 32) {
         drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
     }
+
     // Show the nametables (kinda)
     if (scanlines == 256 && cycles == 0) {
-        // fprintf(stderr, "\n\nNEXT:\n");
+        // fprintf(stderr, "\n\nNEXT: \n");
         for (int i = 0; i < 32; i++) {
             for (int j = 0; j < 32; j++) {
                 uint8_t pattern_id = ppu_nametable[0][i*32 + j];
                 uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
-
                 // fprintf(stderr, "%02x ", pattern_id);
                 for (int k = 0; k < 8; k++) {
                     for (int l = 0; l < 8; l++) {
@@ -393,7 +392,7 @@ void PPU::showPatterntablePixel() {
                     }
                 }
             }
-            // fprintf(stderr,"\n");
+            // fprintf(stderr, "\n");
         }
     }
 }
@@ -417,11 +416,11 @@ bool PPU::executeCycle() {
         // Continue with adding functinality for every cycle and scanline and stuff.
 
     if (scanlines >= -1 && scanlines <= 239) {
-        if (scanlines == 0 && cycles == 0) {
-            cycles += 1;
-        }
-        else if (scanlines == -1 && cycles == 1) {
+        if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
+        }
+        else if (scanlines == 0 && cycles == 0) {
+            cycles += 1;
         }
 
         if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
@@ -432,23 +431,18 @@ bool PPU::executeCycle() {
             att_shifter_high <<= 1;
             att_shifter_low <<= 1;
 
-
-            // fprintf(stderr, "CYCLES: %u\n", cycles);
-
             switch ((cycles - 1) % 8) {
                 case 0:
-                    // fprintf(stderr, "0\n");
                     bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
                     bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
 
                     att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
-                    att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
-                    // uint16_t nametable_id_addr = 0x2000 + (ppu_addr.nametable_x * 0x0400) + (ppu_addr.nametable_y * 0x0800); // + coarse_x + coarse_y
+                    att_shifter_low = (att_shifter_low & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
                     // TODO: Check if this needs an offset.
-                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
+                    // bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
+                    bg_nametable = ppuRead(ppu_addr.full);
                     break;
                 case 2:
-                    // fprintf(stderr, "2\n");
                     byte_addr = 0x23C0
                             + (ppu_addr.nametable_y * 0x0800)
                             + (ppu_addr.nametable_x * 0x0400)
@@ -467,14 +461,12 @@ bool PPU::executeCycle() {
                     bg_attribute &= 0x03;
                     break;
                 case 4:
-                    // fprintf(stderr, "4\n");
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y;
                     bg_low = ppuRead(byte_addr);
                     break;
                 case 6:
-                    // fprintf(stderr, "6\n");
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y 
@@ -482,37 +474,39 @@ bool PPU::executeCycle() {
                     bg_high = ppuRead(byte_addr);
                     break;
                 case 7:
-                    // fprintf(stderr, "7\n");
-                    ppu_addr.coarse_x += 1;
-                    if (ppu_addr.coarse_x >= 32) {
+                    if (ppu_addr.coarse_x == 31) {
                         ppu_addr.coarse_x = 0;
-                        // TODO: check if this actually toggles for single bit fields.
-                        // fprintf(stderr, "BEFORE: %u\n", ppu_addr.nametable_x);
                         ppu_addr.nametable_x ^= 1;
-                        // fprintf(stderr, "AFTER: %u\n\n", ppu_addr.nametable_x);
                     }
-                    break;
-                default:
-                    // fprintf(stderr, "def\n");
+                    else {
+                        ppu_addr.coarse_x += 1;
+                    }
                     break;
             }
         }
         
         if (cycles == 256) {
-            ppu_addr.fine_y += 1;
-            if (ppu_addr.fine_y == 8) {
+            if (ppu_addr.fine_y == 7) {
                 ppu_addr.fine_y = 0;
-                ppu_addr.coarse_y += 1;
-
-                if (ppu_addr.coarse_y == 30) {
+                if (ppu_addr.coarse_y == 29) {
                     ppu_addr.coarse_y = 0;
-                    // TODO: check if this actually toggles for single bit fields.
                     ppu_addr.nametable_y ^= 1;
                 }
+                else if (ppu_addr.coarse_y == 31)
+				{
+					ppu_addr.coarse_y = 0;
+				}
+                else {
+                    ppu_addr.coarse_y += 1;
+                }
+            }
+            else {
+                ppu_addr.fine_y += 1;
             }
         }
         else if (cycles == 257) {
-            // TODO: CHECK IF THIS NEEDS TO BE HERE FOR LOADING THE NEXT PART   
+            // TODO: CHECK IF THIS NEEDS TO BE HERE FOR LOADING THE NEXT PART
+            // fprintf(stderr, "Setting X VALUES !!!!\n");
             bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
             bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
 
@@ -521,6 +515,10 @@ bool PPU::executeCycle() {
             
             ppu_addr.nametable_x = ppu_buff.nametable_x;
 			ppu_addr.coarse_x = ppu_buff.coarse_x;
+        }
+        else if (cycles == 338 || cycles == 340) {
+            // bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
+            bg_nametable = ppuRead(ppu_addr.full);
         }
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
             ppu_addr.nametable_y = ppu_buff.nametable_y;

@@ -115,7 +115,7 @@ union loopy_register {
         uint8_t coarse_y : 5;
         uint8_t nametable_x : 1;
         uint8_t nametable_y : 1;
-        uint8_t fine_y : 1;
+        uint8_t fine_y : 3;
         uint8_t padding : 1;
     };
     uint16_t full;
