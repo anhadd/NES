@@ -354,32 +354,27 @@ void PPU::showPatterntablePixel() {
         drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
     }
 
-    // Show the nametables (kinda)
+    // Show the nametables (WRONG PATTERNS USED!!! But at least gives some idea of the structure)
     if (scanlines == 256 && cycles == 0) {
-        fprintf(stderr, "\n\nNEXT: \n");
+        // fprintf(stderr, "\n\nNEXT: \n");
         for (int i = 0; i < 32; i++) {
             for (int j = 0; j < 32; j++) {
                 uint8_t pattern_id = ppu_nametable[0][i*32 + j];
                 uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
-                fprintf(stderr, "%02x ", pattern_id);
+                // fprintf(stderr, "%02x ", pattern_id);
                 for (int k = 0; k < 8; k++) {
                     for (int l = 0; l < 8; l++) {
-                        // uint16_t adr = (((i*8+k) / 8) * 0x0100) + ((i*8+k) % 8) + ((j*8+l) / 8) * 0x10 + (pattern_id*8);
-                        // uint8_t pixel = ((ppuRead(adr) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
-                        // uint16_t adr = (((i*8+k) / 8) * 0x0100) + ((i*8+k) % 8) + ((j*8+l) / 8) * 0x10 + (pattern_id*8);
                         uint16_t adr = 0x0000 + (pattern_id * 8 * 8 * 32) + (k * 8 * 32) + l;
                         uint8_t pixel = ((ppuRead(adr) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
                         drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
-                        // uint16_t adr2 = (((i*8+k) / 8) * 0x0100) + ((i*8+k) % 8) + ((j*8+l) / 8) * 0x10 + (pattern_id*8);
-                        // uint8_t pixel2 = ((ppuRead(adr2 + 0x1000) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr2 + 0x1000 + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
-                        uint16_t adr2 = pattern_id2 * 8 * 8 * 32;
+                        uint16_t adr2 = 0x0000 + (pattern_id2 * 8 * 8 * 32) + (k * 8 * 32) + l;
                         uint8_t pixel2 = ((ppuRead(adr2) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr2 + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
                         drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
                     }
                 }
             }
-            fprintf(stderr, "\n");
+            // fprintf(stderr, "\n");
         }
     }
 }
@@ -423,6 +418,17 @@ bool PPU::executeCycle() {
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
+                    /*  Gets the attribute byte.
+                        The attribute byte is then split into 4 parts: 04 03 02 01
+                        Each part corresponds to one quarter of the tile in the following way:
+                            |--------|--------|
+                            |-- 01 --|-- 02 --|
+                            |--------|--------|
+                            |=================|
+                            |--------|--------|
+                            |-- 03 --|-- 04 --|
+                            |--------|--------|
+                    */
                     byte_addr = 0x23C0
                             + (ppu_addr.nametable_y * 0x0800)
                             + (ppu_addr.nametable_x * 0x0400)
@@ -430,12 +436,12 @@ bool PPU::executeCycle() {
                             + (ppu_addr.coarse_x >> 2);
                     bg_attribute = ppuRead(byte_addr);
                     if ((ppu_addr.coarse_y % 4) < 2) {
-                        // Top half of attribute 2x2 tile.
+                        // Bottom half of attribute 2x2 tile.
                         // Shifts the bg_attribute 4 bits to the right to get there.
                         bg_attribute >>= 4;
                     }
                     if (ppu_addr.coarse_x % 4 < 2) {
-                        // Left half of attribute 2x2 tile.
+                        // Right half of attribute 2x2 tile.
                         // Shifts the bg_attribute 2 bits to the right to get there.
                         bg_attribute >>= 2;
                     }
@@ -517,6 +523,8 @@ bool PPU::executeCycle() {
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
+            // TODO: MANY ROMS FOR SOME REASON HAVE THIS NOT SET, SO NMI IS NEVER SIGNALED !!! CHECK WHY
+            fprintf(stderr, "NMI SIGNALED!\n");
             signal_nmi = true;
         }
     }
@@ -524,15 +532,16 @@ bool PPU::executeCycle() {
     uint8_t pixel = 0x00;
     uint8_t palette = 0x00;
 
-    uint8_t pixel_low = (bg_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
-    uint8_t pixel_high = (bg_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
-    pixel = (pixel_high << 1) | pixel_low;
+    if (ppu_mask.showbg) {
+        uint8_t pixel_low = (bg_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
+        uint8_t pixel_high = (bg_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+        pixel = (pixel_high << 1) | pixel_low;
 
-    uint8_t palette_low = (att_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
-    uint8_t palette_high = (att_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
-    // TODO: probably remove the curr_palette parts, but makes testing palettes easier rn.
-    palette = (palette_high << 1) | palette_low + curr_palette;
-    curr_palette = palette;
+        uint8_t palette_low = (att_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
+        uint8_t palette_high = (att_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+        // TODO: probably remove the curr_palette parts, but makes testing palettes easier rn.
+        palette = (palette_high << 1) | palette_low + curr_palette;
+    }
 
     drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
     showPatterntablePixel();
