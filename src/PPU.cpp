@@ -10,6 +10,7 @@
 
 PPU::PPU() {
     // Constructor
+    total_frames = 0;
     cycles = 0;
     scanlines = 0;
     finished = false;
@@ -342,39 +343,45 @@ void PPU::showPatterntablePixel() {
     // adr and pixel from: https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
     // For debugging only.
     
-    // Show the pattern tables.
-    if (scanlines >= 0 && scanlines < 256 && cycles >= 0 && cycles < 128) {
-        uint16_t adr = ((scanlines / 8) * 0x0100) + (scanlines % 8) + (cycles / 8) * 0x10;
-        uint8_t pixel = ((ppuRead(adr) >> (7-(cycles % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cycles % 8))) & 0x01) * 2;
-        drawPixel(gui->pattern_renderer, cycles, scanlines, getColorIndex(curr_palette, pixel));
-    }
+    if (total_frames % 10 == 0) {
+        // Show the palette memory colors.
+        if (scanlines == 0 && cycles >= 0 && cycles < 32) {
+            drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
+        }
 
-    // Also show the palette memory colors.
-    if (scanlines >= 0 && scanlines < 1 && cycles >= 0 && cycles < 32) {
-        drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
-    }
+        if (scanlines == 256 && cycles == 0) {
+            // Show the pattern tables.
+            for (int sc = 0; sc < 256; sc++) {
+                for (int cy = 0; cy < 128; cy++) {
+                    uint16_t adr = ((sc / 8) * 0x0100) + (sc % 8) + (cy / 8) * 0x10;
+                    uint8_t pixel = ((ppuRead(adr) >> (7-(cy % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cy % 8))) & 0x01) * 2;
+                    drawPixel(gui->pattern_renderer, cy, sc, getColorIndex(curr_palette, pixel));
+                }
+            }
+            
+            // Show the nametables.
+            for (int i = 0; i < 32; i++) {
+                for (int j = 0; j < 32; j++) {
+                    uint8_t pattern_id = ppu_nametable[0][i*32 + j];
+                    uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
+                    for (int k = 0; k < 8; k++) {
+                        for (int l = 0; l < 8; l++) {
+                            // 1 Tile = 16 Bytes.
+                            uint16_t adr = 0x0000 + (pattern_id * 16) + k;
+                            uint8_t pixel = ((ppuRead(adr) >> (7-l)) & 0x01) + ((ppuRead(adr + 8) >> (7-l)) & 0x01) * 2;
+                            drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
-    // Show the nametables (WRONG PATTERNS USED!!! But at least gives some idea of the structure)
-    if (scanlines == 256 && cycles == 0) {
-        // fprintf(stderr, "\n\nNEXT: \n");
-        for (int i = 0; i < 32; i++) {
-            for (int j = 0; j < 32; j++) {
-                uint8_t pattern_id = ppu_nametable[0][i*32 + j];
-                uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
-                // fprintf(stderr, "%02x ", pattern_id);
-                for (int k = 0; k < 8; k++) {
-                    for (int l = 0; l < 8; l++) {
-                        uint16_t adr = 0x0000 + (pattern_id * 8 * 8 * 32) + (k * 8 * 32) + l;
-                        uint8_t pixel = ((ppuRead(adr) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
-                        drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
-
-                        uint16_t adr2 = 0x0000 + (pattern_id2 * 8 * 8 * 32) + (k * 8 * 32) + l;
-                        uint8_t pixel2 = ((ppuRead(adr2) >> (7-((j*8+l) % 8))) & 0x01) + ((ppuRead(adr2 + 8) >> (7-(j*8+l % 8))) & 0x01) * 2;
-                        drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
+                            // uint16_t adr2 = 0x0000 + (pattern_id2 * 8 * 8 * 32) + (k * 8 * 32) + l;
+                            uint16_t adr2 = 0x0000 + (pattern_id2 * 16) + k;
+                            uint8_t pixel2 = ((ppuRead(adr2) >> (7-l)) & 0x01) + ((ppuRead(adr2 + 8) >> (7-l)) & 0x01) * 2;
+                            drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
+                        }
                     }
                 }
             }
-            // fprintf(stderr, "\n");
+            SDL_RenderPresent(gui->pattern_renderer);
+            SDL_RenderPresent(gui->palette_renderer);
+            SDL_RenderPresent(gui->nametable_renderer);
         }
     }
 }
@@ -414,7 +421,7 @@ bool PPU::executeCycle() {
 
                     att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
                     att_shifter_low = (att_shifter_low & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
-                    // TODO: Check if this needs an offset.
+
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
@@ -524,7 +531,7 @@ bool PPU::executeCycle() {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
             // TODO: MANY ROMS FOR SOME REASON HAVE THIS NOT SET, SO NMI IS NEVER SIGNALED !!! CHECK WHY
-            fprintf(stderr, "NMI SIGNALED!\n");
+            // fprintf(stderr, "NMI SIGNALED!\n");
             signal_nmi = true;
         }
     }
@@ -557,10 +564,9 @@ bool PPU::executeCycle() {
 		{
 			scanlines = -1;
 			finished = true;
+
+            total_frames += 1;
             SDL_RenderPresent(gui->renderer);
-            SDL_RenderPresent(gui->pattern_renderer);
-            SDL_RenderPresent(gui->palette_renderer);
-            SDL_RenderPresent(gui->nametable_renderer);
 		}
 	}
     
