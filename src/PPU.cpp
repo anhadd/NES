@@ -133,11 +133,50 @@ PPU::~PPU() {
 }
 
 void PPU::reset() {
+    total_frames = 0;
     cycles = 0;
     scanlines = 0;
     finished = false;
+    address_latch = false;
+
+    // fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
+    // fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
+    // fill(begin(ppu_palette), end(ppu_palette), 0);
+
+    ppu_ctrl.full = 0x00;
+    ppu_mask.full = 0x00;
+    ppu_status.full = 0x00;
+    oam_addr = 0x00;
+    oam_data = 0x00;
+    ppu_scroll = 0x00;
+
+    ppu_addr.full = 0x0000;
+    ppu_buff.full = 0x0000;
+    fine_x = 0x00;
+
+    ppu_data = 0x00;
+
+    // fill(begin(OAM), end(OAM), 0);
+    // fill(begin(secondary_OAM), end(secondary_OAM), 0);
+
+    data_read_buffer = 0x00;
+    curr_palette = 0x00;
+
+    // Background rendering variables
+    bg_shifter_high = 0x0000;
+    bg_shifter_low = 0x0000;
+    att_shifter_high = 0x00;
+    att_shifter_low = 0x00;
+
+    bg_nametable = 0x00;
+    bg_attribute = 0x00;
+    bg_low = 0x00;
+    bg_high = 0x00;
 
     SDL_RenderClear(gui->renderer);
+    SDL_RenderClear(gui->nametable_renderer);
+    SDL_RenderClear(gui->palette_renderer);
+    SDL_RenderClear(gui->pattern_renderer);
 }
 
 void PPU::passGUI(GUI* nesGUI) {
@@ -161,6 +200,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
+        // TODO: CONTINUE HERE! This is what causes the duplication on screen, fix it by checking the modulos probably.
         if (vertical_mirorring) {
             if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
                 return ppu_nametable[0][address & 0x03FF];
@@ -200,7 +240,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         // fprintf(stderr, "NAMETABLE WRITE! ADDR: %04x       %02x\n", address, value);
         address &= 0x0FFF;
         if (vertical_mirorring) {
-            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+            if ((address >= 0x0000 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
                 ppu_nametable[0][address & 0x03FF] = value;
             }
             else {
@@ -208,7 +248,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             }
         }
         else {
-            if (address >= 0 && address < 0x0800) {
+            if (address >= 0x0000 && address < 0x0800) {
                 ppu_nametable[0][address & 0x03FF] = value;
             }
             else {
@@ -218,7 +258,6 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     }
     else {
         address &= 0x001F;
-        // fprintf(stderr, "WRITE TO PALETTE: ADDR: %04x   -     %02x -> %02x\n", address, ppu_palette[address], value);
         if (address == 0x0010) address = 0x0000;
         else if (address == 0x0014) address = 0x0004;
         else if (address == 0x0018) address = 0x0008;
@@ -264,9 +303,10 @@ uint8_t PPU::readRegister(uint16_t address) {
             }
             else {
                 // Reading from palettes is instant.
-                data_read_buffer = ppuRead(ppu_addr.full);
+                // Buffer gets set to value in VRAM, palette value is returned.
+                data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
                 incrementPPUAddr();
-                return data_read_buffer;
+                return ppuRead(ppu_addr.full);
             }
     }
     return 0x00;
@@ -305,7 +345,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
                 fine_x = value & 0x07;
                 address_latch = true;
             }
-            ppu_buff.full &= 0x3FFF;
+            // ppu_buff.full &= 0x3FFF;
             break;
         case PPU_ADDR:
             if (address_latch) {
@@ -371,7 +411,6 @@ void PPU::showPatterntablePixel() {
                             uint8_t pixel = ((ppuRead(adr) >> (7-l)) & 0x01) + ((ppuRead(adr + 8) >> (7-l)) & 0x01) * 2;
                             drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
-                            // uint16_t adr2 = 0x0000 + (pattern_id2 * 8 * 8 * 32) + (k * 8 * 32) + l;
                             uint16_t adr2 = 0x0000 + (pattern_id2 * 16) + k;
                             uint8_t pixel2 = ((ppuRead(adr2) >> (7-l)) & 0x01) + ((ppuRead(adr2 + 8) >> (7-l)) & 0x01) * 2;
                             drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
@@ -422,7 +461,7 @@ bool PPU::executeCycle() {
                     att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
                     att_shifter_low = (att_shifter_low & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
 
-                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
+                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO:  & 0x0FFF might not be necessary
                     break;
                 case 2:
                     /*  Gets the attribute byte.
@@ -443,12 +482,12 @@ bool PPU::executeCycle() {
                             + (ppu_addr.coarse_x >> 2);
                     bg_attribute = ppuRead(byte_addr);
                     if ((ppu_addr.coarse_y % 4) < 2) {
-                        // Bottom half of attribute 2x2 tile.
+                        // Top half of attribute 2x2 tile.
                         // Shifts the bg_attribute 4 bits to the right to get there.
                         bg_attribute >>= 4;
                     }
                     if (ppu_addr.coarse_x % 4 < 2) {
-                        // Right half of attribute 2x2 tile.
+                        // Left half of attribute 2x2 tile.
                         // Shifts the bg_attribute 2 bits to the right to get there.
                         bg_attribute >>= 2;
                     }
@@ -468,7 +507,7 @@ bool PPU::executeCycle() {
                     bg_high = ppuRead(byte_addr);
                     break;
                 case 7:
-                    if (ppu_mask.showbg) {
+                    if (ppu_mask.showbg || ppu_mask.showsprites) {
                         if (ppu_addr.coarse_x == 31) {
                             ppu_addr.coarse_x = 0;
                             ppu_addr.nametable_x ^= 1;
@@ -482,7 +521,7 @@ bool PPU::executeCycle() {
         }
         
         if (cycles == 256) {
-            if (ppu_mask.showbg) {
+            if (ppu_mask.showbg || ppu_mask.showsprites) {
                 if (ppu_addr.fine_y == 7) {
                     ppu_addr.fine_y = 0;
                     if (ppu_addr.coarse_y == 29) {
@@ -510,16 +549,16 @@ bool PPU::executeCycle() {
             att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
             att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
             
-            if (ppu_mask.showbg) {
+            if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_x = ppu_buff.nametable_x;
 			    ppu_addr.coarse_x = ppu_buff.coarse_x;
             }
         }
         else if (cycles == 338 || cycles == 340) {
-            bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
+            bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF)); // TODO: & 0x0FFF might not be necessary.
         }
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
-            if (ppu_mask.showbg) {
+            if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_y = ppu_buff.nametable_y;
                 ppu_addr.coarse_y = ppu_buff.coarse_y;
                 ppu_addr.fine_y = ppu_buff.fine_y;
@@ -550,7 +589,8 @@ bool PPU::executeCycle() {
         palette = (palette_high << 1) | palette_low + curr_palette;
     }
 
-    drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
+    // TODO: check if this should be cycles - 1.
+    drawPixel(gui->renderer, cycles, scanlines, getColorIndex(palette, pixel));
     showPatterntablePixel();
     
     cycles += 1;
