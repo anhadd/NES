@@ -14,8 +14,25 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
             }
         }
         else if (sdlevent.type == SDL_KEYUP){
+            // TODO: ADD INPUT SUPPORT !!!
             switch (sdlevent.key.keysym.sym) {
-                case SDLK_p:
+                case INPUT_A:
+                    break;
+                case INPUT_B:
+                    break;
+                case INPUT_START:
+                    break;
+                case INPUT_SELECT:
+                    break;
+                case INPUT_UP:
+                    break;
+                case INPUT_DOWN:
+                    break;
+                case INPUT_LEFT:
+                    break;
+                case INPUT_RIGHT:
+                    break;
+                case INPUT_PALETTE:
                     if (nes.ppu.curr_palette >= 7) {
                         nes.ppu.curr_palette = 0;
                     }
@@ -23,12 +40,12 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
                         nes.ppu.curr_palette += 1;
                     }
                     break;
-                case SDLK_9:
+                case INPUT_SLOW:
                     if (FPS > 10) {
                         FPS -= 10;
                     }
                     break;
-                case SDLK_0:
+                case INPUT_FAST:
                     FPS += 10;
                     break;
             }
