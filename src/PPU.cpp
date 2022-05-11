@@ -335,13 +335,13 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
         case SCROLL:
             if (address_latch) {
                 // Get the fine_y and coarse_y values.
-                ppu_buff.coarse_y = (value >> 3) & 0x1F;
+                ppu_buff.coarse_y = value / 0x08;
                 ppu_buff.fine_y = value & 0x07;
                 address_latch = false;
             }
             else {
                 // Get the fine_x and coarse_x values.
-                ppu_buff.coarse_x = (value >> 3) & 0x1F;
+                ppu_buff.coarse_x = value / 0x08;
                 fine_x = value & 0x07;
                 address_latch = true;
             }
@@ -404,6 +404,10 @@ void PPU::showPatterntablePixel() {
                 for (int j = 0; j < 32; j++) {
                     uint8_t pattern_id = ppu_nametable[0][i*32 + j];
                     uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
+
+                    // uint8_t pattern_id = ppuRead(0x2000 + (i*32 + j));
+                    // uint8_t pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
                             // 1 Tile = 16 Bytes.
@@ -448,10 +452,12 @@ bool PPU::executeCycle() {
         if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
 
-            bg_shifter_high <<= 1;
-            bg_shifter_low <<= 1;
-            att_shifter_high <<= 1;
-            att_shifter_low <<= 1;
+            if (ppu_mask.showbg) {
+                bg_shifter_high <<= 1;
+                bg_shifter_low <<= 1;
+                att_shifter_high <<= 1;
+                att_shifter_low <<= 1;
+            }
 
             switch ((cycles - 1) % 8) {
                 case 0:
