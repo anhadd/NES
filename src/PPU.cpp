@@ -201,6 +201,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
         // TODO: CONTINUE HERE! This is what causes the duplication on screen, fix it by checking the modulos probably.
+            // THE PROBLEM IS LIKELY NOT HERE NVM !!!
         if (vertical_mirorring) {
             if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
                 return ppu_nametable[0][address & 0x03FF];
@@ -402,11 +403,11 @@ void PPU::showPatterntablePixel() {
             // Show the nametables.
             for (int i = 0; i < 32; i++) {
                 for (int j = 0; j < 32; j++) {
-                    uint8_t pattern_id = ppu_nametable[0][i*32 + j];
-                    uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
+                    // uint8_t pattern_id = ppu_nametable[0][i*32 + j];
+                    // uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
 
-                    // uint8_t pattern_id = ppuRead(0x2000 + (i*32 + j));
-                    // uint8_t pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                    uint8_t pattern_id = ppuRead(0x2000 + (i*32 + j));
+                    uint8_t pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
 
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
@@ -449,7 +450,8 @@ bool PPU::executeCycle() {
             cycles += 1;
         }
 
-        if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
+        // if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
+        if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
 
             if (ppu_mask.showbg) {
@@ -468,6 +470,7 @@ bool PPU::executeCycle() {
                     att_shifter_low = (att_shifter_low & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
 
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO:  & 0x0FFF might not be necessary
+                    // fprintf(stderr, "%02x ", bg_nametable);
                     break;
                 case 2:
                     /*  Gets the attribute byte.
@@ -500,6 +503,7 @@ bool PPU::executeCycle() {
                     bg_attribute &= 0x03;
                     break;
                 case 4:
+                    // uint16_t adr = 0x0000 + (pattern_id * 16) + k;
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y;
@@ -547,20 +551,21 @@ bool PPU::executeCycle() {
                     ppu_addr.fine_y += 1;
                 }
             }
+            // fprintf(stderr, "\n");
         }
         else if (cycles == 257) {
-            bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
-            bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
+            // bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
+            // bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
 
-            att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
-            att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
+            // att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
+            // att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
             
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_x = ppu_buff.nametable_x;
 			    ppu_addr.coarse_x = ppu_buff.coarse_x;
             }
         }
-        else if (cycles == 338 || cycles == 340) {
+        else if (cycles == 337 || cycles == 339) {
             bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF)); // TODO: & 0x0FFF might not be necessary.
         }
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
@@ -579,6 +584,7 @@ bool PPU::executeCycle() {
             // fprintf(stderr, "NMI SIGNALED!\n");
             signal_nmi = true;
         }
+        // fprintf(stderr, "\n\n\n");
     }
 
     uint8_t pixel = 0x00;
@@ -595,8 +601,11 @@ bool PPU::executeCycle() {
         palette = (palette_high << 1) | palette_low + curr_palette;
     }
 
-    // TODO: check if this should be cycles - 1.
-    drawPixel(gui->renderer, cycles, scanlines, getColorIndex(palette, pixel));
+    // Shows only the visible onscreen pixels.
+    if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
+        // TODO: check if this should be cycles - 1.
+        drawPixel(gui->renderer, cycles, scanlines, getColorIndex(palette, pixel));
+    }
     showPatterntablePixel();
     
     cycles += 1;
