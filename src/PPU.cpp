@@ -15,6 +15,7 @@ PPU::PPU() {
     scanlines = 0;
     finished = false;
     address_latch = false;
+    odd_frame = false;
 
     fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
     // fill(begin(ppu_nametable), end(ppu_nametable), 0);
@@ -138,6 +139,7 @@ void PPU::reset() {
     scanlines = 0;
     finished = false;
     address_latch = false;
+    odd_frame = false;
 
     // fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
     // fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
@@ -412,11 +414,11 @@ void PPU::showPatterntablePixel() {
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
                             // 1 Tile = 16 Bytes.
-                            uint16_t adr = 0x0000 + (pattern_id * 16) + k;
+                            uint16_t adr = (ppu_ctrl.bgr_addr * 0x1000) + (pattern_id * 16) + k;
                             uint8_t pixel = ((ppuRead(adr) >> (7-l)) & 0x01) + ((ppuRead(adr + 8) >> (7-l)) & 0x01) * 2;
                             drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
-                            uint16_t adr2 = 0x0000 + (pattern_id2 * 16) + k;
+                            uint16_t adr2 = (ppu_ctrl.bgr_addr * 0x1000) + (pattern_id2 * 16) + k;
                             uint8_t pixel2 = ((ppuRead(adr2) >> (7-l)) & 0x01) + ((ppuRead(adr2 + 8) >> (7-l)) & 0x01) * 2;
                             drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
                         }
@@ -446,7 +448,7 @@ bool PPU::executeCycle() {
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
         }
-        else if (scanlines == 0 && cycles == 0) {
+        else if (scanlines == 0 && cycles == 0 && odd_frame) {
             cycles += 1;
         }
 
@@ -538,11 +540,11 @@ bool PPU::executeCycle() {
                         ppu_addr.coarse_y = 0;
                         ppu_addr.nametable_y ^= 1;
                     }
-                    // TODO: Check if this else if is necessary for normal roms !!!
-                    else if (ppu_addr.coarse_y == 31)
-                    {
-                        ppu_addr.coarse_y = 0;
-                    }
+                    // // TODO: Check if this else if is necessary for normal roms !!!
+                    // else if (ppu_addr.coarse_y == 31)
+                    // {
+                    //     ppu_addr.coarse_y = 0;
+                    // }
                     else {
                         ppu_addr.coarse_y += 1;
                     }
@@ -621,6 +623,7 @@ bool PPU::executeCycle() {
 			finished = true;
 
             total_frames += 1;
+            odd_frame = !odd_frame;
             SDL_RenderPresent(gui->renderer);
 		}
 	}

@@ -109,14 +109,17 @@ union PPUSTATUS {
 };
 
 
+// The repeating screen is fixed here! Apparently there is a real difference between:
+    // uint16_t X : 5
+    // uint8_t X : 5
 union loopy_register {
     struct {
-        uint8_t coarse_x : 5;
-        uint8_t coarse_y : 5;
-        uint8_t nametable_x : 1;
-        uint8_t nametable_y : 1;
-        uint8_t fine_y : 3;
-        uint8_t padding : 1;
+        uint16_t coarse_x : 5;
+        uint16_t coarse_y : 5;
+        uint16_t nametable_x : 1;
+        uint16_t nametable_y : 1;
+        uint16_t fine_y : 3;
+        uint16_t padding : 1;
     };
     uint16_t full;
 };
@@ -135,6 +138,7 @@ class PPU {
         bool finished;
         bool address_latch;
         bool vertical_mirorring;         // 0: Horizontal / 1: Vertical
+        bool odd_frame;
 
         struct color curr_color;
         vector<struct color> palette_lookup;
