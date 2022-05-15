@@ -28,6 +28,8 @@ class GUI {
 
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();
+
+        void createDebugWindows();
 };
 
 

@@ -10,6 +10,12 @@ NES::NES() {
     cpu.passBUS(&bus);
 
     key_state = SDL_GetKeyboardState(NULL);
+
+    ppu.show_debug = SHOW_DEBUG;
+
+    if (SHOW_DEBUG) {
+        gui.createDebugWindows();
+    }
 }
 
 

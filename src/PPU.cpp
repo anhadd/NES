@@ -607,10 +607,11 @@ bool PPU::executeCycle() {
 
     // Shows only the visible onscreen pixels.
     if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
-        // TODO: check if this should be cycles - 1.
         drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
     }
-    showPatterntablePixel();
+    if (show_debug) {
+        showPatterntablePixel();
+    }
     
     cycles += 1;
 

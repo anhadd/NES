@@ -28,6 +28,8 @@
 
 #define INPUT_QUIT SDLK_ESCAPE
 
+#define SHOW_DEBUG true
+
 using namespace std;
 
 

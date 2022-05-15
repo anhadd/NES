@@ -23,8 +23,12 @@ int main(int argc, char *argv[])
     int FPS = 60; // TODO: Should be 60 at the end
 
     SDL_ShowWindow(nes.gui.window);
-    SDL_ShowWindow(nes.gui.pattern_window);
-    SDL_ShowWindow(nes.gui.palette_window);
+
+    if (SHOW_DEBUG) {
+        SDL_ShowWindow(nes.gui.pattern_window);
+        SDL_ShowWindow(nes.gui.palette_window);
+        SDL_ShowWindow(nes.gui.nametable_window);
+    }
     printf("Window Opened!\n");
 
     if (nes.initialize(argv[1]) != 0) {

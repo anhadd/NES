@@ -139,6 +139,7 @@ class PPU {
         bool address_latch;
         bool vertical_mirorring;         // 0: Horizontal / 1: Vertical
         bool odd_frame;
+        bool show_debug;
 
         struct color curr_color;
         vector<struct color> palette_lookup;
