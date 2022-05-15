@@ -468,8 +468,8 @@ bool PPU::executeCycle() {
                     bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
                     bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
 
-                    att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
-                    att_shifter_low = (att_shifter_low & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
+                    att_shifter_high = (att_shifter_high & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
+                    att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
 
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO:  & 0x0FFF might not be necessary
                     // fprintf(stderr, "%02x ", bg_nametable);
@@ -489,15 +489,15 @@ bool PPU::executeCycle() {
                     byte_addr = 0x23C0
                             + (ppu_addr.nametable_y * 0x0800)
                             + (ppu_addr.nametable_x * 0x0400)
-                            + ((ppu_addr.coarse_y >> 2) * 0x08)
-                            + (ppu_addr.coarse_x >> 2);
+                            + ((ppu_addr.coarse_y / 4) * 0x08)
+                            + (ppu_addr.coarse_x / 4);
                     bg_attribute = ppuRead(byte_addr);
-                    if ((ppu_addr.coarse_y % 4) < 2) {
+                    if ((ppu_addr.coarse_y % 4) >= 2) {
                         // Top half of attribute 2x2 tile.
                         // Shifts the bg_attribute 4 bits to the right to get there.
                         bg_attribute >>= 4;
                     }
-                    if (ppu_addr.coarse_x % 4 < 2) {
+                    if (ppu_addr.coarse_x % 4 >= 2) {
                         // Left half of attribute 2x2 tile.
                         // Shifts the bg_attribute 2 bits to the right to get there.
                         bg_attribute >>= 2;
@@ -593,20 +593,22 @@ bool PPU::executeCycle() {
     uint8_t palette = 0x00;
 
     if (ppu_mask.showbg) {
-        uint8_t pixel_low = (bg_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
-        uint8_t pixel_high = (bg_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+        uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
+
+        uint8_t pixel_low = (bg_shifter_low & bit_mask) != 0;
+        uint8_t pixel_high = (bg_shifter_high & bit_mask) != 0;
         pixel = (pixel_high << 1) | pixel_low;
 
-        uint8_t palette_low = (att_shifter_low & (0x01 << (8 + (7 - fine_x)))) != 0;
-        uint8_t palette_high = (att_shifter_high & (0x01 << (8 + (7 - fine_x)))) != 0;
+        uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
+        uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
         // TODO: probably remove the curr_palette parts, but makes testing palettes easier rn.
-        palette = (palette_high << 1) | palette_low + curr_palette;
+        palette = ((palette_high << 1) | palette_low) + curr_palette;
     }
 
     // Shows only the visible onscreen pixels.
     if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
         // TODO: check if this should be cycles - 1.
-        drawPixel(gui->renderer, cycles, scanlines, getColorIndex(palette, pixel));
+        drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
     }
     showPatterntablePixel();
     
