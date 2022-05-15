@@ -24,6 +24,11 @@ uint8_t BUS::busReadCPU(uint16_t address) {
     else if (address <= 0x3FFF) {
         return ppu->readRegister(address);
     }
+    else if (address == 0x4016 || address == 0x4017) {
+        uint8_t temp = controller_shift[address % 0x4016];
+        controller_shift[address % 0x4016] <<= 1;
+        return (temp & 0x80) != 0;
+    }
     else {
         return memory[address];
     }
@@ -36,6 +41,9 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     }
     else if (address <= 0x3FFF) {
         ppu->writeRegister(address, value);
+    }
+    else if (address == 0x4016 || address == 0x4017) {
+        controller_shift[address % 0x4016] = controller[address % 0x4016];
     }
     else {
         memory[address] = value;

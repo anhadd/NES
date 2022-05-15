@@ -13,6 +13,10 @@ class BUS {
         // TODO: lower the size to remove the mirroring parts of memory for space.
         uint8_t memory[0x10000];        // CPU memory
 
+        // Used for handling input.
+        uint8_t controller[2];
+        uint8_t controller_shift[2];
+
         PPU* ppu;
         
         BUS();

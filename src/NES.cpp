@@ -8,6 +8,8 @@ NES::NES() {
 
     bus.passPPU(&ppu);
     cpu.passBUS(&bus);
+
+    key_state = SDL_GetKeyboardState(NULL);
 }
 
 
