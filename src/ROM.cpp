@@ -41,6 +41,7 @@ bool ROM::loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
     // TODO: Check what to do with the trainer, right now it is just skipped.
+    // TODO: ADD MAPPER SUPPORT !!!!
     if (h.f6.trainer_present) {
         romFile.ignore(TRAINER_SIZE);
     }
