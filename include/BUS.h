@@ -18,6 +18,11 @@ class BUS {
         uint8_t controller_shift[2];
 
         PPU* ppu;
+        uint8_t oam_page;
+        uint8_t oam_index;
+        uint8_t oam_data;
+        bool oam_writing;
+        bool cpu_synchronized;
         
         BUS();
         ~BUS();
