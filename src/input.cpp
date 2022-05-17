@@ -25,7 +25,6 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
             }
         }
         else if (sdlevent.type == SDL_KEYUP){
-            // TODO: ADD INPUT SUPPORT !!!
             switch (sdlevent.key.keysym.sym) {
                 case INPUT_PALETTE:
                     if (nes.ppu.curr_palette >= 7) {
