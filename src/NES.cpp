@@ -39,7 +39,35 @@ void NES::executeFrame() {
     while (!ppu.finished) {
         ppu.executeCycle();
         if (total_cycles % 3 == 0) {
-            cpu.executeCycle();
+            if (!bus.oam_writing) {
+                cpu.executeCycle();
+            }
+            else {
+                if (bus.cpu_synchronized) {
+                    if (total_cycles % 2 == 0) {
+                        bus.oam_data = bus.busReadCPU((bus.oam_page << 8) | bus.oam_index);
+                    }
+                    else {
+                        ppu.OAM[bus.oam_index] = bus.oam_data;
+                        if (bus.oam_index == 0xFF) {
+                            bus.oam_page = 0x00;
+                            bus.oam_data = 0x00;
+                            bus.oam_index = 0x00;
+                            bus.oam_writing = false;
+                            bus.cpu_synchronized = false;
+                        }
+                        else {
+                            bus.oam_index += 1;
+                        }
+                    }
+                }
+                else {
+                    if (total_cycles % 2 == 1) {
+                        bus.cpu_synchronized = true;
+                    }
+                }
+            }
+            
         }
 
         if (ppu.signal_nmi) {
