@@ -124,6 +124,35 @@ union loopy_register {
     uint16_t full;
 };
 
+// Sprite attributes:
+
+// 76543210
+// ||||||||
+// ||||||++- Palette (4 to 7) of sprite
+// |||+++--- Unimplemented (read 0)
+// ||+------ Priority (0: in front of background; 1: behind background)
+// |+------- Flip sprite horizontally
+// +-------- Flip sprite vertically
+union sprite_attributes {
+    struct {
+        uint8_t palette : 2;
+        uint8_t unused : 3;
+        uint8_t priority : 1;
+        uint8_t flip_horizontally : 1;
+        uint8_t flip_vertically : 1;
+    };
+    uint8_t full;
+};
+
+
+// Used for accessing the sprite information in OAM memory.
+struct OAM_sprite {
+    uint8_t y;
+    uint8_t pattern_id;
+    union sprite_attributes flags;
+    uint8_t x;
+};
+
 
 
 
@@ -162,8 +191,16 @@ class PPU {
 
         uint8_t ppu_data;
 
-        uint8_t OAM[0xFF];
-        uint8_t secondary_OAM[0x20];
+        OAM_sprite sprite_OAM[0x40];
+        uint8_t* OAM;
+        OAM_sprite sprite_secondary_OAM[0x08];
+        uint8_t* secondary_OAM;
+        uint8_t secondary_OAM_index;
+
+        uint8_t sprite_shifter_high[0x08];
+        uint8_t sprite_shifter_low[0x08];
+
+        bool sprite_zero;
 
         uint8_t data_read_buffer;
         uint8_t curr_palette;
@@ -194,7 +231,11 @@ class PPU {
         uint16_t getColorIndex(uint8_t palette, uint8_t index);
         void drawPixel(SDL_Renderer *renderer, uint16_t x, uint16_t y, uint16_t color_index);
         void showPatterntablePixel();
+
+        void loadShifters();
+        void updateShifters();
         void incrementPPUAddr();
+        uint8_t flipByte(uint8_t byte);
 
         bool executeCycle();
 };

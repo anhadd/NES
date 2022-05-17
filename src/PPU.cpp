@@ -8,6 +8,8 @@
     // Currently the nametable is incorrect
     // The palette is also incorrect, probably with how reading and writing is done, check the nes_error.log
 
+// TODO: Check if supporting 8x16 sprites is necessary.
+
 PPU::PPU() {
     // Constructor
     total_frames = 0;
@@ -18,7 +20,6 @@ PPU::PPU() {
     odd_frame = false;
 
     fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
-    // fill(begin(ppu_nametable), end(ppu_nametable), 0);
     fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
@@ -35,8 +36,16 @@ PPU::PPU() {
 
     ppu_data = 0x00;
 
-    fill(begin(OAM), end(OAM), 0);
-    fill(begin(secondary_OAM), end(secondary_OAM), 0);
+    memset(sprite_OAM, 0, sizeof(sprite_OAM));
+    OAM = (uint8_t*)sprite_OAM;
+    memset(sprite_secondary_OAM, 0, sizeof(sprite_secondary_OAM));
+    secondary_OAM = (uint8_t*)sprite_secondary_OAM;
+    secondary_OAM_index = 0x00;
+
+    fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
+    fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
+
+    sprite_zero = false;
 
     data_read_buffer = 0x00;
     curr_palette = 0x00;
@@ -176,9 +185,12 @@ void PPU::reset() {
     bg_high = 0x00;
 
     SDL_RenderClear(gui->renderer);
-    SDL_RenderClear(gui->nametable_renderer);
-    SDL_RenderClear(gui->palette_renderer);
-    SDL_RenderClear(gui->pattern_renderer);
+
+    if (show_debug) {
+        SDL_RenderClear(gui->nametable_renderer);
+        SDL_RenderClear(gui->palette_renderer);
+        SDL_RenderClear(gui->pattern_renderer);
+    }
 }
 
 void PPU::passGUI(GUI* nesGUI) {
@@ -202,8 +214,6 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
-        // TODO: CONTINUE HERE! This is what causes the duplication on screen, fix it by checking the modulos probably.
-            // THE PROBLEM IS LIKELY NOT HERE NVM !!!
         if (vertical_mirorring) {
             if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
                 return ppu_nametable[0][address & 0x03FF];
@@ -432,6 +442,41 @@ void PPU::showPatterntablePixel() {
     }
 }
 
+void PPU::loadShifters() {
+    if (ppu_mask.showbg) {
+        bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
+        bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
+
+        att_shifter_high = (att_shifter_high & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
+        att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
+    }
+}
+
+void PPU::updateShifters() {
+    if (ppu_mask.showbg) {
+        bg_shifter_high <<= 1;
+        bg_shifter_low <<= 1;
+        att_shifter_high <<= 1;
+        att_shifter_low <<= 1;
+    }
+
+    if (ppu_mask.showsprites) {
+        for (int i = 0; i < 8; i++) {
+            if ((cycles - 2) >= sprite_secondary_OAM[i].x && (cycles - 2) < sprite_secondary_OAM[i].x + 8) {
+                sprite_shifter_high[i] <<= 1;
+                sprite_shifter_low[i] <<= 1;
+            }
+        }
+    }
+}
+
+uint8_t PPU::flipByte(uint8_t byte) {
+    byte = (byte & 0b11110000) >> 4 | (byte & 0b00001111) << 4;
+    byte = (byte & 0b11001100) >> 2 | (byte & 0b00110011) << 2;
+    byte = (byte & 0b10101010) >> 1 | (byte & 0b01010101) << 1;
+    return byte;
+}
+
 bool PPU::executeCycle() {
     // Execute a single cycle.
     /*  
@@ -447,6 +492,9 @@ bool PPU::executeCycle() {
     if (scanlines >= -1 && scanlines <= 239) {
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
+            ppu_status.sprite_overflow = 0;
+
+            // TODO: check if weird stuff from old frames is being drawn.
         }
         else if (scanlines == 0 && cycles == 0 && odd_frame) {
             cycles += 1;
@@ -456,21 +504,11 @@ bool PPU::executeCycle() {
         if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
 
-            if (ppu_mask.showbg) {
-                bg_shifter_high <<= 1;
-                bg_shifter_low <<= 1;
-                att_shifter_high <<= 1;
-                att_shifter_low <<= 1;
-            }
+            updateShifters();
 
             switch ((cycles - 1) % 8) {
                 case 0:
-                    bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
-                    bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
-
-                    att_shifter_high = (att_shifter_high & 0xFF00) | (((bg_attribute & 0x02) >> 1) * 0xFF);
-                    att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
-
+                    loadShifters();
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO:  & 0x0FFF might not be necessary
                     // fprintf(stderr, "%02x ", bg_nametable);
                     break;
@@ -577,6 +615,92 @@ bool PPU::executeCycle() {
                 ppu_addr.fine_y = ppu_buff.fine_y;
             }
         }
+
+
+
+
+        /* 
+            ===============================================================================
+            ================================== SPRITES ====================================
+            ===============================================================================
+
+            Each scanline, the PPU reads the spritelist (that is, Object Attribute Memory) to see which to draw:
+
+            - First, it clears the list of sprites to draw.
+            - Second, it reads through OAM, checking which sprites will be on this scanline. It chooses the first eight it finds that do.
+            - Third, if eight sprites were found, it checks (in a wrongly-implemented fashion) for further sprites on the scanline to see if the sprite overflow flag should be set.
+            - Fourth, using the details for the eight (or fewer) sprites chosen, it determines which pixels each has on the scanline and where to draw them.
+
+            (from: https://www.nesdev.org/wiki/PPU_sprite_evaluation)
+        */
+        if (scanlines != -1) {
+            // if (cycles >= 1 && cycles <= 64) {
+            //     if (cycles % 2 == 0) {
+            //         secondary_OAM[(cycles - 1) / 2] = 0xFF;
+            //     }
+            // }
+            // else 
+            if (cycles == 257) {
+                memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
+
+                secondary_OAM_index = 0;
+                fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
+                fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
+
+                sprite_zero = false;
+
+                for (int i = 0; i < 64; i++) {
+                    int16_t distance = scanlines - sprite_OAM[i].y;
+                    if (distance >= 0 && distance < 8) { // + (ppu_ctrl.sprite_size * 8)
+                        if (secondary_OAM_index < 8) {
+                            if (i == 0) {
+                                sprite_zero = true;
+                            }
+
+                            sprite_secondary_OAM[secondary_OAM_index] = sprite_OAM[i];
+                            secondary_OAM_index += 1;
+                        }
+                        else {
+                            ppu_status.sprite_overflow = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (cycles == 321) {
+                uint8_t sprite_low = 0x00;
+                uint8_t sprite_high = 0x00;
+
+                uint16_t sprite_addr = 0x0000;
+
+                for (int i = 0; i < secondary_OAM_index; i++) {
+                    sprite_low = 0x00;
+                    sprite_high = 0x00;
+
+                    if (sprite_secondary_OAM[i].flags.flip_vertically) {
+                        sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
+                                    + (sprite_secondary_OAM[i].pattern_id * 0x10)
+                                    + (7 - (scanlines - sprite_secondary_OAM[i].y));
+                    }
+                    else {
+                        sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
+                                    + (sprite_secondary_OAM[i].pattern_id * 0x10)
+                                    + (scanlines - sprite_secondary_OAM[i].y);
+                    }
+
+                    sprite_low = ppuRead(sprite_addr);
+                    sprite_high = ppuRead(sprite_addr + 8);
+
+                    if (sprite_secondary_OAM[i].flags.flip_horizontally) {
+                        sprite_low = flipByte(sprite_low);
+                        sprite_high = flipByte(sprite_high);
+                    }
+
+                    sprite_shifter_low[i] = sprite_low;
+                    sprite_shifter_high[i] = sprite_high;
+                }
+            }
+        }
     }
     
     if (scanlines == 241 && cycles == 1) {
@@ -589,8 +713,12 @@ bool PPU::executeCycle() {
         // fprintf(stderr, "\n\n\n");
     }
 
+
+
+
     uint8_t pixel = 0x00;
     uint8_t palette = 0x00;
+    uint8_t sprite_behind_bg = 0x00;
 
     if (ppu_mask.showbg) {
         uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
@@ -601,13 +729,73 @@ bool PPU::executeCycle() {
 
         uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
         uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
-        // TODO: probably remove the curr_palette parts, but makes testing palettes easier rn.
+        // TODO: probably remove the curr_palette parts, but makes testing palettes easier for now.
         palette = ((palette_high << 1) | palette_low) + curr_palette;
+    }
+
+
+
+    uint8_t sprite_pixel = 0x00;
+    uint8_t sprite_palette = 0x00;
+
+    if (ppu_mask.showsprites) {
+        for (int i = 0; i < secondary_OAM_index; i++) {
+            if ((cycles - 1) >= sprite_secondary_OAM[i].x && (cycles - 1) < sprite_secondary_OAM[i].x + 8) {
+                uint16_t bit_mask = 0x80;
+
+                uint8_t pixel_low = (sprite_shifter_low[i] & bit_mask) != 0;
+                uint8_t pixel_high = (sprite_shifter_high[i] & bit_mask) != 0;
+                sprite_pixel = (pixel_high << 1) | pixel_low;
+
+                // TODO: probably remove the curr_palette parts, but makes testing palettes easier for now.
+                sprite_palette = sprite_secondary_OAM[i].flags.palette + 0x04 + curr_palette;
+                sprite_behind_bg = sprite_secondary_OAM[i].flags.priority;
+
+                if (sprite_pixel != 0x00) {
+                    if (i != 0 && sprite_zero) {
+                        sprite_zero = false;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+
+    uint8_t final_pixel = 0x00;
+    uint8_t final_palette = 0x00;
+
+    if (pixel == 0x00  && sprite_pixel > 0x00) {
+        // fprintf(stderr, "SPRITE!!\n");
+        final_pixel = sprite_pixel;
+        final_palette = sprite_palette;
+    }
+    else if (pixel > 0x00 && sprite_pixel == 0x00) {
+        final_pixel = pixel;
+        final_palette = palette;
+    }
+    else if (pixel > 0x00 && sprite_pixel > 0x00) {
+        if (sprite_behind_bg) {
+            final_pixel = pixel;
+            final_palette = palette;
+        }
+        else {
+            final_pixel = sprite_pixel;
+            final_palette = sprite_palette;
+        }
+
+        if (sprite_zero) {
+            if (ppu_mask.showbg && ppu_mask.showsprites) {
+                if (cycles >= 1 && cycles <= 257) {
+                    ppu_status.sprite_zerohit = 1;
+                }
+            }
+        }
     }
 
     // Shows only the visible onscreen pixels.
     if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
-        drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(palette, pixel));
+        drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
     }
     if (show_debug) {
         showPatterntablePixel();
