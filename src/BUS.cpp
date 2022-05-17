@@ -5,6 +5,14 @@
 BUS::BUS() {
     // Constructor
     fill(begin(memory), end(memory), 0);
+
+    fill(begin(controller), end(controller), 0);
+    fill(begin(controller_shift), end(controller_shift), 0);
+    
+    oam_page = 0x00;
+    oam_index = 0x00;
+    oam_writing = false;
+    cpu_synchronized = false;
 }
 
 
@@ -41,6 +49,11 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     }
     else if (address <= 0x3FFF) {
         ppu->writeRegister(address, value);
+    }
+    else if (address == 0x4014) {
+        oam_page = value;
+        oam_index = 0x00;
+        oam_writing = true;
     }
     else if (address == 0x4016 || address == 0x4017) {
         controller_shift[address % 0x4016] = controller[address % 0x4016];
