@@ -250,7 +250,6 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         ppu_patterntable[address] = value;
     }
     else if (address <= 0x3EFF) {
-        // fprintf(stderr, "NAMETABLE WRITE! ADDR: %04x       %02x\n", address, value);
         address &= 0x0FFF;
         if (vertical_mirorring) {
             if ((address >= 0x0000 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
@@ -388,6 +387,7 @@ uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
 
 void PPU::drawPixel(SDL_Renderer *renderer, uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
+    // TODO: THIS IS SUUUUUUUPER SLOW, TRY SOMETHING ELSE !
     SDL_SetRenderDrawColor(renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
     SDL_RenderDrawPoint(renderer, x, y);
 }
@@ -415,9 +415,6 @@ void PPU::showPatterntablePixel() {
             // Show the nametables.
             for (int i = 0; i < 32; i++) {
                 for (int j = 0; j < 32; j++) {
-                    // uint8_t pattern_id = ppu_nametable[0][i*32 + j];
-                    // uint8_t pattern_id2 = ppu_nametable[1][i*32 + j];
-
                     uint8_t pattern_id = ppuRead(0x2000 + (i*32 + j));
                     uint8_t pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
 
@@ -509,8 +506,7 @@ bool PPU::executeCycle() {
             switch ((cycles - 1) % 8) {
                 case 0:
                     loadShifters();
-                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF)); // TODO:  & 0x0FFF might not be necessary
-                    // fprintf(stderr, "%02x ", bg_nametable);
+                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
                     /*  Gets the attribute byte.
@@ -578,11 +574,6 @@ bool PPU::executeCycle() {
                         ppu_addr.coarse_y = 0;
                         ppu_addr.nametable_y ^= 1;
                     }
-                    // // TODO: Check if this else if is necessary for normal roms !!!
-                    // else if (ppu_addr.coarse_y == 31)
-                    // {
-                    //     ppu_addr.coarse_y = 0;
-                    // }
                     else {
                         ppu_addr.coarse_y += 1;
                     }
@@ -591,22 +582,15 @@ bool PPU::executeCycle() {
                     ppu_addr.fine_y += 1;
                 }
             }
-            // fprintf(stderr, "\n");
         }
         else if (cycles == 257) {
-            // bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
-            // bg_shifter_low = (bg_shifter_low & 0xFF00) | bg_low;
-
-            // att_shifter_high = (att_shifter_high & 0xFF00) | ((bg_attribute & 0x01) * 0xFF);
-            // att_shifter_low = (att_shifter_low & 0xFF00) | ((bg_attribute & 0x02) * 0xFF);
-            
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_x = ppu_buff.nametable_x;
 			    ppu_addr.coarse_x = ppu_buff.coarse_x;
             }
         }
         else if (cycles == 337 || cycles == 339) {
-            bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF)); // TODO: & 0x0FFF might not be necessary.
+            bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
         }
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
@@ -634,12 +618,6 @@ bool PPU::executeCycle() {
             (from: https://www.nesdev.org/wiki/PPU_sprite_evaluation)
         */
         if (scanlines != -1) {
-            // if (cycles >= 1 && cycles <= 64) {
-            //     if (cycles % 2 == 0) {
-            //         secondary_OAM[(cycles - 1) / 2] = 0xFF;
-            //     }
-            // }
-            // else 
             if (cycles == 257) {
                 memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
 
@@ -651,7 +629,7 @@ bool PPU::executeCycle() {
 
                 for (int i = 0; i < 64; i++) {
                     int16_t distance = scanlines - sprite_OAM[i].y;
-                    if (distance >= 0 && distance < 8) { // + (ppu_ctrl.sprite_size * 8)
+                    if (distance >= 0 && distance < 8) {
                         if (secondary_OAM_index < 8) {
                             if (i == 0) {
                                 sprite_zero = true;
@@ -706,11 +684,10 @@ bool PPU::executeCycle() {
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
-            // TODO: MANY ROMS FOR SOME REASON HAVE THIS NOT SET, SO NMI IS NEVER SIGNALED !!! CHECK WHY
-            // fprintf(stderr, "NMI SIGNALED!\n");
+            // TODO: MANY ROMS FOR SOME REASON HAVE THIS NOT SET, SO NMI IS NEVER SIGNALED !!!
+                // It is because of unsupported mappers.
             signal_nmi = true;
         }
-        // fprintf(stderr, "\n\n\n");
     }
 
 
@@ -766,7 +743,6 @@ bool PPU::executeCycle() {
     uint8_t final_palette = 0x00;
 
     if (pixel == 0x00  && sprite_pixel > 0x00) {
-        // fprintf(stderr, "SPRITE!!\n");
         final_pixel = sprite_pixel;
         final_palette = sprite_palette;
     }
