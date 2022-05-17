@@ -1,11 +1,16 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 
+#include <chrono>
+#include <thread>
+
 #include "../include/NES.h"
 #include "../include/input.h"
 
 
 using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
 
 
 
@@ -19,8 +24,10 @@ int main(int argc, char *argv[])
     remove("nes_error.log");
     freopen("nes_error.log", "w", stderr);
     
+
     bool quit = false;
-    int FPS = 60; // TODO: Should be 60 at the end
+    int FPS = 60;
+    std::time_t next_frame_time = 0;
 
     SDL_ShowWindow(nes.gui.window);
 
@@ -38,10 +45,11 @@ int main(int argc, char *argv[])
     printf("Rom Loaded!\n");
 
     while (!quit) {
+        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/FPS));
         quit = handleInput(quit, nes.gui.sdlevent, nes, FPS);
-        SDL_Delay(1000/FPS);
-
         nes.executeFrame();
+
+        sleep_until(system_clock::from_time_t(next_frame_time));
     }
 
     SDL_Quit();
