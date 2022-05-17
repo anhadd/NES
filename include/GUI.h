@@ -13,6 +13,7 @@ class GUI {
     public:
         SDL_Window *window;
         SDL_Renderer *renderer;
+        SDL_Surface *surface;
 
         SDL_Window *pattern_window;
         SDL_Renderer *pattern_renderer;
@@ -23,7 +24,6 @@ class GUI {
         SDL_Window *nametable_window;
         SDL_Renderer *nametable_renderer;
 
-        // SDL_Texture *texture;
         SDL_Event sdlevent;
 
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
