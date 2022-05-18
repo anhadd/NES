@@ -229,7 +229,7 @@ class PPU {
         uint8_t writeRegister(uint16_t address, uint8_t value);
 
         uint16_t getColorIndex(uint8_t palette, uint8_t index);
-        void drawPixel(SDL_Renderer *renderer, uint16_t x, uint16_t y, uint16_t color_index);
+        void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);
         void showPatterntablePixel();
 
         void loadShifters();

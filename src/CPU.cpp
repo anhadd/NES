@@ -62,8 +62,7 @@ void CPU::reset() {
     absolute_address = 0x0000;
     total_cycles = 7;
 
-    // TODO: SWITCH TO THE CPUREAD WAY, THIS C000 IS ONLY FOR NESTEST TESTING
-    // PC = 0xC000; // For nestest.
+    // PC = 0xC000; // For running nestest.
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 }
 
@@ -775,7 +774,7 @@ bool CPU::UNK() {
     fprintf(stderr, "Error: Unknown operation!\n");
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
-    // // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
+    // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
     exit(0);
     return 0;
 }

@@ -184,12 +184,13 @@ void PPU::reset() {
     bg_low = 0x00;
     bg_high = 0x00;
 
-    SDL_RenderClear(gui->renderer);
+    // SDL_RenderClear(gui->renderer);
+    SDL_FillRect(gui->surface, NULL, 0x000000);
 
     if (show_debug) {
-        SDL_RenderClear(gui->nametable_renderer);
-        SDL_RenderClear(gui->palette_renderer);
-        SDL_RenderClear(gui->pattern_renderer);
+        SDL_FillRect(gui->pattern_surface, NULL, 0x000000);
+        SDL_FillRect(gui->palette_surface, NULL, 0x000000);
+        SDL_FillRect(gui->nametable_surface, NULL, 0x000000);
     }
 }
 
@@ -385,11 +386,17 @@ uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
     return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
-void PPU::drawPixel(SDL_Renderer *renderer, uint16_t x, uint16_t y, uint16_t color_index) {
+void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
-    // TODO: THIS IS SUUUUUUUPER SLOW, TRY SOMETHING ELSE !
-    SDL_SetRenderDrawColor(renderer, curr_color.r, curr_color.g, curr_color.b, curr_color.a);
-    SDL_RenderDrawPoint(renderer, x, y);
+
+    uint32_t* target_pixel = (uint32_t*) ((uint8_t*) surface->pixels
+                                    + (y * surface->pitch)
+                                    + (x * surface->format->BytesPerPixel));
+    
+    *target_pixel = curr_color.a << 24
+                | curr_color.r << 16
+                | curr_color.g << 8
+                | curr_color.b;
 }
 
 void PPU::showPatterntablePixel() {
@@ -399,7 +406,7 @@ void PPU::showPatterntablePixel() {
     if (total_frames % 10 == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
-            drawPixel(gui->palette_renderer, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
+            drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
         }
 
         if (scanlines == 256 && cycles == 0) {
@@ -408,7 +415,7 @@ void PPU::showPatterntablePixel() {
                 for (int cy = 0; cy < 128; cy++) {
                     uint16_t adr = ((sc / 8) * 0x0100) + (sc % 8) + (cy / 8) * 0x10;
                     uint8_t pixel = ((ppuRead(adr) >> (7-(cy % 8))) & 0x01) + ((ppuRead(adr + 8) >> (7-(cy % 8))) & 0x01) * 2;
-                    drawPixel(gui->pattern_renderer, cy, sc, getColorIndex(curr_palette, pixel));
+                    drawPixelOnSurface(gui->pattern_surface_buff, cy, sc, getColorIndex(curr_palette, pixel));
                 }
             }
             
@@ -423,18 +430,21 @@ void PPU::showPatterntablePixel() {
                             // 1 Tile = 16 Bytes.
                             uint16_t adr = (ppu_ctrl.bgr_addr * 0x1000) + (pattern_id * 16) + k;
                             uint8_t pixel = ((ppuRead(adr) >> (7-l)) & 0x01) + ((ppuRead(adr + 8) >> (7-l)) & 0x01) * 2;
-                            drawPixel(gui->nametable_renderer, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
+                            drawPixelOnSurface(gui->nametable_surface_buff, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
                             uint16_t adr2 = (ppu_ctrl.bgr_addr * 0x1000) + (pattern_id2 * 16) + k;
                             uint8_t pixel2 = ((ppuRead(adr2) >> (7-l)) & 0x01) + ((ppuRead(adr2 + 8) >> (7-l)) & 0x01) * 2;
-                            drawPixel(gui->nametable_renderer, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
+                            drawPixelOnSurface(gui->nametable_surface_buff, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
                         }
                     }
                 }
             }
-            SDL_RenderPresent(gui->pattern_renderer);
-            SDL_RenderPresent(gui->palette_renderer);
-            SDL_RenderPresent(gui->nametable_renderer);
+            SDL_BlitScaled(gui->pattern_surface_buff, NULL, gui->pattern_surface, &gui->scaled_pattern_rect);
+            SDL_UpdateWindowSurface(gui->pattern_window);
+            SDL_BlitScaled(gui->palette_surface_buff, NULL, gui->palette_surface, &gui->scaled_palette_rect);
+            SDL_UpdateWindowSurface(gui->palette_window);
+            SDL_BlitScaled(gui->nametable_surface_buff, NULL, gui->nametable_surface, &gui->scaled_nametable_rect);
+            SDL_UpdateWindowSurface(gui->nametable_window);
         }
     }
 }
@@ -490,8 +500,6 @@ bool PPU::executeCycle() {
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
             ppu_status.sprite_overflow = 0;
-
-            // TODO: check if weird stuff from old frames is being drawn.
         }
         else if (scanlines == 0 && cycles == 0 && odd_frame) {
             cycles += 1;
@@ -771,7 +779,7 @@ bool PPU::executeCycle() {
 
     // Shows only the visible onscreen pixels.
     if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
-        drawPixel(gui->renderer, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
+        drawPixelOnSurface(gui->surface_buff, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
     }
     if (show_debug) {
         showPatterntablePixel();
@@ -791,7 +799,8 @@ bool PPU::executeCycle() {
 
             total_frames += 1;
             odd_frame = !odd_frame;
-            SDL_RenderPresent(gui->renderer);
+            SDL_BlitScaled(gui->surface_buff, NULL, gui->surface, &gui->scaled_screen_rect);
+            SDL_UpdateWindowSurface(gui->window);
 		}
 	}
     
