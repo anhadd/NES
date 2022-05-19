@@ -33,12 +33,13 @@ class GUI {
 
         SDL_Event sdlevent;
 
-        bool debug_windows_created;
-
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();
 
         void createDebugWindows();
+
+    private:
+        bool debug_windows_created;
 };
 
 

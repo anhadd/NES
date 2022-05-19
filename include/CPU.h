@@ -82,9 +82,22 @@ enum addressing_mode {
 
 struct instruction;
 
-// DONE: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
+
 class CPU {
     public:
+        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
+                                    // jumps to the address located at $FFFC and $FFFD
+        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
+                                    // Jumps to the address located at $FFFA and $FFFB
+
+        // Constructor / Destructor
+        CPU();
+        ~CPU();
+
+        void passBUS(BUS* nesBUS);  // Used for receiving the BUS from the NES.
+        bool executeCycle();
+
+    private:
         vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
@@ -120,10 +133,6 @@ class CPU {
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
         void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
                                     // jumps to the address located at $FFFE and $FFFF
-        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
-                                    // Jumps to the address located at $FFFA and $FFFB
-        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
-                                    // jumps to the address located at $FFFC and $FFFD
         void decrementSP();         // Decrements the stack pointer (SP);
         void incrementSP();         // Increments the stack pointer (SP);
         
@@ -146,16 +155,9 @@ class CPU {
         bool pushStatusToStack();
 
         bool readAddress();
-        bool executeCycle();
 
         uint8_t cpuRead(uint16_t address);
         uint8_t cpuWrite(uint16_t address, uint8_t value);
-
-        void passBUS(BUS* nesBUS);
-
-        // Constructor / Decstructor
-        CPU();
-        ~CPU();
 };
 
 // The structure of an instruction with all the data that is required.

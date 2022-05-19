@@ -158,22 +158,41 @@ struct OAM_sprite {
 
 class PPU {
     public:
+        bool vertical_mirorring;                // 0: Horizontal / 1: Vertical
+        bool signal_nmi;
+        bool finished;
+        bool show_debug;
+
+        uint8_t ppu_patterntable[0x2000];       // PPU memory
+        uint8_t* OAM;
+
+        uint8_t curr_palette;
+
+        PPU();
+        ~PPU();
+
+        void passGUI(GUI* nesGUI);
+        bool executeCycle();
+        void reset();
+
+        uint8_t ppuRead(uint16_t address);
+        uint8_t ppuWrite(uint16_t address, uint8_t value);
+
+        uint8_t readRegister(uint16_t address);
+        uint8_t writeRegister(uint16_t address, uint8_t value);
+
+    private:
         GUI* gui;
         
         uint16_t total_frames; // TODO: Probably remove this, only used for testing.
         uint16_t cycles;
         int16_t scanlines;
-        bool signal_nmi;
-        bool finished;
         bool address_latch;
-        bool vertical_mirorring;         // 0: Horizontal / 1: Vertical
         bool odd_frame;
-        bool show_debug;
 
         struct color curr_color;
         vector<struct color> palette_lookup;
 
-        uint8_t ppu_patterntable[0x2000];       // PPU memory
         uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables
         uint8_t ppu_palette[0x0020];            // PPU memory
         
@@ -192,7 +211,6 @@ class PPU {
         uint8_t ppu_data;
 
         OAM_sprite sprite_OAM[0x40];
-        uint8_t* OAM;
         OAM_sprite sprite_secondary_OAM[0x08];
         uint8_t* secondary_OAM;
         uint8_t secondary_OAM_index;
@@ -203,7 +221,6 @@ class PPU {
         bool sprite_zero;
 
         uint8_t data_read_buffer;
-        uint8_t curr_palette;
 
         // Background rendering variables
         uint16_t bg_shifter_high;
@@ -216,18 +233,6 @@ class PPU {
         uint8_t bg_low;
         uint8_t bg_high;
 
-        PPU();
-        ~PPU();
-
-        void reset();
-        void passGUI(GUI* nesGUI);
-
-        uint8_t ppuRead(uint16_t address);
-        uint8_t ppuWrite(uint16_t address, uint8_t value);
-
-        uint8_t readRegister(uint16_t address);
-        uint8_t writeRegister(uint16_t address, uint8_t value);
-
         uint16_t getColorIndex(uint8_t palette, uint8_t index);
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);
         void showPatterntablePixel();
@@ -236,8 +241,6 @@ class PPU {
         void updateShifters();
         void incrementPPUAddr();
         uint8_t flipByte(uint8_t byte);
-
-        bool executeCycle();
 };
 
 

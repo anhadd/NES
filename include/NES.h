@@ -28,20 +28,16 @@
 
 #define INPUT_QUIT SDLK_ESCAPE
 
-#define SHOW_DEBUG false
+#define SHOW_DEBUG true
 
 using namespace std;
 
 
 class NES {
     public:
-        CPU cpu;
-        ROM rom;
         BUS bus;
         PPU ppu;
         GUI gui;
-
-        uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 
         const uint8_t* key_state;
 
@@ -50,6 +46,12 @@ class NES {
 
         uint8_t initialize(char* romName);
         void executeFrame();
+
+    private:
+        CPU cpu;
+        ROM rom;
+
+        uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 };
 
 

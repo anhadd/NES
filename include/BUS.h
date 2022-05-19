@@ -15,9 +15,7 @@ class BUS {
 
         // Used for handling input.
         uint8_t controller[2];
-        uint8_t controller_shift[2];
 
-        PPU* ppu;
         uint8_t oam_page;
         uint8_t oam_index;
         uint8_t oam_data;
@@ -34,6 +32,10 @@ class BUS {
 
         uint8_t busReadPPU(uint16_t address);
         uint8_t busWritePPU(uint16_t address, uint8_t value);
+
+    private:
+        PPU* ppu;
+        uint8_t controller_shift[2];
 };
 
 

@@ -102,8 +102,10 @@ class ROM {
         ROM();
         ~ROM();
 
-        void dumpContents(ifstream* romFile);
         bool loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (&ppu_patterntable)[0x2000]);
+
+    private:
+        void dumpContents(ifstream* romFile);
 };
 
 
