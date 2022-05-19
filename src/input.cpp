@@ -22,6 +22,9 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
                 case INPUT_QUIT:
                     quit = true;
                     break;
+                case INPUT_RESET:
+                    nes.reset();
+                    break;
             }
         }
         else if (sdlevent.type == SDL_KEYUP){

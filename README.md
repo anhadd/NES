@@ -8,12 +8,17 @@ Then run the created main binary with:
 `./main <ROM file>`
 
 #### Controls
-NES buttons:
-`Z`: A.
-`X`: B.
-`Enter`: Start.
-`Left Shift`: Select.
-`Arrow Keys`: Arrow keys.
+Button      | Mapped To
+----------- | ------------
+**A**       | Z
+**B**       | X
+**UP**      | Arrow Up
+**DOWN**    | Arrow Down
+**LEFT**    | Arrow Left
+**RIGHT**   | Arrow Right
+**Start**   | Enter
+**Select**  | Left Shift
+**Reset**   | R
 
 The speed of the running ROM can also be changed with:  
 `9`: Decrease speed.  

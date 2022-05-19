@@ -27,6 +27,7 @@
 #define INPUT_FAST SDLK_8
 
 #define INPUT_QUIT SDLK_ESCAPE
+#define INPUT_RESET SDLK_r
 
 #define SHOW_DEBUG true
 
@@ -46,6 +47,7 @@ class NES {
 
         uint8_t initialize(char* romName);
         void executeFrame();
+        void reset();
 
     private:
         CPU cpu;

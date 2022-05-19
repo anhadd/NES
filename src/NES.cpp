@@ -35,6 +35,11 @@ uint8_t NES::initialize(char* romName) {
     return 0;
 }
 
+void NES::reset() {
+    cpu.reset();
+    ppu.reset();
+}
+
 void NES::executeFrame() {
     while (!ppu.finished) {
         ppu.executeCycle();

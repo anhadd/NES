@@ -150,9 +150,8 @@ void PPU::reset() {
     address_latch = false;
     odd_frame = false;
 
-    // fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
-    // fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
-    // fill(begin(ppu_palette), end(ppu_palette), 0);
+    fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
+    fill(begin(ppu_palette), end(ppu_palette), 0);
 
     ppu_ctrl.full = 0x00;
     ppu_mask.full = 0x00;
@@ -167,8 +166,8 @@ void PPU::reset() {
 
     ppu_data = 0x00;
 
-    // fill(begin(OAM), end(OAM), 0);
-    // fill(begin(secondary_OAM), end(secondary_OAM), 0);
+    memset(sprite_OAM, 0, sizeof(sprite_OAM));
+    memset(sprite_secondary_OAM, 0, sizeof(sprite_secondary_OAM));
 
     data_read_buffer = 0x00;
     curr_palette = 0x00;
@@ -184,7 +183,6 @@ void PPU::reset() {
     bg_low = 0x00;
     bg_high = 0x00;
 
-    // SDL_RenderClear(gui->renderer);
     SDL_FillRect(gui->surface, NULL, 0x000000);
 
     if (show_debug) {
