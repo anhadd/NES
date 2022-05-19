@@ -498,6 +498,7 @@ bool PPU::executeCycle() {
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
             ppu_status.sprite_overflow = 0;
+            ppu_status.sprite_zerohit = 0;
         }
         else if (scanlines == 0 && cycles == 0 && odd_frame) {
             cycles += 1;
