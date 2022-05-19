@@ -774,7 +774,7 @@ bool CPU::UNK() {
     fprintf(stderr, "Error: Unknown operation!\n");
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
-    // TODO: REMOVE THIS EXIT ONCE TESTING IS DONE !!!
+    // Exits whenever an illegal opcode is encountered.
     exit(0);
     return 0;
 }

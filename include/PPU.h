@@ -184,7 +184,7 @@ class PPU {
     private:
         GUI* gui;
         
-        uint16_t total_frames; // TODO: Probably remove this, only used for testing.
+        uint16_t total_frames;                  // Used for updating the debug screens.
         uint16_t cycles;
         int16_t scanlines;
         bool address_latch;

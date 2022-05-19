@@ -3,10 +3,6 @@
 
 
 
-// TODO: Check why some roms are acting weird with pattern memory, or if it should act like that.
-// TODO: Continue with fixing the nametable and palette
-    // Currently the nametable is incorrect
-    // The palette is also incorrect, probably with how reading and writing is done, check the nes_error.log
 
 // TODO: Check if supporting 8x16 sprites is necessary.
 
@@ -691,8 +687,6 @@ bool PPU::executeCycle() {
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
-            // TODO: MANY ROMS FOR SOME REASON HAVE THIS NOT SET, SO NMI IS NEVER SIGNALED !!!
-                // It is because of unsupported mappers.
             signal_nmi = true;
         }
     }
@@ -713,7 +707,7 @@ bool PPU::executeCycle() {
 
         uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
         uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
-        // TODO: probably remove the curr_palette parts, but makes testing palettes easier for now.
+        // curr_palette allows the colors to be changed, but it is not necessary.
         palette = ((palette_high << 1) | palette_low) + curr_palette;
     }
 
@@ -731,7 +725,7 @@ bool PPU::executeCycle() {
                 uint8_t pixel_high = (sprite_shifter_high[i] & bit_mask) != 0;
                 sprite_pixel = (pixel_high << 1) | pixel_low;
 
-                // TODO: probably remove the curr_palette parts, but makes testing palettes easier for now.
+                // curr_palette allows the colors to be changed, but it is not necessary.
                 sprite_palette = sprite_secondary_OAM[i].flags.palette + 0x04 + curr_palette;
                 sprite_behind_bg = sprite_secondary_OAM[i].flags.priority;
 
