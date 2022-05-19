@@ -29,7 +29,7 @@
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
 
-#define SHOW_DEBUG true
+#define SHOW_DEBUG false
 
 using namespace std;
 
