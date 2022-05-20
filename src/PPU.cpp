@@ -416,8 +416,16 @@ void PPU::showPatterntablePixel() {
             // Show the nametables.
             for (int i = 0; i < 32; i++) {
                 for (int j = 0; j < 32; j++) {
-                    uint8_t pattern_id = ppuRead(0x2000 + (i*32 + j));
-                    uint8_t pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                    uint8_t pattern_id = 0x00;
+                    uint8_t pattern_id2 = 0x00;
+                    if (vertical_mirorring) {
+                        pattern_id = ppuRead(0x2000 + (i*32 + j));
+                        pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                    }
+                    else {
+                        pattern_id = ppuRead(0x2000 + (i*32 + j));
+                        pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                    }
 
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
