@@ -30,7 +30,7 @@ a total of 151 valid opcodes out of the possible 256.
 #include <iostream>
 #include <vector>
 
-#include "ROM.h"
+#include "BUS.h"
 
 using namespace std;
 
@@ -82,14 +82,26 @@ enum addressing_mode {
 
 struct instruction;
 
-// DONE: CHECK HOW TO DO ADDRESSING MODES -> PROBABLY READ INTO AN FINAL ADDRESS AND USE THAT IN THE FUNCTIONS.
+
 class CPU {
     public:
+        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
+                                    // jumps to the address located at $FFFC and $FFFD
+        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
+                                    // Jumps to the address located at $FFFA and $FFFB
+
+        // Constructor / Destructor
+        CPU();
+        ~CPU();
+
+        void passBUS(BUS* nesBUS);  // Used for receiving the BUS from the NES.
+        bool executeCycle();
+
+    private:
         vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
         // union cpu_memory memory;
-        uint8_t memory[0x10000];    // TODO: add "-" to remove the mirroring parts of memory.
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -114,17 +126,13 @@ class CPU {
         
         enum addressing_mode mode;  // Used to store the current addressing mode.
 
-        ROM rom;                    // Contains all rom header data.
+        BUS* bus;                   // The BUS that takes care of memory reads and writes.
         uint16_t rom_address;       // Address to start of the rom.
 
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
         void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
                                     // jumps to the address located at $FFFE and $FFFF
-        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
-                                    // Jumps to the address located at $FFFA and $FFFB
-        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
-                                    // jumps to the address located at $FFFC and $FFFD
         void decrementSP();         // Decrements the stack pointer (SP);
         void incrementSP();         // Increments the stack pointer (SP);
         
@@ -147,14 +155,9 @@ class CPU {
         bool pushStatusToStack();
 
         bool readAddress();
-        bool executeCycle();
 
         uint8_t cpuRead(uint16_t address);
         uint8_t cpuWrite(uint16_t address, uint8_t value);
-
-        // Constructor / Decstructor
-        CPU();
-        ~CPU();
 };
 
 // The structure of an instruction with all the data that is required.

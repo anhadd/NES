@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++11
 CFLAGS = -lSDL2
 DEPS = /include/*
-OBJECTS = PPU.o ROM.o input.o GUI.o CPU.o main.o
+OBJECTS = NES.o BUS.o PPU.o ROM.o input.o GUI.o CPU.o main.o
 
 
 all: ../main

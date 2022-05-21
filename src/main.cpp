@@ -1,51 +1,55 @@
 #include <iostream>
 #include <SDL2/SDL.h>
 
-#include "../include/GUI.h"
-#include "../include/CPU.h"
+#include <chrono>
+#include <thread>
+
+#include "../include/NES.h"
 #include "../include/input.h"
-#include "../include/ROM.h"
 
 
 using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
 
 
 
-// DONE: ADDED 9 AND 0 TO DECREASE / INCREASE SPEED
-// DONE: SDL2 DOESNT WORK YET -> THE COMPILER FLAGS WERE WRONG OR SOMETHING
-// DONE: FIXED BREAKOUT, APPARENTLY THE ROM WAS BROKEN
-// DONE: check 8xy5 and 8xy6? Just try to pass the test_opcode rom. <- WAS WITH SIGNEDNESS AND SHIFTING
 int main(int argc, char *argv[])
 {
-    CPU cpu;
-    ROM rom;
+    //set up SDL
+    SDL_Init(SDL_INIT_EVERYTHING);
+    
+    NES nes;
 
     remove("nes_error.log");
     freopen("nes_error.log", "w", stderr);
     
-    //set up SDL
-    SDL_Init(SDL_INIT_EVERYTHING);
-    const int height = 240, width = 256, scale = 2;
-    GUI gui(height, width, scale);
-    
-    bool quit = false;
-    int FPS = 2000;
 
-    SDL_ShowWindow(gui.window);
+    bool quit = false;
+    int FPS = 60;
+    std::time_t next_frame_time = 0;
+
+    SDL_ShowWindow(nes.gui.window);
+
+    if (SHOW_DEBUG) {
+        SDL_ShowWindow(nes.gui.pattern_window);
+        SDL_ShowWindow(nes.gui.palette_window);
+        SDL_ShowWindow(nes.gui.nametable_window);
+    }
     printf("Window Opened!\n");
 
-    if (rom.loadRom(argv[1], cpu.memory) != 0) {
-        fprintf(stderr, "Error: Could not open ROM file!\n");
+    if (nes.initialize(argv[1]) != 0) {
+        printf("Error: Could not open ROM file!\n");
         return 0;
     }
     printf("Rom Loaded!\n");
 
-    cpu.reset();
     while (!quit) {
-        quit = handleInput(quit, gui.sdlevent, cpu, FPS);
-        SDL_Delay(1000/FPS);
+        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/FPS));
+        quit = handleInput(quit, nes.gui.sdlevent, nes, FPS);
+        nes.executeFrame();
 
-        cpu.executeCycle();
+        sleep_until(system_clock::from_time_t(next_frame_time));
     }
 
     SDL_Quit();
