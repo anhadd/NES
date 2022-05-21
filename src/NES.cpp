@@ -24,10 +24,12 @@ NES::~NES() {
 }
 
 uint8_t NES::initialize(char* romName) {
-    if (rom.loadRom(romName, bus.memory, ppu.ppu_patterntable) != 0) {
+    vector<uint8_t>* ptr = &bus.PRG_memory;
+    tie(bus.PRG_memory, ppu.CHR_memory) = rom.loadRom(romName);
+    if (bus.PRG_memory == vector<uint8_t>() || ppu.CHR_memory == vector<uint8_t>()) {
         return 1;
     }
-
+    
     cpu.reset();
     ppu.reset();
 

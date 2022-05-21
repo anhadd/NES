@@ -15,7 +15,6 @@ PPU::PPU() {
     address_latch = false;
     odd_frame = false;
 
-    fill(begin(ppu_patterntable), end(ppu_patterntable), 0);
     fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
@@ -205,7 +204,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
-        return ppu_patterntable[address];
+        return CHR_memory[address];
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
@@ -242,7 +241,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
-        ppu_patterntable[address] = value;
+        CHR_memory[address] = value;
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;

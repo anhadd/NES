@@ -3,15 +3,20 @@
 
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <vector>
 
 #include "PPU.h"
+#include "ROM.h"
 
 using namespace std;
 
 class BUS {
     public:
+        ROM* rom;
         // TODO: lower the size to remove the mirroring parts of memory for space.
-        uint8_t memory[0x10000];        // CPU memory.
+        uint8_t memory[0x8000];         // CPU memory without PRG.
+        vector<uint8_t> PRG_memory;     // PRG memory, vector so it is resizable for each mapper.
+                                        // Stores the actual ROM program data (instructions etc).
         uint8_t controller[2];          // Used for handling input.
 
         uint8_t oam_page;               // The page that OAM is transfered from.
@@ -24,12 +29,10 @@ class BUS {
         ~BUS();                         // Destructor.
 
         void passPPU(PPU* nesPPU);      // Used for receiving the PPU from the NES.
+        void passROM(ROM* nesROM);
 
         uint8_t busReadCPU(uint16_t address);                   // Reading from CPU memory.
         uint8_t busWriteCPU(uint16_t address, uint8_t value);   // Writing to CPU memory.
-
-        uint8_t busReadPPU(uint16_t address);                   // Reading from PPU memory.
-        uint8_t busWritePPU(uint16_t address, uint8_t value);   // Writing to PPU memory.
 
     private:
         PPU* ppu;                                               // The PPU received from NES.

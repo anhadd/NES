@@ -63,6 +63,7 @@ void CPU::reset() {
     total_cycles = 7;
 
     // PC = 0xC000; // For running nestest.
+    fprintf(stderr, "CPU STARTING ADDR: %02x %02x\n", cpuRead(0xFFFD), cpuRead(0xFFFC));
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 }
 
@@ -93,8 +94,16 @@ void CPU::NMI() {
 bool CPU::executeCycle() {
     // Execute a single cycle.
     if (cycles == 0) {
-        // Set opcode -> set mode -> set cycles -> call readaddress -> call opcode function.
+        /* 
+            Set current opcode 
+            -> set addressing mode 
+            -> set required cycles 
+            -> call readaddress to get the absolute address 
+            -> call opcode function. 
+        */
         opcode = cpuRead(PC);
+
+        // Prints debug logging information.
         // fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
 
         PC += 1;

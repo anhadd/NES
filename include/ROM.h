@@ -3,6 +3,9 @@
 
 #include <SDL2/SDL.h>
 #include <fstream>
+#include <vector>
+
+#include "Mapper0.h"
 
 using namespace std;
 
@@ -98,11 +101,12 @@ union header {
 class ROM {
     public:
         union header h;
+        Mapper0 mapper;
 
         ROM();
         ~ROM();
 
-        bool loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (&ppu_patterntable)[0x2000]);
+        pair<vector<uint8_t>, vector<uint8_t>> loadRom(char* romName);
 
     private:
         void dumpContents(ifstream* romFile);

@@ -163,7 +163,8 @@ class PPU {
         bool finished;
         bool show_debug;
 
-        uint8_t ppu_patterntable[0x2000];       // PPU memory
+        vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
+                                        // Stores the pattern table.
         uint8_t* OAM;
 
         uint8_t curr_palette;

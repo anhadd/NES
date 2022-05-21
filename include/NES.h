@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <tuple>
 
 #include "GUI.h"
 #include "CPU.h"
@@ -29,16 +30,18 @@
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
 
-#define SHOW_DEBUG false
+#define SHOW_DEBUG true
 
 using namespace std;
 
 
 class NES {
     public:
+        CPU cpu;
         BUS bus;
         PPU ppu;
         GUI gui;
+        ROM rom;
 
         const uint8_t* key_state;
 
@@ -50,9 +53,6 @@ class NES {
         void reset();
 
     private:
-        CPU cpu;
-        ROM rom;
-
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 };
 
