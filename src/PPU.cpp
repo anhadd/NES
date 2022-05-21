@@ -394,10 +394,9 @@ void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint1
 }
 
 void PPU::showPatterntablePixel() {
-    // adr and pixel from: https://emudev.de/nes-emulator/cartridge-loading-pattern-tables-and-ppu-registers/
     // For debugging only.
     
-    if (total_frames % 10 == 0) {
+    if (total_frames % 15 == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
             drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
@@ -706,6 +705,12 @@ bool PPU::executeCycle() {
     uint8_t palette = 0x00;
     uint8_t sprite_behind_bg = 0x00;
 
+    uint8_t sprite_pixel = 0x00;
+    uint8_t sprite_palette = 0x00;
+
+    uint8_t final_pixel = 0x00;
+    uint8_t final_palette = 0x00;
+
     if (ppu_mask.showbg) {
         uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
 
@@ -718,11 +723,6 @@ bool PPU::executeCycle() {
         // curr_palette allows the colors to be changed, but it is not necessary.
         palette = ((palette_high << 1) | palette_low) + curr_palette;
     }
-
-
-
-    uint8_t sprite_pixel = 0x00;
-    uint8_t sprite_palette = 0x00;
 
     if (ppu_mask.showsprites) {
         for (int i = 0; i < secondary_OAM_index; i++) {
@@ -746,10 +746,6 @@ bool PPU::executeCycle() {
             }
         }
     }
-
-
-    uint8_t final_pixel = 0x00;
-    uint8_t final_palette = 0x00;
 
     if (pixel == 0x00  && sprite_pixel > 0x00) {
         final_pixel = sprite_pixel;
