@@ -5,7 +5,11 @@
 #include <fstream>
 #include <vector>
 
+#include "Mapper.h"
+
 #include "Mapper0.h"
+#include "Mapper1.h"
+#include "Mapper2.h"
 
 using namespace std;
 
@@ -101,12 +105,19 @@ union header {
 class ROM {
     public:
         union header h;
-        Mapper0 mapper;
+        Mapper* mapper;
+        uint8_t mapper_id;
+
+        vector<uint8_t> PRG_memory;     // PRG memory, vector so it is resizable for each mapper.
+                                        // Stores the actual ROM program data (instructions etc).
+        vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper.
+        vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
+                                        // Stores the pattern table.
 
         ROM();
         ~ROM();
 
-        pair<vector<uint8_t>, vector<uint8_t>> loadRom(char* romName);
+        bool loadRom(char* romName);
 
     private:
         void dumpContents(ifstream* romFile);

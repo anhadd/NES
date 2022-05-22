@@ -15,18 +15,20 @@ Mapper0::~Mapper0() {
     
 }
 
-uint16_t Mapper0::cpuMap(uint16_t address) {
-    // TODO: FIX WHY THE BANK NUMBERS ARE WRONG HERE !
-    fprintf(stderr, "PRG BANKS MAPPING: %u\n", PRG_banks);
-    fprintf(stderr, "CHR BANKS MAPPING: %u\n", CHR_banks);
-    if (PRG_banks == 1) {
-        return address & 0x3FFF;
+uint32_t Mapper0::cpuMap(uint16_t address, bool write, uint8_t value) {
+    if (address >= 0x6000 && address <= 0x7FFF) {
+        return address & 0x1FFF;
     }
     else {
-        return address & 0x7FFF;
+        if (PRG_banks == 1) {
+            return address & 0x3FFF;
+        }
+        else {
+            return address & 0x7FFF;
+        }
     }
 }
 
-uint16_t Mapper0::ppuMap(uint16_t address) {
+uint32_t Mapper0::ppuMap(uint16_t address) {
     return address & 0x1FFF;
 }

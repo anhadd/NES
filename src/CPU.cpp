@@ -1,6 +1,9 @@
 #include "../include/CPU.h"
 
 
+
+// TODO: CHECK IF SOME ROMS DONT WORK BECAUSE OF THE CPU!
+    // SEE IF THE BROKEN ROMS USE SOME INSTRUCTION THAT BREAKS LOADING THE SCREEN.
 CPU::CPU() {
     status.full = 0x24;
 
@@ -60,11 +63,13 @@ void CPU::reset() {
     Y = 0;
 
     absolute_address = 0x0000;
-    total_cycles = 7;
+    total_cycles = 0;
 
     // PC = 0xC000; // For running nestest.
-    fprintf(stderr, "CPU STARTING ADDR: %02x %02x\n", cpuRead(0xFFFD), cpuRead(0xFFFC));
+    // fprintf(stderr, "CPU STARTING ADDR: %02x %02x\n", cpuRead(0xFFFD), cpuRead(0xFFFC));
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
+
+    cycles = 7;
 }
 
 void CPU::IRQ() {
@@ -787,3 +792,18 @@ bool CPU::UNK() {
     exit(0);
     return 0;
 }
+
+
+// ILLEGAL OPCODES
+
+// bool CPU::SRE() { // 0x5B
+//     LSR();
+//     EOR();
+//     return 0;
+// }
+
+// bool CPU::ISC() { // 0xFF
+//     INC();
+//     SBC();
+//     return 0;
+// }

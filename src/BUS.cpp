@@ -41,9 +41,13 @@ uint8_t BUS::busReadCPU(uint16_t address) {
         controller_shift[address % 0x4016] <<= 1;
         return (temp & 0x80) != 0;
     }
+    else if (address >= 0x6000 && address <= 0x7FFF) {
+        // TODO: CHECK WHHY SOME MAPPER 2 ROMS UE THIS ARE (THOUGHT THEY SHOULDNT ?)
+        // fprintf(stderr, "!!!!! PRG RAM USED !!!!!!\n");
+        return rom->PRG_ram[rom->mapper->cpuMap(address, false)];
+    }
     else if (address >= 0x8000 && address <= 0xFFFF) {
-        address = rom->mapper.cpuMap(address);
-        return PRG_memory[address];
+        return rom->PRG_memory[rom->mapper->cpuMap(address, false)];
     }
     else {
         return memory[address];
@@ -66,9 +70,15 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     else if (address == 0x4016 || address == 0x4017) {
         controller_shift[address % 0x4016] = controller[address % 0x4016];
     }
+    else if (address >= 0x6000 && address <= 0x7FFF) {
+        // TODO: CHECK WHHY SOME MAPPER 2 ROMS UE THIS ARE (THOUGHT THEY SHOULDNT ?)
+        // fprintf(stderr, "!!!!! PRG RAM USED !!!!!!\n");
+        rom->PRG_ram[rom->mapper->cpuMap(address, true, value)] = value;
+    }
     else if (address >= 0x8000 && address <= 0xFFFF) {
-        address = rom->mapper.cpuMap(address);
-        PRG_memory[address] = value;
+        // Writing not allowed for PRG memory.
+        rom->mapper->cpuMap(address, true, value);
+        // rom->PRG_memory[address] = value;
     }
     else {
         memory[address] = value;

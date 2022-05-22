@@ -4,22 +4,17 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
+#include "Mapper.h"
 
 using namespace std;
 
-class Mapper0 {
+class Mapper0 : public Mapper {
     public:
-        uint8_t id;
-        uint8_t PRG_banks;
-        uint8_t CHR_banks;
-
         Mapper0();
         ~Mapper0();
 
-        uint16_t cpuMap(uint16_t address);
-        uint16_t ppuMap(uint16_t address);
-    private:
-
+        uint32_t cpuMap(uint16_t address, bool write, uint8_t value = 0x00);
+        uint32_t ppuMap(uint16_t address);
 };
 
 

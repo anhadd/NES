@@ -5,6 +5,7 @@
 
 
 // TODO: Check if supporting 8x16 sprites is necessary.
+    // NECESSARY FOR SOME POPULAR ROMS, SO DO IT.
 
 PPU::PPU() {
     // Constructor
@@ -191,6 +192,10 @@ void PPU::passGUI(GUI* nesGUI) {
     gui = nesGUI;
 }
 
+void PPU::passROM(ROM* nesROM) {
+    rom = nesROM;
+}
+
 void PPU::incrementPPUAddr() {
     if (ppu_ctrl.ppu_increment) {
         ppu_addr.full += 32;
@@ -204,7 +209,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
-        return CHR_memory[address];
+        return rom->CHR_memory[rom->mapper->ppuMap(address)];
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
@@ -241,7 +246,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
-        CHR_memory[address] = value;
+        rom->CHR_memory[rom->mapper->ppuMap(address)] = value;
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;

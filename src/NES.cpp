@@ -5,8 +5,10 @@
 NES::NES() {
     // Constructor
     ppu.passGUI(&gui);
+    ppu.passROM(&rom);
 
     bus.passPPU(&ppu);
+    bus.passROM(&rom);
     cpu.passBUS(&bus);
 
     key_state = SDL_GetKeyboardState(NULL);
@@ -24,14 +26,11 @@ NES::~NES() {
 }
 
 uint8_t NES::initialize(char* romName) {
-    vector<uint8_t>* ptr = &bus.PRG_memory;
-    tie(bus.PRG_memory, ppu.CHR_memory) = rom.loadRom(romName);
-    if (bus.PRG_memory == vector<uint8_t>() || ppu.CHR_memory == vector<uint8_t>()) {
+    if (rom.loadRom(romName) != 0) {
         return 1;
     }
-    
-    cpu.reset();
-    ppu.reset();
+
+    reset();
 
     ppu.vertical_mirorring = rom.h.f6.mirroring;
     return 0;

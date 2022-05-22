@@ -14,9 +14,7 @@ class BUS {
     public:
         ROM* rom;
         // TODO: lower the size to remove the mirroring parts of memory for space.
-        uint8_t memory[0x8000];         // CPU memory without PRG.
-        vector<uint8_t> PRG_memory;     // PRG memory, vector so it is resizable for each mapper.
-                                        // Stores the actual ROM program data (instructions etc).
+        uint8_t memory[0x6000];         // CPU memory without PRG.
         uint8_t controller[2];          // Used for handling input.
 
         uint8_t oam_page;               // The page that OAM is transfered from.

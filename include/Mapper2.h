@@ -1,5 +1,5 @@
-#ifndef MAPPER1_H
-#define MAPPER1_H
+#ifndef Mapper2_H
+#define Mapper2_H
 
 #include <SDL2/SDL.h>
 #include <iostream>
@@ -8,10 +8,10 @@
 
 using namespace std;
 
-class Mapper1 : public Mapper {
+class Mapper2 : public Mapper {
     public:
-        Mapper1();
-        ~Mapper1();
+        Mapper2();
+        ~Mapper2();
 
         uint32_t cpuMap(uint16_t address, bool write, uint8_t value = 0x00);
         uint32_t ppuMap(uint16_t address);

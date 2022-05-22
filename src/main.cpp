@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     NES nes;
 
     remove("nes_error.log");
-    freopen("nes_error.log", "w", stderr);
+    setbuf(freopen("nes_error.log", "w", stderr), NULL);
     
 
     bool quit = false;

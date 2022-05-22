@@ -31,48 +31,69 @@ void ROM::dumpContents(ifstream* romFile) {
 }
 
 
-pair<vector<uint8_t>, vector<uint8_t>> ROM::loadRom(char* romName) {
-    vector<uint8_t> PRG_memory;
-    vector<uint8_t> CHR_memory;
+bool ROM::loadRom(char* romName) {
     ifstream romFile(romName, ios::in | ios::binary);
 
     if (romFile.fail()) {
-        return make_pair(vector<uint8_t>(), vector<uint8_t>());
+        return 1;
     }
 
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
     // TODO: Check what to do with the trainer, right now it is just skipped.
-    // TODO: ADD MAPPER SUPPORT !!!!
     if (h.f6.trainer_present) {
+        // TODO: Check if this doesnt jump to far (because of strating at 0x10)
         romFile.ignore(TRAINER_SIZE);
     }
     
     // Buffer for the PRG data.
-    uint16_t buff_size = h.prg_rom_size * PRG_BLOCK_SIZE;
+    uint32_t buff_size = h.prg_rom_size * PRG_BLOCK_SIZE;
     uint8_t buff[buff_size];
 
     // Buffer for the CHR data.
-    uint16_t buff2_size = h.chr_rom_size * CHR_BLOCK_SIZE;
+    uint32_t buff2_size = h.chr_rom_size * CHR_BLOCK_SIZE;
     uint8_t buff2[buff2_size];
-    
+
+    if (h.chr_rom_size == 0) {
+        buff2_size = CHR_BLOCK_SIZE;
+    }
+
     // Load the PRG memory.
     romFile.read(reinterpret_cast<char*>(buff), buff_size);
     PRG_memory.resize(buff_size);
     memcpy(&PRG_memory[0x0000], buff, buff_size * sizeof(char));
-    // TODO: if necessary, just copy the 1 bank again so mapping can be the same.
-    // if (h.prg_rom_size == 1) {
-    //     memcpy(&PRG_memory->at(0x0000), buff, buff_size * sizeof(char));
-    // }
 
     // Load the CHR memory.
     romFile.read(reinterpret_cast<char*>(buff2), buff2_size);
     CHR_memory.resize(buff2_size);
     memcpy(&CHR_memory[0x0000], buff2, buff2_size * sizeof(char));
 
-    mapper.CHR_banks = h.chr_rom_size;
-    mapper.PRG_banks = h.prg_rom_size;
+    // TODO: Check when PRG RAM is really necessary.
+    PRG_ram.resize(0x2000);
+
+    mapper_id = (h.f7.mapper_upper << 4) | (h.f6.mapper_lower);
+    switch(mapper_id) {
+        case 0:
+            printf("MAPPER 0\n");
+            mapper = new Mapper0();
+            break;
+        case 1:
+            printf("MAPPER 1\n");
+            mapper = new Mapper1();
+            break;
+        case 2:
+            printf("MAPPER 2\n");
+            mapper = new Mapper2();
+            mapper->selected_bank2 = h.prg_rom_size - 1;
+            break;
+        default:
+            printf("Unsupported Mapper!\n");
+            exit(0);
+    }
+
+    mapper->CHR_banks = h.chr_rom_size;
+    mapper->PRG_banks = h.prg_rom_size;
 
     romFile.close();
-    return make_pair(PRG_memory, CHR_memory);
+    return 0;
 }

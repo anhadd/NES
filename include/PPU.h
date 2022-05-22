@@ -46,6 +46,7 @@ SRAM offset:
 #include <vector>
 
 #include "GUI.h"
+#include "ROM.h"
 
 using namespace std;
 
@@ -163,8 +164,6 @@ class PPU {
         bool finished;
         bool show_debug;
 
-        vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
-                                        // Stores the pattern table.
         uint8_t* OAM;
 
         uint8_t curr_palette;
@@ -173,6 +172,7 @@ class PPU {
         ~PPU();
 
         void passGUI(GUI* nesGUI);
+        void passROM(ROM* nesROM);
         bool executeCycle();
         void reset();
 
@@ -184,6 +184,7 @@ class PPU {
 
     private:
         GUI* gui;
+        ROM* rom;
         
         uint16_t total_frames;                  // Used for updating the debug screens.
         uint16_t cycles;
