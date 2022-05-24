@@ -2,7 +2,6 @@
 
 
 
-// TODO: CONTINUE MAPPER 1, NOT FINISHED YET!
 
 Mapper2::Mapper2() {
     // Constructor
