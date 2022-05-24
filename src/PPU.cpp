@@ -4,8 +4,6 @@
 
 
 
-// TODO: Check if supporting 8x16 sprites is necessary.
-    // NECESSARY FOR SOME POPULAR ROMS, SO DO IT.
 
 PPU::PPU() {
     // Constructor
@@ -643,7 +641,7 @@ bool PPU::executeCycle() {
 
                 for (int i = 0; i < 64; i++) {
                     int16_t distance = scanlines - sprite_OAM[i].y;
-                    if (distance >= 0 && distance < 8) {
+                    if (distance >= 0 && distance < (8 + ppu_ctrl.sprite_size * 8)) {
                         if (secondary_OAM_index < 8) {
                             if (i == 0) {
                                 sprite_zero = true;
@@ -669,15 +667,39 @@ bool PPU::executeCycle() {
                     sprite_low = 0x00;
                     sprite_high = 0x00;
 
-                    if (sprite_secondary_OAM[i].flags.flip_vertically) {
-                        sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
-                                    + (sprite_secondary_OAM[i].pattern_id * 0x10)
-                                    + (7 - (scanlines - sprite_secondary_OAM[i].y));
+                    if (ppu_ctrl.sprite_size) {
+                        // 8x16 sprites.
+                        if (sprite_secondary_OAM[i].flags.flip_vertically) {
+                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * 0x1000)
+                                        + (((sprite_secondary_OAM[i].pattern_id & 0xFE) + 1) * 0x10)
+                                        + (7 - ((scanlines - sprite_secondary_OAM[i].y) & 0x07));
+                            
+                            if (scanlines - sprite_secondary_OAM[i].y >= 8) {
+                                sprite_addr -= 0x10;
+                            }
+                        }
+                        else {
+                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * 0x1000)
+                                        + ((sprite_secondary_OAM[i].pattern_id & 0xFE) * 0x10)
+                                        + ((scanlines - sprite_secondary_OAM[i].y) & 0x07);
+                            
+                            if (scanlines - sprite_secondary_OAM[i].y >= 8) {
+                                sprite_addr += 0x10;
+                            }
+                        }
                     }
                     else {
-                        sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
-                                    + (sprite_secondary_OAM[i].pattern_id * 0x10)
-                                    + (scanlines - sprite_secondary_OAM[i].y);
+                        // 8x8 sprites.
+                        if (sprite_secondary_OAM[i].flags.flip_vertically) {
+                            sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
+                                        + (sprite_secondary_OAM[i].pattern_id * 0x10)
+                                        + (7 - (scanlines - sprite_secondary_OAM[i].y));
+                        }
+                        else {
+                            sprite_addr = (ppu_ctrl.ptrn_addr * 0x1000)
+                                        + (sprite_secondary_OAM[i].pattern_id * 0x10)
+                                        + (scanlines - sprite_secondary_OAM[i].y);
+                        }
                     }
 
                     sprite_low = ppuRead(sprite_addr);
