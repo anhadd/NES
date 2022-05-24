@@ -149,13 +149,10 @@ class CPU {
         bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
         bool UNK(); // For unknown opcodes.
 
-        // Illegal opcode operations.
-        // bool SRE(); bool ISC();
-
         // Helper functions.
         bool checkBranch(bool flag);
         bool pushPCToStack();
-        bool pushStatusToStack();
+        bool pushStatusToStack(bool is_instruction);
 
         bool readAddress();
 

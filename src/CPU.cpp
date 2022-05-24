@@ -4,18 +4,18 @@
 
 // TODO: CHECK IF SOME ROMS DONT WORK BECAUSE OF THE CPU!
     // SEE IF THE BROKEN ROMS USE SOME INSTRUCTION THAT BREAKS LOADING THE SCREEN.
+    // CPU MIGHT NOT BE COMPLETELY PERFECT ! TRY TO PASS THE TESTS.
 CPU::CPU() {
     status.full = 0x24;
-
     PC = 0x0000;
     SP = 0xFF;
 
     accumulator = 0;
-
     X = 0;
     Y = 0;
 
     absolute_address = 0x0000;
+
     op_lookup = {
         // opcode / opFunction / opmode / opcycles / extra_cycle
 		{ 0x00, &CPU::BRK, IMP, 7, 0 },{ 0x01, &CPU::ORA, IZX, 6, 0 },{ 0x02, &CPU::UNK, IMP, 2, 0 },{ 0x03, &CPU::UNK, IMP, 8, 0 },{ 0x04, &CPU::NOP, ZPN, 3, 0 },{ 0x05, &CPU::ORA, ZPN, 3, 0 },{ 0x06, &CPU::ASL, ZPN, 5, 0 },{ 0x07, &CPU::UNK, IMP, 5, 0 },{ 0x08, &CPU::PHP, IMP, 3, 0 },{ 0x09, &CPU::ORA, IMM, 2, 0 },{ 0x0A, &CPU::ASL, ACC, 2, 0 },{ 0x0B, &CPU::UNK, IMP, 2, 0 },{ 0x0C, &CPU::NOP, ABS, 4, 0 },{ 0x0D, &CPU::ORA, ABS, 4, 0 },{ 0x0E, &CPU::ASL, ABS, 6, 0 },{ 0x0F, &CPU::UNK, IMP, 6, 0 },
@@ -55,14 +55,18 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
 }
 
 void CPU::reset() {
-    status.full = 0x24;
+    opcode = 0x00;
+
+    status.full = 0x00 | UNUSED_MASK | INTERRUPT_DISABLED_MASK;
     SP = 0xFD;
 
     accumulator = 0;
     X = 0;
     Y = 0;
+    temp = 0x0000;
 
     absolute_address = 0x0000;
+    relative_offset = 0x00;
     total_cycles = 0;
 
     // PC = 0xC000; // For running nestest.
@@ -70,15 +74,17 @@ void CPU::reset() {
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 
     cycles = 7;
+    additional_cycle = false;
 }
 
 void CPU::IRQ() {
     if (!status.interrupt_disabled) {
         pushPCToStack();
 
-        status.break_command = 0;
-        status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
-        pushStatusToStack();
+        // status.break_command = 0;
+        // status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
+        pushStatusToStack(false);
+        status.interrupt_disabled = 1;
 
         PC = (cpuRead(0xFFFF) << 8) | cpuRead(0xFFFE);
         cycles = 7;
@@ -88,9 +94,10 @@ void CPU::IRQ() {
 void CPU::NMI() {
     pushPCToStack();
 
-    status.break_command = 0;
-    status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
-	pushStatusToStack();
+    // status.break_command = 0;
+    // status.full |= UNUSED_MASK | INTERRUPT_DISABLED_MASK;
+	pushStatusToStack(false);
+    status.interrupt_disabled = 1;
 
 	PC = (cpuRead(0xFFFB) << 8) | cpuRead(0xFFFA);
 	cycles = 8;
@@ -285,8 +292,13 @@ bool CPU::pushPCToStack() {
 }
 
 // Pushes status register to Stack.
-bool CPU::pushStatusToStack() {
-    cpuWrite(SP + STACK_START, status.full | UNUSED_MASK | BREAK_COMMAND_MASK);
+bool CPU::pushStatusToStack(bool is_instruction) {
+    if(is_instruction) {
+        cpuWrite(SP + STACK_START, status.full | UNUSED_MASK | BREAK_COMMAND_MASK);
+    }
+    else {
+        cpuWrite(SP + STACK_START, status.full | UNUSED_MASK);
+    }
     decrementSP();
     return 0;
 }
@@ -382,8 +394,8 @@ bool CPU::BPL() {
 bool CPU::BRK() {
     pushPCToStack();
 
+    pushStatusToStack(true);
     status.interrupt_disabled = 1;
-    pushStatusToStack();
 
     PC = (cpuRead(0xFFFF) << 8) | cpuRead(0xFFFE);
     return 0;
@@ -431,7 +443,7 @@ bool CPU::CMP() {
 bool CPU::CPX() {
     temp = (uint16_t)X - (uint16_t)cpuRead(absolute_address);
 
-    status.carry =      X >= cpuRead(absolute_address);
+    status.carry =      X >= cpuRead(absolute_address); //TODO: maybe wrong.
     status.zero =       X == cpuRead(absolute_address);
     status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
@@ -440,7 +452,7 @@ bool CPU::CPX() {
 bool CPU::CPY() {
     temp = (uint16_t)Y - (uint16_t)cpuRead(absolute_address);
 
-    status.carry =      Y >= cpuRead(absolute_address);
+    status.carry =      Y >= cpuRead(absolute_address); //TODO: maybe wrong.
     status.zero =       Y == cpuRead(absolute_address);
     status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
@@ -611,7 +623,7 @@ bool CPU::PHA() {
 }
 
 bool CPU::PHP() {
-    pushStatusToStack();
+    pushStatusToStack(true);
     return 0;
 }
 
@@ -789,21 +801,6 @@ bool CPU::UNK() {
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
     // Exits whenever an illegal opcode is encountered.
-    exit(0);
+    // exit(0);
     return 0;
 }
-
-
-// ILLEGAL OPCODES
-
-// bool CPU::SRE() { // 0x5B
-//     LSR();
-//     EOR();
-//     return 0;
-// }
-
-// bool CPU::ISC() { // 0xFF
-//     INC();
-//     SBC();
-//     return 0;
-// }
