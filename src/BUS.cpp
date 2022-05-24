@@ -42,7 +42,7 @@ uint8_t BUS::busReadCPU(uint16_t address) {
         return (temp & 0x80) != 0;
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {
-        // TODO: CHECK WHHY SOME MAPPER 2 ROMS UE THIS ARE (THOUGHT THEY SHOULDNT ?)
+        // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULDNT ?)
         // fprintf(stderr, "!!!!! PRG RAM USED !!!!!!\n");
         return rom->PRG_ram[rom->mapper->cpuMap(address, false)];
     }
@@ -71,7 +71,7 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
         controller_shift[address % 0x4016] = controller[address % 0x4016];
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {
-        // TODO: CHECK WHHY SOME MAPPER 2 ROMS UE THIS ARE (THOUGHT THEY SHOULDNT ?)
+        // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULDNT ?)
         // fprintf(stderr, "!!!!! PRG RAM USED !!!!!!\n");
         rom->PRG_ram[rom->mapper->cpuMap(address, true, value)] = value;
     }
