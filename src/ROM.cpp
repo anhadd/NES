@@ -42,7 +42,7 @@ bool ROM::loadRom(char* romName) {
 
     // TODO: Check what to do with the trainer, right now it is just skipped.
     if (h.f6.trainer_present) {
-        // TODO: Check if this doesnt jump to far (because of strating at 0x10)
+        // TODO: Check if this doesnt jump too far (because of strating at 0x10)
         romFile.ignore(TRAINER_SIZE);
     }
     
@@ -68,23 +68,28 @@ bool ROM::loadRom(char* romName) {
     CHR_memory.resize(buff2_size);
     memcpy(&CHR_memory[0x0000], buff2, buff2_size * sizeof(char));
 
-    // TODO: Check when PRG RAM is really necessary.
+    // TODO: Check if PRG RAM is really always necessary.
     PRG_ram.resize(0x2000);
 
     mapper_id = (h.f7.mapper_upper << 4) | (h.f6.mapper_lower);
     switch(mapper_id) {
         case 0:
-            printf("MAPPER 0\n");
+            printf("Mapper 0\n");
             mapper = new Mapper0();
             break;
         case 1:
-            printf("MAPPER 1\n");
+            printf("Mapper 1\n");
             mapper = new Mapper1();
             break;
         case 2:
-            printf("MAPPER 2\n");
+            printf("Mapper 2\n");
             mapper = new Mapper2();
             mapper->selected_bank2 = h.prg_rom_size - 1;
+            break;
+        case 3:
+            printf("Mapper 3\n");
+            mapper = new Mapper3();
+            
             break;
         default:
             printf("Unsupported Mapper!\n");

@@ -10,6 +10,7 @@
 #include "Mapper0.h"
 #include "Mapper1.h"
 #include "Mapper2.h"
+#include "Mapper3.h"
 
 using namespace std;
 
