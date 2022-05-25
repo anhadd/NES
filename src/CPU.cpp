@@ -224,7 +224,6 @@ bool CPU::readAddress() {
             }
             PC += 1;
             break;
-
         case IMP:
             // Does not require any address in memory.
             absolute_address = 0x0000;

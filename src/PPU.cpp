@@ -243,6 +243,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     address &= 0x3FFF;
 
+    // TODO: WRITE TO PPU WRONG WHEN RUNNING NESTEST INDIRECT Y
     if (address <= 0x1FFF) {
         rom->CHR_memory[rom->mapper->ppuMap(address)] = value;
     }
@@ -419,6 +420,7 @@ void PPU::showPatterntablePixel() {
                 for (int j = 0; j < 32; j++) {
                     uint8_t pattern_id = 0x00;
                     uint8_t pattern_id2 = 0x00;
+
                     if (vertical_mirorring) {
                         pattern_id = ppuRead(0x2000 + (i*32 + j));
                         pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
@@ -427,6 +429,7 @@ void PPU::showPatterntablePixel() {
                         pattern_id = ppuRead(0x2000 + (i*32 + j));
                         pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
                     }
+                    // fprintf(stderr, "%02x ", pattern_id);
 
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
@@ -441,7 +444,9 @@ void PPU::showPatterntablePixel() {
                         }
                     }
                 }
+                // fprintf(stderr, "\n");
             }
+            // fprintf(stderr, "\n\n\n");
             SDL_BlitScaled(gui->pattern_surface_buff, NULL, gui->pattern_surface, &gui->scaled_pattern_rect);
             SDL_UpdateWindowSurface(gui->pattern_window);
             SDL_BlitScaled(gui->palette_surface_buff, NULL, gui->palette_surface, &gui->scaled_palette_rect);
