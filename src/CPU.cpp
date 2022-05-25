@@ -193,6 +193,7 @@ bool CPU::readAddress() {
             byte2 = cpuRead(PC + 1);
             indirect_address = (byte2 << 8) | (byte1);
             // A bug in the NES causes the +1 to not move to the next page when the lower byte is 0x00FF.
+            // TODO: CHECK IF THIS IS CORRECT
             if (byte1 == 0x00FF) {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address & 0xFF00);
@@ -391,7 +392,10 @@ bool CPU::BPL() {
 }
 
 bool CPU::BRK() {
+    // TODO: CHECK IF THIS PC +=1 AND -=1 IS CORRECT
+    PC += 1;
     pushPCToStack();
+    PC -= 1;
 
     pushStatusToStack(true);
     status.interrupt_disabled = 1;
