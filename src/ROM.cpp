@@ -75,29 +75,24 @@ bool ROM::loadRom(char* romName) {
     switch(mapper_id) {
         case 0:
             printf("Mapper 0\n");
-            mapper = new Mapper0();
+            mapper = new Mapper0(h.prg_rom_size, h.chr_rom_size);
             break;
         case 1:
             printf("Mapper 1\n");
-            mapper = new Mapper1();
+            mapper = new Mapper1(h.prg_rom_size, h.chr_rom_size);
             break;
         case 2:
             printf("Mapper 2\n");
-            mapper = new Mapper2();
-            mapper->selected_bank2 = h.prg_rom_size - 1;
+            mapper = new Mapper2(h.prg_rom_size, h.chr_rom_size);
             break;
         case 3:
             printf("Mapper 3\n");
-            mapper = new Mapper3();
-            
+            mapper = new Mapper3(h.prg_rom_size, h.chr_rom_size);
             break;
         default:
             printf("Unsupported Mapper!\n");
             exit(0);
     }
-
-    mapper->CHR_banks = h.chr_rom_size;
-    mapper->PRG_banks = h.prg_rom_size;
 
     romFile.close();
     return 0;
