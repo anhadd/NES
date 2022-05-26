@@ -207,7 +207,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     address &= 0x3FFF;
 
     if (address <= 0x1FFF) {
-        return rom->CHR_memory[rom->mapper->ppuMap(address)];
+        return rom->CHR_memory[rom->mapper->ppuMap(address, false)];
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
@@ -245,7 +245,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
 
     // TODO: WRITE TO PPU WRONG WHEN RUNNING NESTEST INDIRECT Y
     if (address <= 0x1FFF) {
-        rom->CHR_memory[rom->mapper->ppuMap(address)] = value;
+        rom->CHR_memory[rom->mapper->ppuMap(address, true, value)] = value;
     }
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
@@ -314,7 +314,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             else {
                 // Reading from palettes is instant.
                 // Buffer gets set to value in VRAM, palette value is returned.
-                data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
+                data_read_buffer = ppuRead(ppu_addr.full); // TODO: check if still works, was: ppu_addr.full-0x1000
                 incrementPPUAddr();
                 return ppuRead(ppu_addr.full);
             }
@@ -399,7 +399,7 @@ void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint1
 void PPU::showPatterntablePixel() {
     // For debugging only.
     
-    if (total_frames % 15 == 0) {
+    if (total_frames % 30 == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
             drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
@@ -510,6 +510,7 @@ bool PPU::executeCycle() {
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
+        // TODO: might need checking for rendering (bgshow OR spriteshow).
         else if (scanlines == 0 && cycles == 0 && odd_frame) {
             cycles += 1;
         }
@@ -799,7 +800,10 @@ bool PPU::executeCycle() {
         if (sprite_zero) {
             if (ppu_mask.showbg && ppu_mask.showsprites) {
                 if (cycles >= 1 && cycles <= 257) {
-                    ppu_status.sprite_zerohit = 1;
+                    // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
+                    if (!(cycles < 9 && (ppu_mask.showbg_left | ppu_mask.showsprites_left))) {
+                        ppu_status.sprite_zerohit = 1;
+                    }
                 }
             }
         }
