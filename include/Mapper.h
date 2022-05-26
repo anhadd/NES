@@ -14,14 +14,11 @@ class Mapper {
         uint8_t PRG_banks;
         uint8_t CHR_banks;
 
-        uint8_t selected_bank1;
-        uint8_t selected_bank2;
-
-        Mapper();
+        Mapper(uint8_t nPRG = 0, uint8_t nCHR = 0);
         ~Mapper();
 
         virtual uint32_t cpuMap(uint16_t address, bool write, uint8_t value = 0x00) = 0;
-        virtual uint32_t ppuMap(uint16_t address) = 0;
+        virtual uint32_t ppuMap(uint16_t address, bool write, uint8_t value = 0x00) = 0;
 };
 
 

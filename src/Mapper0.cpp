@@ -2,11 +2,11 @@
 
 
 
-Mapper0::Mapper0() {
+Mapper0::Mapper0(uint8_t nPRG, uint8_t nCHR) {
     // Constructor
     id = 0;
-    PRG_banks = 0;
-    CHR_banks = 0;
+    PRG_banks = nPRG;
+    CHR_banks = nCHR;
 }
 
 
@@ -29,6 +29,6 @@ uint32_t Mapper0::cpuMap(uint16_t address, bool write, uint8_t value) {
     }
 }
 
-uint32_t Mapper0::ppuMap(uint16_t address) {
+uint32_t Mapper0::ppuMap(uint16_t address, bool write, uint8_t value) {
     return address & 0x1FFF;
 }

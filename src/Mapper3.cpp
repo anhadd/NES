@@ -3,14 +3,14 @@
 
 
 
-Mapper3::Mapper3() {
+Mapper3::Mapper3(uint8_t nPRG, uint8_t nCHR) {
     // Constructor
-    id = 2;
-    PRG_banks = 0;
-    CHR_banks = 0;
-
-    selected_bank1 = 0;
-    selected_bank2 = 0;
+    id = 0;
+    PRG_banks = nPRG;
+    CHR_banks = nCHR;
+    
+    chr_bank0 = 0;
+    chr_bank1 = 0;
 }
 
 
@@ -21,7 +21,7 @@ Mapper3::~Mapper3() {
 
 uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
-        selected_bank1 = value;
+        chr_bank0 = value;
         return address;
     }
     else {
@@ -34,6 +34,6 @@ uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
     }
 }
 
-uint32_t Mapper3::ppuMap(uint16_t address) {
-    return (selected_bank1 * 0x2000) + (address & 0x1FFF);
+uint32_t Mapper3::ppuMap(uint16_t address, bool write, uint8_t value) {
+    return (chr_bank0 * 0x2000) + (address & 0x1FFF);
 }

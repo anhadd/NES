@@ -2,14 +2,11 @@
 
 
 
-Mapper::Mapper() {
+Mapper::Mapper(uint8_t nPRG, uint8_t nCHR) {
     // Constructor
     id = 0;
-    PRG_banks = 0;
-    CHR_banks = 0;
-
-    selected_bank1 = 0;
-    selected_bank2 = 0;
+    PRG_banks = nPRG;
+    CHR_banks = nCHR;
 }
 
 
