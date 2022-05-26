@@ -182,13 +182,20 @@ class PPU {
         uint8_t readRegister(uint16_t address);
         uint8_t writeRegister(uint16_t address, uint8_t value);
 
+        // Used for printing debug log.
+        union loopy_register ppu_addr;
+        uint8_t fine_x;
+
+        uint16_t cycles;
+        int16_t scanlines;
+
     private:
         GUI* gui;
         ROM* rom;
         
         uint16_t total_frames;                  // Used for updating the debug screens.
-        uint16_t cycles;
-        int16_t scanlines;
+        // uint16_t cycles;
+        // int16_t scanlines;
         bool address_latch;
         bool odd_frame;
 
@@ -206,9 +213,9 @@ class PPU {
         uint8_t ppu_scroll;
 
         // uint16_t ppu_addr;
-        union loopy_register ppu_addr;
+        // union loopy_register ppu_addr;
         union loopy_register ppu_buff;
-        uint8_t fine_x;
+        // uint8_t fine_x;
 
         uint8_t ppu_data;
 

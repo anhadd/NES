@@ -46,6 +46,9 @@ void NES::executeFrame() {
         ppu.executeCycle();
         if (total_cycles % 3 == 0) {
             if (!bus.oam_writing) {
+                // if (cpu.cycles == 0) {
+                //     fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03u,%03u CYC:%u\n", cpu.PC, cpu.cpuRead(cpu.PC), cpu.accumulator, cpu.X, cpu.Y, cpu.status.full, cpu.SP, ppu.scanlines, ppu.cycles - 1, cpu.total_cycles);
+                // }
                 cpu.executeCycle();
             }
             else {

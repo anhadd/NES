@@ -97,11 +97,9 @@ class CPU {
         void passBUS(BUS* nesBUS);  // Used for receiving the BUS from the NES.
         bool executeCycle();
 
-    private:
-        vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
-        uint8_t opcode;             // Stores the current opcode.
 
-        // union cpu_memory memory;
+
+        // Public for logging debug information.
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -113,6 +111,28 @@ class CPU {
                                     // Can also be set to value form memory.
         uint8_t X;
         uint8_t Y;
+
+        uint8_t cycles;
+        uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+
+        uint8_t cpuRead(uint16_t address);
+
+    private:
+        vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
+        uint8_t opcode;             // Stores the current opcode.
+
+        // // union cpu_memory memory;
+        // uint16_t PC;                // Program Counter
+        // uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
+        //                             // Stack pointer works top-down.
+        //                             // No overflow detection, just wraps around form 0x00 to 0xFF.
+        // union status_register status;
+        //                             // Has flags for various things.
+
+        // uint8_t accumulator;        // Stores results of arithmetic and logic operations.
+        //                             // Can also be set to value form memory.
+        // uint8_t X;
+        // uint8_t Y;
         uint16_t temp;              // Stores the temporary results of instructions.
 
         // Used to store the final address, after considering addressing modes.
@@ -120,9 +140,9 @@ class CPU {
         // Used to store the offset of branches, if applicable.
         int8_t relative_offset;
         // Used to store the amount of cycles that an instruction took.
-        uint8_t cycles;
+        // uint8_t cycles;
         bool additional_cycle;      // Used to store whether an instruction might take an extra cycle.
-        uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+        // uint32_t total_cycles;      // Counts the total cycles since the start of the program.
         
         enum addressing_mode mode;  // Used to store the current addressing mode.
 
@@ -156,7 +176,7 @@ class CPU {
 
         bool readAddress();
 
-        uint8_t cpuRead(uint16_t address);
+        // uint8_t cpuRead(uint16_t address);
         uint8_t cpuWrite(uint16_t address, uint8_t value);
 };
 
