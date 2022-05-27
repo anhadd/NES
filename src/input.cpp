@@ -1,7 +1,7 @@
 #include "../include/input.h"
 
 
-bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
+void handleInput(NES &nes) {
 
     nes.bus.controller[0] = 0x00;
     nes.bus.controller[0] |= nes.key_state[INPUT_A]        << 7;
@@ -13,22 +13,25 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
     nes.bus.controller[0] |= nes.key_state[INPUT_LEFT]     << 1;
     nes.bus.controller[0] |= nes.key_state[INPUT_RIGHT]    << 0;
 
-    while (SDL_PollEvent(&sdlevent)){
-        if (sdlevent.type == SDL_QUIT){
-            quit = true;
+    while (SDL_PollEvent(&nes.gui.sdlevent)){
+        if (nes.gui.sdlevent.type == SDL_QUIT){
+            nes.quit = true;
         }
-        else if (sdlevent.type == SDL_KEYDOWN){
-            switch (sdlevent.key.keysym.sym) {
+        else if (nes.gui.sdlevent.type == SDL_KEYDOWN){
+            switch (nes.gui.sdlevent.key.keysym.sym) {
                 case INPUT_QUIT:
-                    quit = true;
+                    nes.quit = true;
                     break;
                 case INPUT_RESET:
                     nes.reset();
                     break;
+                case INPUT_PAUSE:
+                    nes.paused = !nes.paused;
+                    break;
             }
         }
-        else if (sdlevent.type == SDL_KEYUP){
-            switch (sdlevent.key.keysym.sym) {
+        else if (nes.gui.sdlevent.type == SDL_KEYUP){
+            switch (nes.gui.sdlevent.key.keysym.sym) {
                 case INPUT_PALETTE:
                     if (nes.ppu.curr_palette >= 7) {
                         nes.ppu.curr_palette = 0;
@@ -38,16 +41,14 @@ bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS) {
                     }
                     break;
                 case INPUT_SLOW:
-                    if (FPS > 10) {
-                        FPS -= 10;
+                    if (nes.FPS > 10) {
+                        nes.FPS -= 10;
                     }
                     break;
                 case INPUT_FAST:
-                    FPS += 10;
+                    nes.FPS += 10;
                     break;
             }
         }
     }
-
-    return quit;
 }
