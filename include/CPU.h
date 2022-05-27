@@ -134,6 +134,7 @@ class CPU {
         // uint8_t X;
         // uint8_t Y;
         uint16_t temp;              // Stores the temporary results of instructions.
+        uint8_t read_data;          // Stores the data read form a read, so that it can be reused.
 
         // Used to store the final address, after considering addressing modes.
         uint16_t absolute_address;

@@ -7,10 +7,12 @@
     // CPU MIGHT NOT BE COMPLETELY PERFECT ! TRY TO PASS THE TESTS.
 
 // TODO: CHECK ALL MEMORRY RELATED STUFF (CHR, PRG, WRITE, READ ETC.) !!! (ENCOUNTERED SEG FAULT AND TESTS SEEM TO POINTING TO IT BEING WRONG).
+
+// TODO: RUN ROMS AND PAUSE THEM, THEN CHECK THE LOG FOR WHERE THEY GOT STUCK.
 CPU::CPU() {
-    status.full = 0x24;
+    status.full = 0x00 | UNUSED_MASK | BREAK_COMMAND_MASK | INTERRUPT_DISABLED_MASK;
     PC = 0x0000;
-    SP = 0xFF;
+    SP = 0xFD;
 
     accumulator = 0;
     X = 0;
@@ -62,9 +64,9 @@ void CPU::reset() {
     status.full = 0x00 | UNUSED_MASK | INTERRUPT_DISABLED_MASK;
     SP = 0xFD;
 
-    accumulator = 0;
-    X = 0;
-    Y = 0;
+    // accumulator = 0;
+    // X = 0;
+    // Y = 0;
     temp = 0x0000;
 
     absolute_address = 0x0000;
@@ -196,14 +198,14 @@ bool CPU::readAddress() {
             indirect_address = (byte2 << 8) | (byte1);
             // A bug in the NES causes the +1 to not move to the next page when the lower byte is 0x00FF.
             // TODO: CHECK IF THIS BUG PART IS CORRECT (for NEStress it is wrong, but might just be outdated test).
-            // if (byte1 == 0x00FF) {
-            //     byte1 = cpuRead(indirect_address);
-            //     byte2 = cpuRead(indirect_address & 0xFF00);
-            // }
-            // else {
+            if (byte1 == 0x00FF) {
+                byte1 = cpuRead(indirect_address);
+                byte2 = cpuRead(indirect_address & 0xFF00);
+            }
+            else {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address + 1);
-            // }
+            }
             absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             PC += 2;
             break;
@@ -217,7 +219,7 @@ bool CPU::readAddress() {
             break;
         case IZY: // A little like Indirect_Y.
             // Take 1 byte, and take the address from there (with wraparound). Finally add Y.
-            indirect_address = cpuRead(PC);
+            indirect_address = 0x00FF & cpuRead(PC); // TODO: check if the "0x00FF & " is better/necessary
             byte1 = cpuRead(indirect_address % ZERO_PAGE_SIZE);
             byte2 = cpuRead((indirect_address + 1) % ZERO_PAGE_SIZE);
             absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
@@ -312,11 +314,12 @@ bool CPU::pushStatusToStack(bool is_instruction) {
 */
 
 bool CPU::ADC() {
-    temp = (uint16_t)accumulator + (uint16_t)cpuRead(absolute_address) + (uint16_t)status.carry;
+    read_data = cpuRead(absolute_address);
+    temp = (uint16_t)accumulator + (uint16_t)read_data + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    status.overflow =   ((accumulator & NEGATIVE_MASK) && (cpuRead(absolute_address) & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
-                    || (!(accumulator & NEGATIVE_MASK) && !(cpuRead(absolute_address) & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
+    status.overflow =   ((accumulator & NEGATIVE_MASK) && (read_data & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
+                    || (!(accumulator & NEGATIVE_MASK) && !(read_data & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 
@@ -325,6 +328,7 @@ bool CPU::ADC() {
 }
 
 bool CPU::AND() {
+    // fprintf(stderr, "AND ABS ADDR: %04x\n", absolute_address);
     accumulator &= cpuRead(absolute_address);
     
     status.zero =       accumulator == 0;
@@ -369,11 +373,13 @@ bool CPU::BEQ() {
 }
 
 bool CPU::BIT() {
-    temp = (uint16_t)accumulator & (uint16_t)cpuRead(absolute_address);
+    // fprintf(stderr, "ABS ADDR: %04x\n", absolute_address);
+    read_data = cpuRead(absolute_address);
+    temp = (uint16_t)accumulator & (uint16_t)read_data;
 
     status.zero =       (temp & 0x00FF) == 0;
-    status.negative =   (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
-    status.overflow =   (cpuRead(absolute_address) & OVERFLOW_MASK) != 0;
+    status.negative =   (read_data & NEGATIVE_MASK) != 0;
+    status.overflow =   (read_data & OVERFLOW_MASK) != 0;
 
     return 0;
 }
@@ -437,42 +443,48 @@ bool CPU::CLV() {
 }
 
 bool CPU::CMP() {
-    temp = (uint16_t)accumulator - (uint16_t)cpuRead(absolute_address);
+    read_data = cpuRead(absolute_address);
+    temp = (uint16_t)accumulator - (uint16_t)read_data;
 
-    status.carry =      accumulator >= cpuRead(absolute_address);
-    status.zero =       accumulator == cpuRead(absolute_address);
+    status.carry =      accumulator >= read_data;
+    status.zero =       accumulator == read_data;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::CPX() {
-    temp = (uint16_t)X - (uint16_t)cpuRead(absolute_address);
+    read_data = cpuRead(absolute_address);
+    temp = (uint16_t)X - (uint16_t)read_data;
 
-    status.carry =      X >= cpuRead(absolute_address); //TODO: maybe wrong.
-    status.zero =       X == cpuRead(absolute_address);
+    status.carry =      X >= read_data; //TODO: maybe wrong.
+    status.zero =       X == read_data;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::CPY() {
-    temp = (uint16_t)Y - (uint16_t)cpuRead(absolute_address);
+    read_data = cpuRead(absolute_address);
+    temp = (uint16_t)Y - (uint16_t)read_data;
 
-    status.carry =      Y >= cpuRead(absolute_address); //TODO: maybe wrong.
-    status.zero =       Y == cpuRead(absolute_address);
+    status.carry =      Y >= read_data; //TODO: maybe wrong.
+    status.zero =       Y == read_data;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
     return 0;
 }
 
 bool CPU::DEC() {
-    if (cpuRead(absolute_address) == 0) {
+    read_data = cpuRead(absolute_address);
+    if (read_data == 0) {
         cpuWrite(absolute_address, 0xFF);
+        read_data = 0xFF;
     }
     else {
-        cpuWrite(absolute_address, cpuRead(absolute_address) - 1);
+        cpuWrite(absolute_address, read_data - 1);
+        read_data -= 1;
     }
 
-    status.zero =       cpuRead(absolute_address) == 0;
-    status.negative =   (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
+    status.zero =       read_data == 0;
+    status.negative =   (read_data & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -511,15 +523,18 @@ bool CPU::EOR() {
 }
 
 bool CPU::INC() {
-    if (cpuRead(absolute_address) == 0xFF) {
+    read_data = cpuRead(absolute_address);
+    if (read_data == 0xFF) {
         cpuWrite(absolute_address, 0);
+        read_data = 0;
     }
     else {
-        cpuWrite(absolute_address, cpuRead(absolute_address) + 1);
+        cpuWrite(absolute_address, read_data + 1);
+        read_data += 1;
     }
 
-    status.zero =       cpuRead(absolute_address) == 0;
-    status.negative =   (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
+    status.zero =       read_data == 0;
+    status.negative =   (read_data & NEGATIVE_MASK) != 0;
     return 0;
 }
 
@@ -592,8 +607,9 @@ bool CPU::LSR() {
         status.carry =      (accumulator & CARRY_MASK) != 0;
     }
     else {
-        temp = cpuRead(absolute_address) >> 1;
-        status.carry =      (cpuRead(absolute_address) & CARRY_MASK) != 0;
+        read_data = cpuRead(absolute_address);
+        temp = read_data >> 1;
+        status.carry =      (read_data & CARRY_MASK) != 0;
     }
 
     status.zero =       (temp & 0x00FF) == 0;
@@ -659,13 +675,15 @@ bool CPU::ROL() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
-        temp = ((uint16_t)cpuRead(absolute_address) << 1) | status.carry;
-        status.carry =      (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
+        read_data = cpuRead(absolute_address);
+        temp = ((uint16_t)read_data << 1) | status.carry;
+        status.carry =      (read_data & NEGATIVE_MASK) != 0;
 
         cpuWrite(absolute_address, temp & 0x00FF);
+        read_data = temp & 0x00FF;
         
-        status.zero =       cpuRead(absolute_address) == 0;
-        status.negative =   (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
+        status.zero =       read_data == 0;
+        status.negative =   (read_data & NEGATIVE_MASK) != 0;
     }
     return 0;
 }
@@ -681,13 +699,15 @@ bool CPU::ROR() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
-        temp = ((uint16_t)cpuRead(absolute_address) >> 1) | ((uint16_t)status.carry << 7);
-        status.carry =      (cpuRead(absolute_address) & CARRY_MASK) != 0;
+        read_data = cpuRead(absolute_address);
+        temp = ((uint16_t)read_data >> 1) | ((uint16_t)status.carry << 7);
+        status.carry =      (read_data & CARRY_MASK) != 0;
 
         cpuWrite(absolute_address, temp & 0x00FF);
+        read_data = temp & 0x00FF;
 
-        status.zero =       cpuRead(absolute_address) == 0;
-        status.negative =   (cpuRead(absolute_address) & NEGATIVE_MASK) != 0;
+        status.zero =       read_data == 0;
+        status.negative =   (read_data & NEGATIVE_MASK) != 0;
     }
     return 0;
 }
@@ -806,6 +826,7 @@ bool CPU::UNK() {
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
     // Exits whenever an illegal opcode is encountered.
+    // printf("Exiting: Invalid OPCode encountered!\n");
     // exit(0);
     return 0;
 }
