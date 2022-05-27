@@ -118,6 +118,8 @@ class ROM {
         ROM();
         ~ROM();
 
+        void reset();
+
         bool loadRom(char* romName);
 
     private:

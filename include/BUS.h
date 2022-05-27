@@ -29,6 +29,8 @@ class BUS {
         void passPPU(PPU* nesPPU);      // Used for receiving the PPU from the NES.
         void passROM(ROM* nesROM);
 
+        void reset();
+
         uint8_t busReadCPU(uint16_t address);                   // Reading from CPU memory.
         uint8_t busWriteCPU(uint16_t address, uint8_t value);   // Writing to CPU memory.
 

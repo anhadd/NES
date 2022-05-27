@@ -21,6 +21,18 @@ BUS::~BUS() {
     
 }
 
+void BUS::reset() {
+    // fill(begin(memory), &memory[0x7FF], 0);
+    
+    fill(begin(controller), end(controller), 0);
+    fill(begin(controller_shift), end(controller_shift), 0);
+
+    oam_page = 0x00;
+    oam_index = 0x00;
+    oam_writing = false;
+    cpu_synchronized = false;
+}
+
 void BUS::passPPU(PPU* nesPPU) {
     ppu = nesPPU;
 }

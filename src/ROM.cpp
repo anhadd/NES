@@ -4,12 +4,24 @@
 
 ROM::ROM() {
     // Constructor
+    fill(begin(h.full), end(h.full), 0);
+    mapper = nullptr;
+    mapper_id = 0;
+
+    fill(begin(PRG_memory), end(PRG_memory), 0);
+    fill(begin(PRG_ram), end(PRG_ram), 0);
+    fill(begin(CHR_memory), end(CHR_memory), 0);
 }
 
 
 ROM::~ROM() {
     // Destructor
     
+}
+
+
+void ROM::reset() {
+    fill(begin(PRG_ram), end(PRG_ram), 0);
 }
 
 
