@@ -149,16 +149,16 @@ void PPU::reset() {
 
     ppu_ctrl.full = 0x00;
     ppu_mask.full = 0x00;
-    ppu_status.full = 0x00;
-    oam_addr = 0x00;
+    // ppu_status.full = 0x00;
+    // oam_addr = 0x00;
     oam_data = 0x00;
     ppu_scroll = 0x00;
 
-    ppu_addr.full = 0x0000;
+    // ppu_addr.full = 0x0000;
     ppu_buff.full = 0x0000;
     fine_x = 0x00;
 
-    ppu_data = 0x00;
+    // ppu_data = 0x00;
 
     memset(sprite_OAM, 0, sizeof(sprite_OAM));
     memset(sprite_secondary_OAM, 0, sizeof(sprite_secondary_OAM));
@@ -231,10 +231,11 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else {
         address &= 0x001F;
 
-        if (address == 0x0010) address = 0x0000;
-        else if (address == 0x0014) address = 0x0004;
-        else if (address == 0x0018) address = 0x0008;
-        else if (address == 0x001C) address = 0x000C;
+        if (ppu_mask.showbg || ppu_mask.showsprites) {
+            if (address == 0x0010 | address == 0x0014 | address == 0x0018 | address == 0x001C) {
+                address = 0x0000;
+            }
+        }
     
         return ppu_palette[address];
     }
@@ -268,10 +269,12 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     }
     else {
         address &= 0x001F;
-        if (address == 0x0010) address = 0x0000;
-        else if (address == 0x0014) address = 0x0004;
-        else if (address == 0x0018) address = 0x0008;
-        else if (address == 0x001C) address = 0x000C;
+
+        // TODO maybe remove this, and just remap on read.
+        // if (address == 0x0010) address = 0x0000;
+        // else if (address == 0x0014) address = 0x0004;
+        // else if (address == 0x0018) address = 0x0008;
+        // else if (address == 0x001C) address = 0x000C;
 
         ppu_palette[address] = value;
     }
@@ -293,6 +296,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             temp = ppu_status.full & 0xE0;
             ppu_status.v_blank = 0;
             address_latch = false;
+            // fprintf(stderr, "   RET TEMP: %02x\n", temp);
             return temp;
         case OAM_ADDR:
             // No reading allowed.
@@ -314,7 +318,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             else {
                 // Reading from palettes is instant.
                 // Buffer gets set to value in VRAM, palette value is returned.
-                data_read_buffer = ppuRead(ppu_addr.full); // TODO: check if still works, was: ppu_addr.full-0x1000
+                data_read_buffer = ppuRead(ppu_addr.full - 0x1000); // TODO: check if still works, was: ppu_addr.full-0x1000
                 incrementPPUAddr();
                 return ppuRead(ppu_addr.full);
             }
@@ -507,11 +511,12 @@ bool PPU::executeCycle() {
     if (scanlines >= -1 && scanlines <= 239) {
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
+            // fprintf(stderr, "V_BLANK OFF\n");
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
         // TODO: might need checking for rendering (bgshow OR spriteshow).
-        else if (scanlines == 0 && cycles == 0 && odd_frame) {
+        else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
             cycles += 1;
         }
 
@@ -636,7 +641,7 @@ bool PPU::executeCycle() {
             (from: https://www.nesdev.org/wiki/PPU_sprite_evaluation)
         */
         if (scanlines != -1) {
-            if (cycles == 257) {
+            if (cycles == 257 && (ppu_mask.showbg || ppu_mask.showsprites)) {
                 memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
 
                 secondary_OAM_index = 0;
@@ -724,6 +729,7 @@ bool PPU::executeCycle() {
     }
     
     if (scanlines == 241 && cycles == 1) {
+        // fprintf(stderr, "V_BLANK ON\n");
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
             signal_nmi = true;
@@ -799,9 +805,9 @@ bool PPU::executeCycle() {
 
         if (sprite_zero) {
             if (ppu_mask.showbg && ppu_mask.showsprites) {
-                if (cycles >= 1 && cycles <= 257) {
+                if (cycles >= 1 && cycles <= 255 && scanlines >= 0 && scanlines <= 239) {
                     // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
-                    if (!(cycles < 9 && (ppu_mask.showbg_left | ppu_mask.showsprites_left))) {
+                    if (!(cycles < 9 && (!ppu_mask.showbg_left | !ppu_mask.showsprites_left))) {
                         ppu_status.sprite_zerohit = 1;
                     }
                 }
