@@ -19,6 +19,7 @@ Mapper3::~Mapper3() {
     
 }
 
+
 uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
         chr_bank0 = value;
@@ -33,6 +34,7 @@ uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
         }
     }
 }
+
 
 uint32_t Mapper3::ppuMap(uint16_t address, bool write, uint8_t value) {
     return (chr_bank0 * 0x2000) + (address & 0x1FFF);

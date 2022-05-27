@@ -2,7 +2,8 @@
 
 
 
-
+// TODO: Check how this switches the pattern table.
+    // Actually rewrites the CHR memory, does not map or anything.
 Mapper2::Mapper2(uint8_t nPRG, uint8_t nCHR) {
     // Constructor
     id = 0;
@@ -18,6 +19,7 @@ Mapper2::~Mapper2() {
     // Destructor
     
 }
+
 
 uint32_t Mapper2::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
@@ -39,6 +41,7 @@ uint32_t Mapper2::cpuMap(uint16_t address, bool write, uint8_t value) {
         }
     }
 }
+
 
 uint32_t Mapper2::ppuMap(uint16_t address, bool write, uint8_t value) {
     return address & 0x1FFF;

@@ -27,6 +27,7 @@ Mapper1::~Mapper1() {
     
 }
 
+
 uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
         if (address >= 0x6000 && address <= 0x7FFF) {
@@ -100,6 +101,7 @@ uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
         }
     }
 }
+
 
 uint32_t Mapper1::ppuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
