@@ -30,6 +30,8 @@
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
 
+#define INPUT_PAUSE SDLK_SPACE
+
 #define SHOW_DEBUG true
 
 using namespace std;
@@ -42,6 +44,10 @@ class NES {
         PPU ppu;
         GUI gui;
         ROM rom;
+
+        bool quit = false;
+        bool paused = false;
+        int FPS = 60;
 
         const uint8_t* key_state;
 
