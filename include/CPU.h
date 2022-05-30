@@ -100,6 +100,8 @@ class CPU {
 
 
         // Public for logging debug information.
+        vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
+
         uint16_t PC;                // Program Counter
         uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
                                     // Stack pointer works top-down.
@@ -118,7 +120,7 @@ class CPU {
         uint8_t cpuRead(uint16_t address);
 
     private:
-        vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
+        // vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
         // // union cpu_memory memory;
@@ -184,6 +186,7 @@ class CPU {
 // The structure of an instruction with all the data that is required.
 struct instruction {
     uint8_t opcode;
+    char opname[4];
     bool (CPU::*opFunction)(void);
     enum addressing_mode opmode;
     uint8_t opcycles;
