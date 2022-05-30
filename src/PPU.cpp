@@ -290,13 +290,10 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case STATUS:
-            // TODO: REMOVE THIS SETTING VBLANK TO 1 AFTER FINISHING TESTING.
-            // ppu_status.v_blank = 1;
             // TODO: Maybe add "| (data_read_buffer & 0x1F)"  for the noise stuff ??
             temp = ppu_status.full & 0xE0;
             ppu_status.v_blank = 0;
             address_latch = false;
-            // fprintf(stderr, "   RET TEMP: %02x\n", temp);
             return temp;
         case OAM_ADDR:
             // No reading allowed.
