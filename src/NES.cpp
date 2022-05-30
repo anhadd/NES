@@ -50,9 +50,20 @@ void NES::executeFrame() {
         if (total_cycles % 3 == 0) {
             if (!bus.oam_writing) {
                 // if (cpu.cycles == 0) {
-                //     fprintf(stderr, "%04x  %02x  %s             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", cpu.PC, cpu.cpuRead(cpu.PC), cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, cpu.accumulator, cpu.X, cpu.Y, cpu.status.full, cpu.SP, ppu.scanlines, ppu.cycles - 1, cpu.total_cycles);
+                //     fprintf(stderr, "%04x  %02x  %s             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", 
+                //             cpu.PC, 
+                //             cpu.cpuRead(cpu.PC), 
+                //             cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
+                //             cpu.accumulator, 
+                //             cpu.X, 
+                //             cpu.Y, 
+                //             cpu.status.full, 
+                //             cpu.SP, 
+                //             ppu.scanlines, 
+                //             ppu.cycles - 1, 
+                //             cpu.total_cycles);
                 // }
-                if (ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
+                if (cpu.cycles == 0 && ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
                     ppu.signal_nmi = false;
                     cpu.NMI();
                 }
