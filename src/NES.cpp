@@ -63,13 +63,14 @@ void NES::executeFrame() {
                 //             ppu.cycles - 1, 
                 //             cpu.total_cycles);
                 // }
-                if (cpu.cycles == 0 && ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
-                    ppu.signal_nmi = false;
-                    cpu.NMI();
-                }
-                else {
+                // TODO: BM FREEZES ON TITLE SCREEN IF CALLING NMI IS PUT HERE, CHECK WHY AND WHETHER TO FIX THAT
+                // if (cpu.cycles == 0 && ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
+                //     ppu.signal_nmi = false;
+                //     cpu.NMI();
+                // }
+                // else {
                     cpu.executeCycle();
-                }
+                // }
             }
             else {
                 if (bus.cpu_synchronized) {
@@ -99,10 +100,11 @@ void NES::executeFrame() {
             
         }
 
-        // if (ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
-        //     ppu.signal_nmi = false;
-        //     cpu.NMI();
-        // }
+        // TODO: BM STILL FREEZES ON TITLE SCREEN SOMETIMES WITH NMI CALLED HERE, SO CHECK HOW TO FIX THAT
+        if (ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE CALLED, OR WHETHER IT EVEN MATTERS.
+            ppu.signal_nmi = false;
+            cpu.NMI();
+        }
 
         total_cycles += 1;
     }
