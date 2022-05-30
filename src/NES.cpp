@@ -45,11 +45,12 @@ void NES::reset() {
 
 void NES::executeFrame() {
     while (!ppu.finished) {
+        // TODO: COULD JUST RUN 3 PPU CYCLES THEN 1 CPU, CHECK WHICH IS BETTER.
         ppu.executeCycle();
         if (total_cycles % 3 == 0) {
             if (!bus.oam_writing) {
                 // if (cpu.cycles == 0) {
-                //     fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", cpu.PC, cpu.cpuRead(cpu.PC), cpu.accumulator, cpu.X, cpu.Y, cpu.status.full, cpu.SP, ppu.scanlines, ppu.cycles - 1, cpu.total_cycles);
+                //     fprintf(stderr, "%04x  %02x  %s             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", cpu.PC, cpu.cpuRead(cpu.PC), cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, cpu.accumulator, cpu.X, cpu.Y, cpu.status.full, cpu.SP, ppu.scanlines, ppu.cycles - 1, cpu.total_cycles);
                 // }
                 if (ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
                     ppu.signal_nmi = false;
