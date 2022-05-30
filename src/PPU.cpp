@@ -294,6 +294,8 @@ uint8_t PPU::readRegister(uint16_t address) {
             temp = ppu_status.full & 0xE0;
             ppu_status.v_blank = 0;
             address_latch = false;
+            // fprintf(stderr, "RETURN VALUE: %02x\n", temp);
+            // fprintf(stderr, "\nV_BLANK OFF AFTER READ\n\n");
             return temp;
         case OAM_ADDR:
             // No reading allowed.
@@ -330,6 +332,9 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             ppu_ctrl.full = value;
             ppu_buff.nametable_x = ppu_ctrl.nametable_x;
             ppu_buff.nametable_y = ppu_ctrl.nametable_y;
+            if (ppu_status.v_blank && ppu_ctrl.generate_nmi) {
+                signal_nmi = true;
+            }
             break;
         case MASK:
             ppu_mask.full = value;
@@ -507,17 +512,15 @@ bool PPU::executeCycle() {
 
     if (scanlines >= -1 && scanlines <= 239) {
         if (scanlines == -1 && cycles == 1) {
+            // fprintf(stderr, "\nV_BLANK OFF!\n\n");
             ppu_status.v_blank = 0;
-            // fprintf(stderr, "V_BLANK OFF\n");
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
-        // TODO: might need checking for rendering (bgshow OR spriteshow).
         else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
             cycles += 1;
         }
 
-        // if ((cycles >= 1 && cycles <= 257) || (cycles >= 321 && cycles <= 336)) {
         if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
 
@@ -559,7 +562,6 @@ bool PPU::executeCycle() {
                     bg_attribute &= 0x03;
                     break;
                 case 4:
-                    // uint16_t adr = 0x0000 + (pattern_id * 16) + k;
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y;
@@ -726,13 +728,12 @@ bool PPU::executeCycle() {
     }
     
     if (scanlines == 241 && cycles == 1) {
-        // fprintf(stderr, "V_BLANK ON\n");
         ppu_status.v_blank = 1;
+        // fprintf(stderr, "\nV_BLANK ON!\n\n");
         if (ppu_ctrl.generate_nmi) {
             signal_nmi = true;
         }
     }
-
 
 
 
