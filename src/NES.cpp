@@ -55,10 +55,12 @@ void NES::executeFrame() {
         if (total_cycles % 3 == 0) {
             if (!bus.oam_writing) {
                 // if (cpu.cycles == 0) {
-                //     fprintf(stderr, "%04x  %02x  %s             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", 
+                //     fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n", 
                 //             cpu.PC, 
                 //             cpu.cpuRead(cpu.PC), 
                 //             cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
+                //             cpu.cpuRead(cpu.PC + 1),
+                //             cpu.cpuRead(cpu.PC + 2),
                 //             cpu.accumulator, 
                 //             cpu.X, 
                 //             cpu.Y, 
