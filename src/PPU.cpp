@@ -29,6 +29,7 @@ PPU::PPU() {
     fine_x = 0x00;
 
     ppu_data = 0x00;
+    bus_value = 0x00;
 
     memset(sprite_OAM, 0, sizeof(sprite_OAM));
     OAM = (uint8_t*)sprite_OAM;
@@ -295,8 +296,8 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case STATUS:
-            temp = ppu_status.full & 0xE0 | bus_value & 0x1F;
-            ppu_status.v_blank = 0;
+            temp = ppu_status.full & 0xE0 | bus_value & 0x1F; // TODO: MAYBE bus_value IS ALREADY data_read_buffer, CHECK IF bus_value CAN BE REMOVED THEN.
+            ppu_status.v_blank = 0; 
             address_latch = false;
             return temp;
         case OAM_ADDR:
@@ -319,7 +320,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             else {
                 // Reading from palettes is instant.
                 // Buffer gets set to value in VRAM, palette value is returned.
-                data_read_buffer = ppuRead(ppu_addr.full - 0x1000); // TODO: check if still works, was: ppu_addr.full-0x1000
+                data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
                 incrementPPUAddr();
                 return bus_value & 0xB0 | (ppuRead(ppu_addr.full) & 0x3F);
             }
@@ -519,12 +520,11 @@ bool PPU::executeCycle() {
 
     if (scanlines >= -1 && scanlines <= 239) {
         if (scanlines == -1 && cycles == 1) {
-            // fprintf(stderr, "\nV_BLANK OFF!\n\n");
             ppu_status.v_blank = 0;
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
-        else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
+        else if (scanlines == 0 && cycles == 0 && odd_frame) { // TODO:  && (ppu_mask.showbg || ppu_mask.showsprites) CAUSES BM TO FREEZE ON TITLESCREEN, CHECK WHY
             cycles += 1;
         }
 
