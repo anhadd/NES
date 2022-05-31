@@ -13,6 +13,10 @@ NES::NES() {
 
     key_state = SDL_GetKeyboardState(NULL);
 
+    quit = false;
+    paused = false;
+    FPS = 60;
+
     ppu.show_debug = SHOW_DEBUG;
 
     if (SHOW_DEBUG) {
@@ -37,6 +41,7 @@ uint8_t NES::initialize(char* romName) {
 }
 
 void NES::reset() {
+    total_cycles = 0;
     cpu.reset();
     bus.reset();
     rom.reset();
@@ -97,7 +102,6 @@ void NES::executeFrame() {
                     }
                 }
             }
-            
         }
 
         // TODO: BM STILL FREEZES ON TITLE SCREEN SOMETIMES WITH NMI CALLED HERE, SO CHECK HOW TO FIX THAT

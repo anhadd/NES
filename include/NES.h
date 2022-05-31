@@ -45,9 +45,9 @@ class NES {
         GUI gui;
         ROM rom;
 
-        bool quit = false;
-        bool paused = false;
-        int FPS = 60;
+        bool quit;
+        bool paused;
+        int FPS;
 
         const uint8_t* key_state;
 
