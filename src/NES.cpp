@@ -106,7 +106,7 @@ void NES::executeFrame() {
             }
         }
 
-        // TODO: BM STILL FREEZES ON TITLE SCREEN SOMETIMES WITH NMI CALLED HERE, SO CHECK HOW TO FIX THAT
+        // TODO: BM STILL FREEZES ON TITLE SCREEN WITH NMI CALLED HERE, SO CHECK HOW TO FIX THAT
         if (ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE CALLED, OR WHETHER IT EVEN MATTERS.
             ppu.signal_nmi = false;
             cpu.NMI();
