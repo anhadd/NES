@@ -15,7 +15,7 @@
 CPU::CPU() {
     status.full = 0x00 | UNUSED_MASK | BREAK_COMMAND_MASK | INTERRUPT_DISABLED_MASK;
     PC = 0x0000;
-    SP = 0xFD;
+    SP = 0x00;
 
     accumulator = 0;
     X = 0;
@@ -64,8 +64,8 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
 void CPU::reset() {
     opcode = 0x00;
 
-    status.full = 0x00 | UNUSED_MASK | INTERRUPT_DISABLED_MASK;
-    SP = 0xFD;
+    status.full |= INTERRUPT_DISABLED_MASK;
+    SP -= 3;
 
     // accumulator = 0;
     // X = 0;
@@ -159,7 +159,6 @@ bool CPU::readAddress() {
             absolute_address = ((uint16_t)byte1 + (uint16_t)Y) % ZERO_PAGE_SIZE;
             PC += 1;
             break;
-        
         case ABS:
             // The absolute address is 2 bytes swapped around.
             byte1 = cpuRead(PC);
@@ -371,7 +370,6 @@ bool CPU::BEQ() {
 }
 
 bool CPU::BIT() {
-    // fprintf(stderr, "ABS ADDR: %04x\n", absolute_address);
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)accumulator & (uint16_t)read_data;
 
@@ -398,6 +396,9 @@ bool CPU::BPL() {
 }
 
 bool CPU::BRK() {
+    // Dummy read (all 1 byte operations should do it).
+    cpuRead(PC);
+
     // TODO: CHECK IF THIS PC +=1 AND -=1 IS CORRECT
     PC += 1;
     pushPCToStack();
@@ -609,22 +610,17 @@ bool CPU::LSR() {
     if (mode == ACC) {
         temp = accumulator >> 1;
         status.carry =      (accumulator & CARRY_MASK) != 0;
+        accumulator = temp & 0x00FF;
     }
     else {
         read_data = cpuRead(absolute_address);
         temp = read_data >> 1;
         status.carry =      (read_data & CARRY_MASK) != 0;
+        cpuWrite(absolute_address, temp & 0x00FF);
     }
 
     status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
-
-    if (mode == ACC) {
-        accumulator = temp & 0x00FF;
-    }
-    else {
-        cpuWrite(absolute_address, temp & 0x00FF);
-    }
     return 0;
 }
 
@@ -717,6 +713,9 @@ bool CPU::ROR() {
 }
 
 bool CPU::RTI() {
+    // Dummy read (all 1 byte operations should do it).
+    cpuRead(PC);
+
     incrementSP();
     status.full = cpuRead(SP + STACK_START) | UNUSED_MASK;
     
@@ -727,6 +726,9 @@ bool CPU::RTI() {
 }
 
 bool CPU::RTS() {
+    // Dummy read (all 1 byte operations should do it).
+    cpuRead(PC);
+
     incrementSP();
     PC = (cpuRead((SP + 1) + STACK_START) << 8) | cpuRead(SP + STACK_START);
     PC += 1;
@@ -736,7 +738,6 @@ bool CPU::RTS() {
 
 bool CPU::SBC() {
     uint8_t inverted = cpuRead(absolute_address) ^ 0xFF;
-
     temp = (uint16_t)accumulator + (uint16_t)inverted + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
@@ -829,8 +830,8 @@ bool CPU::UNK() {
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
     // Exits whenever an illegal opcode is encountered.
-    // printf("Exiting: Invalid OPCode encountered!\n");
-    // exit(0);
+    printf("Exiting: Invalid OPCode encountered!\n");
+    exit(0);
     return 0;
 }
 
