@@ -230,12 +230,17 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else {
         address &= 0x001F;
+        // fprintf(stderr, "READ PALETTE: %04x\n", address);
 
-        if (ppu_mask.showbg || ppu_mask.showsprites) {
-            if (address == 0x0010 | address == 0x0014 | address == 0x0018 | address == 0x001C) {
-                address = 0x0000;
-            }
-        }
+        // if (ppu_mask.showbg || ppu_mask.showsprites) {
+        //     if (address == 0x0010 | address == 0x0014 | address == 0x0018 | address == 0x001C) {
+        //         address = 0x0000;
+        //     }
+        // }
+        if (address == 0x0010) address = 0x0000;
+        else if (address == 0x0014) address = 0x0004;
+        else if (address == 0x0018) address = 0x0008;
+        else if (address == 0x001C) address = 0x000C;
     
         return ppu_palette[address];
     }
@@ -271,10 +276,10 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         address &= 0x001F;
 
         // TODO maybe remove this, and just remap on read.
-        // if (address == 0x0010) address = 0x0000;
-        // else if (address == 0x0014) address = 0x0004;
-        // else if (address == 0x0018) address = 0x0008;
-        // else if (address == 0x001C) address = 0x000C;
+        if (address == 0x0010) address = 0x0000;
+        else if (address == 0x0014) address = 0x0004;
+        else if (address == 0x0018) address = 0x0008;
+        else if (address == 0x001C) address = 0x000C;
 
         ppu_palette[address] = value;
     }
@@ -290,12 +295,9 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case STATUS:
-            // TODO: Maybe add "| (data_read_buffer & 0x1F)"  for the noise stuff ??
-            temp = ppu_status.full & 0xE0;
+            temp = ppu_status.full & 0xE0 | bus_value & 0x1F;
             ppu_status.v_blank = 0;
             address_latch = false;
-            // fprintf(stderr, "RETURN VALUE: %02x\n", temp);
-            // fprintf(stderr, "\nV_BLANK OFF AFTER READ\n\n");
             return temp;
         case OAM_ADDR:
             // No reading allowed.
@@ -319,20 +321,24 @@ uint8_t PPU::readRegister(uint16_t address) {
                 // Buffer gets set to value in VRAM, palette value is returned.
                 data_read_buffer = ppuRead(ppu_addr.full - 0x1000); // TODO: check if still works, was: ppu_addr.full-0x1000
                 incrementPPUAddr();
-                return ppuRead(ppu_addr.full);
+                return bus_value & 0xB0 | (ppuRead(ppu_addr.full) & 0x3F);
             }
     }
-    return 0x00;
+    return bus_value;
 }
 
 uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
     uint16_t real_address = 0x2000 + (address & 0x0007);
+    uint8_t temp_nmi = 0x00;
+    bus_value = value;
     switch (real_address) {
         case CONTROL:
+            temp_nmi = ppu_ctrl.generate_nmi; 
             ppu_ctrl.full = value;
             ppu_buff.nametable_x = ppu_ctrl.nametable_x;
             ppu_buff.nametable_y = ppu_ctrl.nametable_y;
-            if (ppu_status.v_blank && ppu_ctrl.generate_nmi) {
+            // If generate_nmi is set while v_blank, signal another nmi.
+            if (ppu_status.v_blank && ppu_ctrl.generate_nmi && !temp_nmi) {
                 signal_nmi = true;
             }
             break;
@@ -347,6 +353,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case OAM_DATA:
             OAM[oam_addr] = value;
+            oam_addr += 1;
             break;
         case SCROLL:
             if (address_latch) {
@@ -373,9 +380,9 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             else {
                 // Write to high bytes.
                 ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8);
+                // ppu_buff.full &= 0x3FFF;
                 address_latch = true;
             }
-            // ppu_buff.full &= 0x3FFF;
             break;
         case PPU_DATA:
             ppuWrite(ppu_addr.full, value);
@@ -729,7 +736,6 @@ bool PPU::executeCycle() {
     
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
-        // fprintf(stderr, "\nV_BLANK ON!\n\n");
         if (ppu_ctrl.generate_nmi) {
             signal_nmi = true;
         }
