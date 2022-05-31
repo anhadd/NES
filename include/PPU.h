@@ -218,6 +218,7 @@ class PPU {
         // uint8_t fine_x;
 
         uint8_t ppu_data;
+        uint8_t bus_value;
 
         OAM_sprite sprite_OAM[0x40];
         OAM_sprite sprite_secondary_OAM[0x08];
