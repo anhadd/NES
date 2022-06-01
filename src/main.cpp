@@ -44,7 +44,8 @@ int main(int argc, char *argv[])
         next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/nes.FPS));
         handleInput(nes);
 
-        if (!nes.paused) {
+        if (!nes.paused || nes.run_frame) {
+            nes.run_frame = false;
             nes.executeFrame();
         }
         
