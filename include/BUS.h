@@ -13,7 +13,7 @@ using namespace std;
 class BUS {
     public:
         ROM* rom;
-        uint8_t memory[0x0800];         // CPU memory without PRG.
+        uint8_t memory[0x0800];         // RAM.
         uint8_t controller[2];          // Used for handling input.
 
         uint8_t oam_page;               // The page that OAM is transfered from.
