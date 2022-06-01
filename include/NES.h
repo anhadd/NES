@@ -32,6 +32,8 @@
 
 #define INPUT_PAUSE SDLK_SPACE
 
+#define INPUT_LOG SDLK_l
+#define INPUT_FRAME SDLK_f
 #define SHOW_DEBUG true
 
 using namespace std;
@@ -46,9 +48,10 @@ class NES {
         ROM rom;
 
         bool quit;
-        bool paused;
         int FPS;
 
+        bool paused;
+        bool run_frame;
         bool debug_log;
 
         const uint8_t* key_state;
