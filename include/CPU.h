@@ -163,22 +163,23 @@ class CPU {
 
         // Operations: Can be 1, 2, or 3 bytes long.
         // First byte is always the opcode, the rest are arguments.
-        bool ADC(); bool AND(); bool ASL(); bool BCC(); bool BCS(); bool BEQ(); bool BIT(); bool BMI();
-        bool BNE(); bool BPL(); bool BRK(); bool BVC(); bool BVS(); bool CLC(); bool CLD(); bool CLI();
-        bool CLV(); bool CMP(); bool CPX(); bool CPY(); bool DEC(); bool DEX(); bool DEY(); bool EOR();
-        bool INC(); bool INX(); bool INY(); bool JMP(); bool JSR(); bool LDA(); bool LDX(); bool LDY();
-        bool LSR(); bool NOP(); bool ORA(); bool PHA(); bool PHP(); bool PLA(); bool PLP(); bool ROL();
-        bool ROR(); bool RTI(); bool RTS(); bool SBC(); bool SEC(); bool SED(); bool SEI(); bool STA();
-        bool STX(); bool STY(); bool TAX(); bool TAY(); bool TSX(); bool TXA(); bool TXS(); bool TYA();
-        bool UNK(); // For unknown opcodes.
+        void ADC(); void AND(); void ASL(); void BCC(); void BCS(); void BEQ(); void BIT(); void BMI();
+        void BNE(); void BPL(); void BRK(); void BVC(); void BVS(); void CLC(); void CLD(); void CLI();
+        void CLV(); void CMP(); void CPX(); void CPY(); void DEC(); void DEX(); void DEY(); void EOR();
+        void INC(); void INX(); void INY(); void JMP(); void JSR(); void LDA(); void LDX(); void LDY();
+        void LSR(); void NOP(); void ORA(); void PHA(); void PHP(); void PLA(); void PLP(); void ROL();
+        void ROR(); void RTI(); void RTS(); void SBC(); void SEC(); void SED(); void SEI(); void STA();
+        void STX(); void STY(); void TAX(); void TAY(); void TSX(); void TXA(); void TXS(); void TYA();
+        void UNK(); // For unknown opcodes.
 
         // Illegal opcode operations.
-        bool SRE(); bool ISC(); bool LAX(); bool SAX(); bool DCP(); bool SLO(); bool RLA(); bool RRA();
+        void SRE(); void ISC(); void LAX(); void SAX(); void DCP(); void SLO(); void RLA(); void RRA();
+        void ANC(); void ALR(); void ARR(); void AXS();
 
         // Helper functions.
-        bool checkBranch(bool flag);
-        bool pushPCToStack();
-        bool pushStatusToStack(bool is_instruction);
+        void checkBranch(bool flag);
+        void pushPCToStack();
+        void pushStatusToStack(bool is_instruction);
 
         bool readAddress();
 
@@ -190,7 +191,7 @@ class CPU {
 struct instruction {
     uint8_t opcode;
     char opname[4];
-    bool (CPU::*opFunction)(void);
+    void (CPU::*opFunction)(void);
     enum addressing_mode opmode;
     uint8_t opcycles;
     bool extra_cycle;
