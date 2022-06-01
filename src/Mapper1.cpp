@@ -2,7 +2,7 @@
 
 
 
-// TODO: CONTINUE MAPPER 1, NOT FINISHED YET!
+
 
 Mapper1::Mapper1(uint8_t nPRG, uint8_t nCHR) {
     // Constructor
