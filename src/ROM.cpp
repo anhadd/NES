@@ -11,6 +11,7 @@ ROM::ROM() {
     fill(begin(PRG_memory), end(PRG_memory), 0);
     fill(begin(PRG_ram), end(PRG_ram), 0);
     fill(begin(CHR_memory), end(CHR_memory), 0);
+    fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 }
 
 
@@ -82,6 +83,7 @@ bool ROM::loadRom(char* romName) {
 
     // TODO: Check if PRG RAM is really always necessary.
     PRG_ram.resize(0x2000);
+    Expansion_ROM.resize(0x1FE0);
 
     mapper_id = (h.f7.mapper_upper << 4) | (h.f6.mapper_lower);
     switch(mapper_id) {
