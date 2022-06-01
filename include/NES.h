@@ -49,6 +49,8 @@ class NES {
         bool paused;
         int FPS;
 
+        bool debug_log;
+
         const uint8_t* key_state;
 
         NES();

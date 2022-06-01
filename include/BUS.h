@@ -21,6 +21,8 @@ class BUS {
         uint8_t oam_data;               // The current byte to transfer to OAM.
         bool oam_writing;               // Set when data is being transfered to OAM.
         bool cpu_synchronized;          // Set when the CPU is synchronized to start transferring OAM data.
+
+        bool debug_log;
         
         BUS();                          // Constructor.
         ~BUS();                         // Destructor.
