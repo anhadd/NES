@@ -217,7 +217,8 @@ bool CPU::readAddress() {
             absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 1;
             break;
-        case IZY: // A little like Indirect_Y.
+        case IZY: 
+            // Can also be called Indirect_Y.
             // Take 1 byte, and take the address from there (with wraparound). Finally add Y.
             indirect_address = cpuRead(PC);
             byte1 = cpuRead(indirect_address % ZERO_PAGE_SIZE);
@@ -393,8 +394,7 @@ void CPU::BRK() {
     PC = (cpuRead(0xFFFF) << 8) | cpuRead(0xFFFE);
 }
 
-void CPU::
-() {
+void CPU::BVC() {
     checkBranch(!status.overflow);
 }
 
@@ -690,12 +690,12 @@ void CPU::RTS() {
 void CPU::SBC() {
     // cpuWrite(absolute_address, cpuRead(absolute_address) ^ 0xFF);
     // ADD();
-    uint8_t inverted = cpuRead(absolute_address) ^ 0xFF;
-    temp = (uint16_t)accumulator + (uint16_t)inverted + (uint16_t)status.carry;
+    read_data = cpuRead(absolute_address) ^ 0xFF;
+    temp = (uint16_t)accumulator + (uint16_t)read_data + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    // status.overflow =   ((accumulator & NEGATIVE_MASK) && (inverted & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
-    //                 || (!(accumulator & NEGATIVE_MASK) && !(inverted & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
+    // status.overflow =   ((accumulator & NEGATIVE_MASK) && (read_data & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
+    //                 || (!(accumulator & NEGATIVE_MASK) && !(read_data & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
     status.overflow =   ((accumulator & NEGATIVE_MASK) == (read_data & NEGATIVE_MASK))
                         && ((temp & NEGATIVE_MASK) != (read_data & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
