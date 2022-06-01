@@ -41,6 +41,9 @@ void handleInput(NES &nes) {
                     }
                     break;
                 case INPUT_SLOW:
+                    // fprintf(stderr, "\n\n       !!! MARKER !!!          \n\n\n");
+                    // nes.debug_log = !nes.debug_log;
+                    // nes.bus.debug_log = !nes.bus.debug_log;
                     if (nes.FPS > 10) {
                         nes.FPS -= 10;
                     }

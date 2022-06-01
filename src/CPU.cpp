@@ -65,7 +65,9 @@ void CPU::reset() {
     opcode = 0x00;
 
     status.full |= INTERRUPT_DISABLED_MASK;
-    SP -= 3;
+    decrementSP();
+    decrementSP();
+    decrementSP();
 
     // accumulator = 0;
     // X = 0;
@@ -76,8 +78,6 @@ void CPU::reset() {
     relative_offset = 0x00;
     total_cycles = 0;
 
-    // PC = 0xC000; // For running nestest.
-    // fprintf(stderr, "CPU STARTING ADDR: %02x %02x\n", cpuRead(0xFFFD), cpuRead(0xFFFC));
     PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
 
     cycles = 7;
@@ -195,14 +195,14 @@ bool CPU::readAddress() {
             indirect_address = (byte2 << 8) | (byte1);
             // A bug in the NES causes the +1 to not move to the next page when the lower byte is 0x00FF.
             // TODO: CHECK IF THIS BUG PART IS CORRECT (for NEStress it is wrong, but might just be outdated test).
-            if (byte1 == 0x00FF) {
-                byte1 = cpuRead(indirect_address);
-                byte2 = cpuRead(indirect_address & 0xFF00);
-            }
-            else {
+            // if (byte1 == 0x00FF) {
+            //     byte1 = cpuRead(indirect_address);
+            //     byte2 = cpuRead(indirect_address & 0xFF00);
+            // }
+            // else {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address + 1);
-            }
+            // }
             absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
             PC += 2;
             break;
@@ -325,7 +325,6 @@ bool CPU::ADC() {
 }
 
 bool CPU::AND() {
-    // fprintf(stderr, "AND ABS ADDR: %04x\n", absolute_address);
     accumulator &= cpuRead(absolute_address);
     
     status.zero =       accumulator == 0;
@@ -336,21 +335,16 @@ bool CPU::AND() {
 bool CPU::ASL() {
     if (mode == ACC) {
         temp = (uint16_t)accumulator << 1;
+        accumulator = temp & 0x00FF;
     }
     else {
         temp = (uint16_t)cpuRead(absolute_address) << 1;
+        cpuWrite(absolute_address, temp & 0x00FF);
     }
     
     status.carry =      temp > 0xFF;
     status.zero =       (temp & 0x00FF) == 0;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
-
-    if (mode == ACC) {
-        accumulator = temp & 0x00FF;
-    }
-    else {
-        cpuWrite(absolute_address, temp & 0x00FF);
-    }
     return 0;
 }
 
@@ -402,7 +396,6 @@ bool CPU::BRK() {
     // TODO: CHECK IF THIS PC +=1 AND -=1 IS CORRECT
     PC += 1;
     pushPCToStack();
-    PC -= 1;
 
     pushStatusToStack(true);
     status.interrupt_disabled = 1;
@@ -737,6 +730,8 @@ bool CPU::RTS() {
 }
 
 bool CPU::SBC() {
+    // cpuWrite(absolute_address, cpuRead(absolute_address) ^ 0xFF);
+    // ADD();
     uint8_t inverted = cpuRead(absolute_address) ^ 0xFF;
     temp = (uint16_t)accumulator + (uint16_t)inverted + (uint16_t)status.carry;
     

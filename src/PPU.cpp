@@ -231,7 +231,6 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
     else {
         address &= 0x001F;
-        // fprintf(stderr, "READ PALETTE: %04x\n", address);
 
         // if (ppu_mask.showbg || ppu_mask.showsprites) {
         //     if (address == 0x0010 | address == 0x0014 | address == 0x0018 | address == 0x001C) {
@@ -443,7 +442,6 @@ void PPU::showPatterntablePixel() {
                         pattern_id = ppuRead(0x2000 + (i*32 + j));
                         pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
                     }
-                    // fprintf(stderr, "%02x ", pattern_id);
 
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
@@ -458,9 +456,7 @@ void PPU::showPatterntablePixel() {
                         }
                     }
                 }
-                // fprintf(stderr, "\n");
             }
-            // fprintf(stderr, "\n\n\n");
             SDL_BlitScaled(gui->pattern_surface_buff, NULL, gui->pattern_surface, &gui->scaled_pattern_rect);
             SDL_UpdateWindowSurface(gui->pattern_window);
             SDL_BlitScaled(gui->palette_surface_buff, NULL, gui->palette_surface, &gui->scaled_palette_rect);
@@ -524,7 +520,7 @@ bool PPU::executeCycle() {
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
-        else if (scanlines == 0 && cycles == 0 && odd_frame) { // TODO:  && (ppu_mask.showbg || ppu_mask.showsprites) CAUSES BM TO FREEZE ON TITLESCREEN, CHECK WHY
+        else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
             cycles += 1;
         }
 
