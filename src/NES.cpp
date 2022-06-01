@@ -15,6 +15,7 @@ NES::NES() {
 
     quit = false;
     paused = false;
+    run_frame = false;
     FPS = 60;
 
     debug_log = false;
@@ -57,31 +58,24 @@ void NES::executeFrame() {
         ppu.executeCycle();
         
         if (!bus.oam_writing) {
-            // if (cpu.cycles == 0 && debug_log) {
-                // fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
-                //         cpu.PC, 
-                //         cpu.cpuRead(cpu.PC), 
-                //         cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
-                //         cpu.cpuRead(cpu.PC + 1),
-                //         cpu.cpuRead(cpu.PC + 2),
-                //         cpu.accumulator, 
-                //         cpu.X, 
-                //         cpu.Y, 
-                //         cpu.status.full,
-                //         cpu.SP, 
-                //         ppu.scanlines, 
-                //         ppu.cycles - 1
-                //         // cpu.total_cycles
-                //         );
-            // }
-            // TODO: BM FREEZES ON TITLE SCREEN IF CALLING NMI IS PUT HERE, CHECK WHY AND WHETHER TO FIX THAT
-            // if (cpu.cycles == 0 && ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE IN HERE, OR WHETHER IT EVEN MATTERS.
-            //     ppu.signal_nmi = false;
-            //     cpu.NMI();
-            // }
-            // else {
-                cpu.executeCycle();
-            // }
+            if (cpu.cycles == 0 && debug_log) {
+                fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
+                        cpu.PC, 
+                        cpu.cpuRead(cpu.PC), 
+                        cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
+                        cpu.cpuRead(cpu.PC + 1),
+                        cpu.cpuRead(cpu.PC + 2),
+                        cpu.accumulator, 
+                        cpu.X, 
+                        cpu.Y, 
+                        cpu.status.full,
+                        cpu.SP, 
+                        ppu.scanlines, 
+                        ppu.cycles - 1
+                        // cpu.total_cycles
+                        );
+            }
+            cpu.executeCycle();
         }
         else {
             if (bus.cpu_synchronized) {
@@ -89,7 +83,7 @@ void NES::executeFrame() {
                     bus.oam_data = bus.busReadCPU((bus.oam_page << 8) | bus.oam_index);
                 }
                 else {
-                    ppu.OAM[bus.oam_index] = bus.oam_data;
+                    ppu.writeRegister(OAM_DATA, bus.oam_data);
                     if (bus.oam_index == 0xFF) {
                         bus.oam_page = 0x00;
                         bus.oam_data = 0x00;
@@ -109,8 +103,7 @@ void NES::executeFrame() {
             }
         }
 
-        // TODO: BM STILL FREEZES ON TITLE SCREEN WITH NMI CALLED HERE, SO CHECK HOW TO FIX THAT
-        if (cpu.cycles == 0 && ppu.signal_nmi) { // TODO: CHECK WHERE NMI SHOULD BE CALLED, OR WHETHER IT EVEN MATTERS.
+        if (cpu.cycles == 0 && ppu.signal_nmi) {
             ppu.signal_nmi = false;
             cpu.NMI();
         }
