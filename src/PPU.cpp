@@ -303,7 +303,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case OAM_DATA:
-            return OAM[oam_addr];
+            return OAM[oam_addr & 0xFF];
         case SCROLL:
         case PPU_ADDR:
             // No reading allowed.
@@ -352,7 +352,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             oam_addr = value;
             break;
         case OAM_DATA:
-            OAM[oam_addr] = value;
+            OAM[oam_addr & 0xFF] = value;
             oam_addr += 1;
             break;
         case SCROLL:
@@ -374,12 +374,12 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             if (address_latch) {
                 // Write to low bytes.
                 ppu_buff.full = (ppu_buff.full & 0xFF00) | value;
-                ppu_addr.full = ppu_buff.full; // TODO: Check if this is necessary:  & 0x3FFF
+                ppu_addr.full = ppu_buff.full;
                 address_latch = false;
             }
             else {
                 // Write to high bytes.
-                ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8);
+                ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8); // TODO: Check if this is necessary:  & 0x3FFF
                 // ppu_buff.full &= 0x3FFF;
                 address_latch = true;
             }
