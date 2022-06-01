@@ -8,10 +8,10 @@ ROM::ROM() {
     mapper = nullptr;
     mapper_id = 0;
 
-    fill(begin(PRG_memory), end(PRG_memory), 0);
-    fill(begin(PRG_ram), end(PRG_ram), 0);
-    fill(begin(CHR_memory), end(CHR_memory), 0);
-    fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
+    // fill(begin(PRG_memory), end(PRG_memory), 0);
+    // fill(begin(PRG_ram), end(PRG_ram), 0);
+    // fill(begin(CHR_memory), end(CHR_memory), 0);
+    // fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 }
 
 
@@ -53,9 +53,9 @@ bool ROM::loadRom(char* romName) {
 
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
-    // TODO: Check what to do with the trainer, right now it is just skipped.
+    // Trainer data is skipped.
     if (h.f6.trainer_present) {
-        // TODO: Check if this doesnt jump too far (because of strating at 0x10)
+        printf("WARNING: Mapper in ROM file!\n");
         romFile.ignore(TRAINER_SIZE);
     }
     
@@ -84,6 +84,8 @@ bool ROM::loadRom(char* romName) {
     // TODO: Check if PRG RAM is really always necessary.
     PRG_ram.resize(0x2000);
     Expansion_ROM.resize(0x1FE0);
+    fill(begin(PRG_ram), end(PRG_ram), 0);
+    fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 
     mapper_id = (h.f7.mapper_upper << 4) | (h.f6.mapper_lower);
     switch(mapper_id) {
@@ -104,7 +106,7 @@ bool ROM::loadRom(char* romName) {
             mapper = new Mapper3(h.prg_rom_size, h.chr_rom_size);
             break;
         default:
-            printf("Unsupported Mapper!\n");
+            printf("Error: Unsupported Mapper %u\n", mapper_id);
             exit(0);
     }
 
