@@ -22,7 +22,7 @@ Mapper3::~Mapper3() {
 
 uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
-        chr_bank0 = value;
+        chr_bank0 = value & 0x03;
         return address;
     }
     else {
