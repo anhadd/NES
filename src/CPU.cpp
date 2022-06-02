@@ -2,21 +2,7 @@
 
 
 
-// TODO: CHECK IF SOME ROMS DONT WORK BECAUSE OF THE CPU!
-    // SEE IF THE BROKEN ROMS USE SOME INSTRUCTION THAT BREAKS LOADING THE SCREEN.
-    // CPU MIGHT NOT BE COMPLETELY PERFECT ! TRY TO PASS THE TESTS.
 
-// TODO: CHECK ALL MEMORY RELATED STUFF (CHR, PRG, WRITE, READ ETC.) !!! (ENCOUNTERED SEG FAULT AND TESTS SEEM TO POINTING TO IT BEING WRONG).
-
-// TODO: RUN ROMS AND PAUSE THEM, THEN CHECK THE LOG FOR WHERE THEY GOT STUCK.
-
-// TODO: MOST ERRORS IN ROMS SEEM TO BE RELATED TO NMI TIMINGS / CPU+PPU SYNCHRONIZATION (?).
-    // GO THROUGH TIMING TESTS AND CHEKC THE TIMING DIAGRAMS.
-
-// TODO: CONTINUE DEBUGGING!
-    // RUN THE PROGRAM, PAUSE IT, TURN ON LOGS, RUN FRAMES UNTIL A TEST IS DONE, CHECK LOGS
-
-// TODO: CHECK INVALID OPCODE WHEN UNPAUSING CV
 CPU::CPU() {
     status.full = 0x00 | UNUSED_MASK | BREAK_COMMAND_MASK | INTERRUPT_DISABLED_MASK;
     PC = 0x0000;
@@ -125,10 +111,7 @@ bool CPU::executeCycle() {
             -> call opcode function.
         */
         opcode = cpuRead(PC);
-
-        // Prints debug logging information.
-        // fprintf(stderr, "%04x  %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x CYC:%u\n", PC, opcode, accumulator, X, Y, status.full, SP, total_cycles);
-
+        
         PC += 1;
         mode = op_lookup[opcode].opmode;
         cycles = op_lookup[opcode].opcycles;
@@ -207,7 +190,6 @@ bool CPU::readAddress() {
             byte2 = cpuRead(PC + 1);
             indirect_address = (byte2 << 8) | (byte1);
             // A bug in the NES causes the +1 to not move to the next page when the lower byte is 0x00FF.
-            // TODO: CHECK IF THIS BUG PART IS CORRECT (for NEStress it is wrong, but might just be outdated test).
             if (byte1 == 0x00FF) {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address & 0xFF00);
@@ -441,7 +423,7 @@ void CPU::CPX() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)X - (uint16_t)read_data;
 
-    status.carry =      X >= read_data; //TODO: maybe wrong.
+    status.carry =      X >= read_data;
     status.zero =       X == read_data;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
@@ -450,7 +432,7 @@ void CPU::CPY() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)Y - (uint16_t)read_data;
 
-    status.carry =      Y >= read_data; //TODO: maybe wrong.
+    status.carry =      Y >= read_data;
     status.zero =       Y == read_data;
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
