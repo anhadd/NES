@@ -208,14 +208,14 @@ bool CPU::readAddress() {
             indirect_address = (byte2 << 8) | (byte1);
             // A bug in the NES causes the +1 to not move to the next page when the lower byte is 0x00FF.
             // TODO: CHECK IF THIS BUG PART IS CORRECT (for NEStress it is wrong, but might just be outdated test).
-            // if (byte1 == 0x00FF) {
-            //     byte1 = cpuRead(indirect_address);
-            //     byte2 = cpuRead(indirect_address & 0xFF00);
-            // }
-            // else {
+            if (byte1 == 0x00FF) {
+                byte1 = cpuRead(indirect_address);
+                byte2 = cpuRead(indirect_address & 0xFF00);
+            }
+            else {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address + 1);
-            // }
+            }
             absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 2;
             break;
