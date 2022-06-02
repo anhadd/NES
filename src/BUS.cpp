@@ -46,9 +46,6 @@ void BUS::passROM(ROM* nesROM) {
 // CPU reading from the BUS.
 uint8_t BUS::busReadCPU(uint16_t address) {
     if (address >= 0x0000 && address <= 0x1FFF) {
-        // if (debug_log) {
-        //     fprintf(stderr, "RAM READ : %04x        %02x\n", address & 0x07FF, memory[address & 0x07FF]);
-        // }
         return memory[address & 0x07FF];
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
@@ -82,9 +79,6 @@ uint8_t BUS::busReadCPU(uint16_t address) {
 // CPU writing to the BUS.
 uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     if (address >= 0x0000 && address <= 0x1FFF) {
-        // if (debug_log) {
-        //     fprintf(stderr, "RAM WRITE: %04x        %02x\n", address & 0x07FF, value);
-        // }
         memory[address & 0x07FF] = value;
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
