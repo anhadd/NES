@@ -55,7 +55,7 @@ bool ROM::loadRom(char* romName) {
 
     // Trainer data is skipped.
     if (h.f6.trainer_present) {
-        printf("WARNING: Mapper in ROM file!\n");
+        printf("Mapper found in ROM file, skipped.\n");
         romFile.ignore(TRAINER_SIZE);
     }
     
@@ -110,6 +110,7 @@ bool ROM::loadRom(char* romName) {
             exit(0);
     }
 
+    printf("PRG BANKS: %u       CHR BANKS: %u\n", mapper->PRG_banks, mapper->CHR_banks);
     romFile.close();
     return 0;
 }
