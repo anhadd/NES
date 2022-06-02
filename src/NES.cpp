@@ -53,6 +53,7 @@ void NES::reset() {
 
 void NES::executeFrame() {
     while (!ppu.finished) {
+        // Prints debug log information.
         if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
                 fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
                         cpu.PC, 
