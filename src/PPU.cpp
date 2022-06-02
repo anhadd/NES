@@ -40,7 +40,7 @@ PPU::PPU() {
     fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
     fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
 
-    sprite_zero = false;
+    sprite_zero_rendering = false;
 
     data_read_buffer = 0x00;
     curr_palette = 0x00;
@@ -150,16 +150,11 @@ void PPU::reset() {
 
     ppu_ctrl.full = 0x00;
     ppu_mask.full = 0x00;
-    // ppu_status.full = 0x00;
-    // oam_addr = 0x00;
     oam_data = 0x00;
     ppu_scroll = 0x00;
 
-    // ppu_addr.full = 0x0000;
     ppu_buff.full = 0x0000;
     fine_x = 0x00;
-
-    // ppu_data = 0x00;
 
     memset(sprite_OAM, 0, sizeof(sprite_OAM));
     memset(sprite_secondary_OAM, 0, sizeof(sprite_secondary_OAM));
@@ -187,14 +182,17 @@ void PPU::reset() {
     }
 }
 
+// Pass the GUI to the current PPU.
 void PPU::passGUI(GUI* nesGUI) {
     gui = nesGUI;
 }
 
+// Pass the ROM to the current PPU.
 void PPU::passROM(ROM* nesROM) {
     rom = nesROM;
 }
 
+// Increment the PPU address register depending on the increment mode.
 void PPU::incrementPPUAddr() {
     if (ppu_ctrl.ppu_increment) {
         ppu_addr.full += 32;
@@ -204,12 +202,16 @@ void PPU::incrementPPUAddr() {
     }
 }
 
+// Read from the PPU memory (which can also be on the ROM).
 uint8_t PPU::ppuRead(uint16_t address) {
+    // Limit the address to the allowed range.
     address &= 0x3FFF;
 
+    // If the address is between 0x0000 and 0x1FFF the data is from CHR_memory (pattern tables).
     if (address <= 0x1FFF) {
         return rom->CHR_memory[rom->mapper->ppuMap(address, false)];
     }
+    // If the address if between 0x2000 and 0x3EFF the data is from nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
         if (vertical_mirorring) {
@@ -229,6 +231,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
             }
         }
     }
+    // If the address is between 0x3F00 and 0x3FFF the data is from the palette memory.
     else {
         address &= 0x001F;
 
@@ -246,15 +249,30 @@ uint8_t PPU::ppuRead(uint16_t address) {
     }
 }
 
+// Write to the PPU memory (which can also be on the ROM).
 uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
+    // Limit the address to the allowed range.
     address &= 0x3FFF;
 
-    // TODO: WRITE TO PPU WRONG WHEN RUNNING NESTEST INDIRECT Y
+    // If the address is between 0x0000 and 0x1FFF the data is for CHR_memory (pattern tables).
     if (address <= 0x1FFF) {
         rom->CHR_memory[rom->mapper->ppuMap(address, true, value)] = value;
     }
+    // If the address if between 0x2000 and 0x3EFF the data is for nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
+        /*  Select the correct nametable depending on the mirroring:
+                     H
+            |--------|--------|
+            |-- 01 --|-- 02 --|
+            |--------|--------|
+            |=================|-V
+            |--------|--------|
+            |-- 03 --|-- 04 --|
+            |--------|--------|
+            If the mirroring is horizontal, 01==02 and 03==04
+            If the mirroring is vertical,   01==03 and 02==04
+        */
         if (vertical_mirorring) {
             if ((address >= 0x0000 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
                 ppu_nametable[0][address & 0x03FF] = value;
@@ -272,6 +290,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             }
         }
     }
+    // If the address is between 0x3F00 and 0x3FFF the data is for the palette memory.
     else {
         address &= 0x001F;
 
@@ -286,6 +305,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     return 0;
 }
 
+// Read from the PPU registers (Used by the CPU).
 uint8_t PPU::readRegister(uint16_t address) {
     uint16_t real_address = 0x2000 + (address & 0x0007);
     uint8_t temp;
@@ -327,6 +347,7 @@ uint8_t PPU::readRegister(uint16_t address) {
     return bus_value;
 }
 
+// Write to the PPU registers (Used by the CPU).
 uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
     uint16_t real_address = 0x2000 + (address & 0x0007);
     uint8_t temp_nmi = 0x00;
@@ -392,10 +413,12 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
     return 0;
 }
 
+// Get the index of a color in the palette lookup table.
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
     return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
 }
 
+// Draw a single pixel on the screen.
 void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
 
@@ -409,9 +432,9 @@ void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint1
                 | curr_color.b;
 }
 
-void PPU::showPatterntablePixel() {
-    // For debugging only.
-    
+// Draw pixels on the debug windows (pattern tables / palette / nametables).
+void PPU::drawDebugPixels() {
+    // Used for debugging only.
     if (total_frames % 30 == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
@@ -467,6 +490,7 @@ void PPU::showPatterntablePixel() {
     }
 }
 
+// Load data into the shifter registers.
 void PPU::loadShifters() {
     if (ppu_mask.showbg) {
         bg_shifter_high = (bg_shifter_high & 0xFF00) | bg_high;
@@ -477,6 +501,7 @@ void PPU::loadShifters() {
     }
 }
 
+// Sift the shifter registers 1 bit.
 void PPU::updateShifters() {
     if (ppu_mask.showbg) {
         bg_shifter_high <<= 1;
@@ -495,6 +520,7 @@ void PPU::updateShifters() {
     }
 }
 
+// Flip a bit around, used for flipping sprites horizontally.
 uint8_t PPU::flipByte(uint8_t byte) {
     byte = (byte & 0b11110000) >> 4 | (byte & 0b00001111) << 4;
     byte = (byte & 0b11001100) >> 2 | (byte & 0b00110011) << 2;
@@ -502,8 +528,8 @@ uint8_t PPU::flipByte(uint8_t byte) {
     return byte;
 }
 
+// Executes a single ppu cycle.
 bool PPU::executeCycle() {
-    // Execute a single cycle.
     /*  
         - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
             each PPU frame is 341*262=89342 PPU clocks long. There is no skipped clock every other frame.
@@ -512,31 +538,41 @@ bool PPU::executeCycle() {
         - The PPU renders 262 scanlines per frame. Each scanline lasts for 341 PPU clock cycles
         - Cycles and scanlines go off screen (> width and height) because the remainder is the V-blank period.
         - During V-blank is usually when stuff is updated, because it is not visible.
+        (from: https://www.nesdev.org/wiki/PPU_frame_timing)
+
+        There are a lot of numbers here, but it pretty much follows the diagram of how the PPU does stuff that can be found here:
+            https://www.nesdev.org/wiki/File:Ntsc_timing.png
     */
 
+    // If the scanline (y) is for prerendering or visible.
     if (scanlines >= -1 && scanlines <= 239) {
+        // Reset statuses at the start of every frame.
         if (scanlines == -1 && cycles == 1) {
             ppu_status.v_blank = 0;
             ppu_status.sprite_overflow = 0;
             ppu_status.sprite_zerohit = 0;
         }
+        // Skip a cycle at the start of every odd frame.
         else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
             cycles += 1;
         }
 
+        // If the cycle (x) is visible.
         if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
             uint16_t byte_addr = 0x0000;
-
+            // Update the shifter registers.
             updateShifters();
 
             switch ((cycles - 1) % 8) {
                 case 0:
+                    // Load new data into the shifter registers.
                     loadShifters();
+                    // Get the tile from the nametable that needs to be rendered.
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
                     /*  Gets the attribute byte.
-                        The attribute byte is then split into 4 parts: 04 03 02 01
+                        The attribute byte is split into 4 parts: 04 03 02 01
                         Each part corresponds to one quarter of the tile in the following way:
                             |--------|--------|
                             |-- 01 --|-- 02 --|
@@ -552,6 +588,7 @@ bool PPU::executeCycle() {
                             + ((ppu_addr.coarse_y / 4) * 0x08)
                             + (ppu_addr.coarse_x / 4);
                     bg_attribute = ppuRead(byte_addr);
+                    // Shifts the attribute byte to get the palette of the correct quarter of the tile.
                     if ((ppu_addr.coarse_y % 4) >= 2) {
                         // Top half of attribute 2x2 tile.
                         // Shifts the bg_attribute 4 bits to the right to get there.
@@ -565,12 +602,14 @@ bool PPU::executeCycle() {
                     bg_attribute &= 0x03;
                     break;
                 case 4:
+                    // Load data of the low byte of a tile.
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y;
                     bg_low = ppuRead(byte_addr);
                     break;
                 case 6:
+                    // Load data of the high byte of a tile.
                     byte_addr = (ppu_ctrl.bgr_addr * 0x1000)
                             + (bg_nametable * 0x10)
                             + ppu_addr.fine_y 
@@ -578,7 +617,9 @@ bool PPU::executeCycle() {
                     bg_high = ppuRead(byte_addr);
                     break;
                 case 7:
+                    // Increment the x tile every 8 cycles (since a tile is 8 pixels wide).
                     if (ppu_mask.showbg || ppu_mask.showsprites) {
+                        // Move to the next nametable if the x tile goes above 31 (a nametable is 32 tiles wide).
                         if (ppu_addr.coarse_x == 31) {
                             ppu_addr.coarse_x = 0;
                             ppu_addr.nametable_x ^= 1;
@@ -590,11 +631,13 @@ bool PPU::executeCycle() {
                     break;
             }
         }
-        
+
+        // If the cycle (x) is at the end of a line of pixels, move to the next line (fine_y).
         if (cycles == 256) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 if (ppu_addr.fine_y == 7) {
                     ppu_addr.fine_y = 0;
+                    // If the y tile goes above 29 move to the next nametable (a nametable is 30 tiles high).
                     if (ppu_addr.coarse_y == 29) {
                         ppu_addr.coarse_y = 0;
                         ppu_addr.nametable_y ^= 1;
@@ -608,15 +651,18 @@ bool PPU::executeCycle() {
                 }
             }
         }
+        // At the 257th scanline load the x values of the buffered address data into the real ppu address register.
         else if (cycles == 257) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_x = ppu_buff.nametable_x;
 			    ppu_addr.coarse_x = ppu_buff.coarse_x;
             }
         }
+        // Unused reads done by the NES.
         else if (cycles == 337 || cycles == 339) {
             bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
         }
+        // On the cycles 280 to 304 of the prerender scanline, load the y values of the buffered address data into the real ppu address register.
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_y = ppu_buff.nametable_y;
@@ -642,7 +688,9 @@ bool PPU::executeCycle() {
 
             (from: https://www.nesdev.org/wiki/PPU_sprite_evaluation)
         */
+        // On every visible scanline.
         if (scanlines != -1) {
+            // If at the end of the visible row of pixels, check the sprites that are in the next row of pixels.
             if (cycles == 257 && (ppu_mask.showbg || ppu_mask.showsprites)) {
                 memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
 
@@ -650,14 +698,14 @@ bool PPU::executeCycle() {
                 fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
                 fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
 
-                sprite_zero = false;
+                sprite_zero_in_sOAM = false;
 
                 for (int i = 0; i < 64; i++) {
                     int16_t distance = scanlines - sprite_OAM[i].y;
                     if (distance >= 0 && distance < (8 + ppu_ctrl.sprite_size * 8)) {
                         if (secondary_OAM_index < 8) {
                             if (i == 0) {
-                                sprite_zero = true;
+                                sprite_zero_in_sOAM = true;
                             }
 
                             sprite_secondary_OAM[secondary_OAM_index] = sprite_OAM[i];
@@ -670,6 +718,7 @@ bool PPU::executeCycle() {
                     }
                 }
             }
+            // On the 321th cycle, load data for the next visible sprites into the sprite shifter registers.
             else if (cycles == 321) {
                 uint8_t sprite_low = 0x00;
                 uint8_t sprite_high = 0x00;
@@ -730,6 +779,7 @@ bool PPU::executeCycle() {
         }
     }
     
+    // At the end of the vivible part of a frame, set v_blank to true and signal an NMI if necessary.
     if (scanlines == 241 && cycles == 1) {
         ppu_status.v_blank = 1;
         if (ppu_ctrl.generate_nmi) {
@@ -738,7 +788,7 @@ bool PPU::executeCycle() {
     }
 
 
-
+    // Choose the correct color for every pixel by getting data from the shifter registers.
     uint8_t pixel = 0x00;
     uint8_t palette = 0x00;
     uint8_t sprite_behind_bg = 0x00;
@@ -758,11 +808,12 @@ bool PPU::executeCycle() {
 
         uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
         uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
-        // curr_palette allows the colors to be changed, but it is not necessary.
+        // Adding curr_palette allows the colors to be changed, but it is not necessary.
         palette = ((palette_high << 1) | palette_low) + curr_palette;
     }
 
     if (ppu_mask.showsprites) {
+        sprite_zero_rendering = false;
         for (int i = 0; i < secondary_OAM_index; i++) {
             if ((cycles - 1) >= sprite_secondary_OAM[i].x && (cycles - 1) < sprite_secondary_OAM[i].x + 8) {
                 uint16_t bit_mask = 0x80;
@@ -771,13 +822,13 @@ bool PPU::executeCycle() {
                 uint8_t pixel_high = (sprite_shifter_high[i] & bit_mask) != 0;
                 sprite_pixel = (pixel_high << 1) | pixel_low;
 
-                // curr_palette allows the colors to be changed, but it is not necessary.
+                // Adding curr_palette allows the colors to be changed, but it is not necessary.
                 sprite_palette = sprite_secondary_OAM[i].flags.palette + 0x04 + curr_palette;
                 sprite_behind_bg = sprite_secondary_OAM[i].flags.priority;
 
                 if (sprite_pixel != 0x00) {
-                    if (i != 0 && sprite_zero) {
-                        sprite_zero = false;
+                    if (i == 0) {
+                        sprite_zero_rendering = true;
                     }
                     break;
                 }
@@ -785,6 +836,7 @@ bool PPU::executeCycle() {
         }
     }
 
+    // Choose the background color or sprite color depending on which one should be in front.
     if (pixel == 0x00  && sprite_pixel > 0x00) {
         final_pixel = sprite_pixel;
         final_palette = sprite_palette;
@@ -803,35 +855,35 @@ bool PPU::executeCycle() {
             final_palette = sprite_palette;
         }
 
-        if (sprite_zero) {
-            if (ppu_mask.showbg && ppu_mask.showsprites) {
-                if (cycles >= 1 && cycles <= 255 && scanlines >= 0 && scanlines <= 239) {
-                    // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
-                    if (!(cycles < 9 && (!ppu_mask.showbg_left | !ppu_mask.showsprites_left))) {
-                        ppu_status.sprite_zerohit = 1;
-                    }
+        if (sprite_zero_in_sOAM && sprite_zero_rendering && (ppu_mask.showbg && ppu_mask.showsprites)) {
+            // Check if the current pixel is visible.
+            if (cycles >= 1 && cycles <= 255 && scanlines >= 0 && scanlines <= 239) {
+                // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
+                // This is done since rendering of the left part of the screen could be turned off.
+                if (!(cycles < 9 && (!ppu_mask.showbg_left | !ppu_mask.showsprites_left))) {
+                    ppu_status.sprite_zerohit = 1;
                 }
             }
         }
     }
 
-    // Shows only the visible onscreen pixels.
-    if (scanlines >= 0 && scanlines <= 240 && cycles >= 0 && cycles <= 256) {
+    // Draw only the visible onscreen pixels.
+    if (scanlines >= 0 && scanlines <= 240 && cycles >= 1 && cycles <= 256) {
         drawPixelOnSurface(gui->surface_buff, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
     }
+    // Draw the pixels on the debug windows if debugging is enabled.
     if (show_debug) {
-        showPatterntablePixel();
+        drawDebugPixels();
     }
     
+    // Increment the cycles, if the cycles is at the end of a scanline set it to 0 and increment the scanline.
+    // If the scanline is at the end the frame is done, so update the window and start the next frame.
     cycles += 1;
-
-    if (cycles >= MAX_COLUMNS)
-	{
+    if (cycles >= MAX_COLUMNS) {
 		cycles = 0;
-		
+
         scanlines += 1;
-		if (scanlines >= MAX_SCANLINES)
-		{
+		if (scanlines >= MAX_SCANLINES) {
 			scanlines = -1;
 			finished = true;
 

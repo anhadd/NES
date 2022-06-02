@@ -228,7 +228,8 @@ class PPU {
         uint8_t sprite_shifter_high[0x08];
         uint8_t sprite_shifter_low[0x08];
 
-        bool sprite_zero;
+        bool sprite_zero_in_sOAM;
+        bool sprite_zero_rendering;
 
         uint8_t data_read_buffer;
 
@@ -245,7 +246,7 @@ class PPU {
 
         uint16_t getColorIndex(uint8_t palette, uint8_t index);
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);
-        void showPatterntablePixel();
+        void drawDebugPixels();
 
         void loadShifters();
         void updateShifters();
