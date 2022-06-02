@@ -26,6 +26,8 @@ CPU::CPU() {
     X = 0;
     Y = 0;
 
+    execute_nmi = false;
+
     absolute_address = 0x0000;
 
     op_lookup = {
@@ -68,6 +70,7 @@ uint8_t CPU::cpuWrite(uint16_t address, uint8_t value) {
 
 void CPU::reset() {
     opcode = 0x00;
+    execute_nmi = false;
 
     status.full |= INTERRUPT_DISABLED_MASK;
     decrementSP();
@@ -108,7 +111,7 @@ void CPU::NMI() {
     status.interrupt_disabled = 1;
 
 	PC = (cpuRead(0xFFFB) << 8) | cpuRead(0xFFFA);
-	cycles = 8;
+	cycles = 8; // TODO: COULD BE 7?
 }
 
 bool CPU::executeCycle() {
@@ -119,7 +122,7 @@ bool CPU::executeCycle() {
             -> set addressing mode 
             -> set required cycles 
             -> call readaddress to get the absolute address 
-            -> call opcode function. 
+            -> call opcode function.
         */
         opcode = cpuRead(PC);
 
@@ -135,6 +138,11 @@ bool CPU::executeCycle() {
     }
     cycles -= 1;
     total_cycles += 1;
+
+    if (cycles == 0 && execute_nmi) {
+        NMI();
+        execute_nmi = false;
+    }
     return 0;
 }
 
@@ -208,7 +216,7 @@ bool CPU::readAddress() {
                 byte1 = cpuRead(indirect_address);
                 byte2 = cpuRead(indirect_address + 1);
             // }
-            absolute_address = (((uint16_t)byte2 << 8) | ((uint16_t)byte1)) + (uint16_t)Y;
+            absolute_address = ((uint16_t)byte2 << 8) | ((uint16_t)byte1);
             PC += 2;
             break;
         case IZX:

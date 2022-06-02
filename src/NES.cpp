@@ -53,12 +53,7 @@ void NES::reset() {
 
 void NES::executeFrame() {
     while (!ppu.finished) {
-        ppu.executeCycle();
-        ppu.executeCycle();
-        ppu.executeCycle();
-        
-        if (!bus.oam_writing) {
-            if (cpu.cycles == 0 && debug_log) {
+        if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
                 fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
                         cpu.PC, 
                         cpu.cpuRead(cpu.PC), 
@@ -71,9 +66,19 @@ void NES::executeFrame() {
                         cpu.status.full,
                         cpu.SP, 
                         ppu.scanlines, 
-                        ppu.cycles - 1
+                        ppu.cycles
                         // cpu.total_cycles
                         );
+        }
+
+        ppu.executeCycle();
+        ppu.executeCycle();
+        ppu.executeCycle();
+        
+        if (!bus.oam_writing) {
+            if (ppu.signal_nmi) {
+                cpu.execute_nmi = true;
+                ppu.signal_nmi = false;
             }
             cpu.executeCycle();
         }
@@ -101,11 +106,6 @@ void NES::executeFrame() {
                     bus.cpu_synchronized = true;
                 }
             }
-        }
-
-        if (cpu.cycles == 0 && ppu.signal_nmi) {
-            ppu.signal_nmi = false;
-            cpu.NMI();
         }
 
         total_cycles += 1;

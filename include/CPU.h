@@ -85,6 +85,8 @@ struct instruction;
 
 class CPU {
     public:
+        bool execute_nmi;
+
         void reset();               // Reset interrupt, on startup and when the reset button is pressed.
                                     // jumps to the address located at $FFFC and $FFFD
         void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
