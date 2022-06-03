@@ -664,8 +664,10 @@ void CPU::RTI() {
     status.full = cpuRead(SP + STACK_START) | UNUSED_MASK;
     
     incrementSP();
-    PC = (cpuRead((SP + 1) + STACK_START) << 8) | cpuRead(SP + STACK_START);
+    uint8_t byte1 = cpuRead(SP + STACK_START);
     incrementSP();
+    uint8_t byte2 = cpuRead(SP + STACK_START);
+    PC = (byte2 << 8) | byte1;
 }
 
 void CPU::RTS() {
@@ -673,9 +675,11 @@ void CPU::RTS() {
     cpuRead(PC);
 
     incrementSP();
-    PC = (cpuRead((SP + 1) + STACK_START) << 8) | cpuRead(SP + STACK_START);
-    PC += 1;
+    uint8_t byte1 = cpuRead(SP + STACK_START);
     incrementSP();
+    uint8_t byte2 = cpuRead(SP + STACK_START);
+    PC = (byte2 << 8) | byte1;
+    PC += 1;
 }
 
 void CPU::SBC() {
@@ -811,9 +815,10 @@ void CPU::RRA() {
 }
 
 void CPU::ANC() {
-    AND();
+    UNK();
+    // AND();
     // Copies bit 7 to the carry flag (like ASL happened).
-    status.carry =      (accumulator & NEGATIVE_MASK) != 0;
+    // status.carry =      (accumulator & NEGATIVE_MASK) != 0;
 }
 
 void CPU::ALR() {
