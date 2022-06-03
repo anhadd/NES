@@ -8,11 +8,22 @@
 
 using namespace std;
 
+enum Mirroring {
+    MIRROR_VERTICAL,
+    MIRROR_HORIZONTAL,
+    MIRROR_SINGLE_LOWER,
+    MIRROR_SINGLE_UPPER
+    // MIRROR_4_SCREEN
+};
+
 class Mapper {
     public:
         uint8_t id;
         uint8_t PRG_banks;
         uint8_t CHR_banks;
+
+        enum Mirroring mirroring;
+        bool prg_ram_enabled;
 
         Mapper(uint8_t nPRG = 0, uint8_t nCHR = 0);
         ~Mapper();

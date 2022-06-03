@@ -7,6 +7,8 @@ Mapper::Mapper(uint8_t nPRG, uint8_t nCHR) {
     id = 0;
     PRG_banks = nPRG;
     CHR_banks = nCHR;
+
+    mirroring = MIRROR_VERTICAL;
 }
 
 

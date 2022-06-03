@@ -22,8 +22,7 @@ using namespace std;
 // +----- CHR ROM bank mode (0: switch 8 KB at a time; 1: switch two separate 4 KB banks)
 union control_register {
     struct {
-        uint8_t mirroring0 : 1;
-        uint8_t mirroring1 : 1;
+        uint8_t mirroring : 2;
         uint8_t prg_split : 2;
         uint8_t chr_split : 1;
         uint8_t unused : 3;
@@ -50,8 +49,6 @@ class Mapper1 : public Mapper {
         uint8_t load_reg;
         uint8_t load_reg_index;
         union control_register ctrl_reg;
-
-        bool prg_ram_enabled;
 };
 
 

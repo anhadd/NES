@@ -20,7 +20,7 @@ Mapper1::Mapper1(uint8_t nPRG, uint8_t nCHR) {
     load_reg_index = 0;
     ctrl_reg.full = 0x0C;
 
-    prg_ram_enabled = false;
+    prg_ram_enabled = true;
 }
 
 
@@ -59,6 +59,21 @@ uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
                         case 0x8000:
                         case 0x9000:
                             ctrl_reg.full = load_reg & 0x1F;
+
+                            switch (ctrl_reg.mirroring) {
+                                case 0:	
+                                    mirroring = MIRROR_SINGLE_LOWER;
+                                    break;
+                                case 1: 
+                                    mirroring = MIRROR_SINGLE_UPPER;
+                                    break;
+                                case 2: 
+                                    mirroring = MIRROR_VERTICAL;
+                                    break;
+                                case 3:	
+                                    mirroring = MIRROR_HORIZONTAL;
+                                    break;
+                            }
                             break;
                         case 0xA000:
                         case 0xB000:
@@ -77,15 +92,20 @@ uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
                         case 0xE000:
                         case 0xF000:
                             if (ctrl_reg.prg_split <= 1) {
+                                // 32KB mode. Ignore the last bit.
                                 prg_bank0 = (load_reg & 0x0E) >> 1;
                             }
                             else if (ctrl_reg.prg_split == 2) {
+                                // 16KB mode. Fix 0 and switch 1.
+                                prg_bank0 = 0;
                                 prg_bank1 = load_reg & 0x0F;
                             }
                             else {
+                                // 16KB mode. Switch 0 and fix 1.
                                 prg_bank0 = load_reg & 0x0F;
+                                prg_bank1 = PRG_banks - 1;
                             }
-                            prg_ram_enabled = (load_reg & 0x10) != 0;
+                            prg_ram_enabled = (load_reg & 0x10) == 0;
                             break;
                     }
                     load_reg = 0x00;
@@ -119,22 +139,17 @@ uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
 
 
 uint32_t Mapper1::ppuMap(uint16_t address, bool write, uint8_t value) {
-    // if (write) {
-    //     return address & 0x1FFF;
-    // }
-    // else {
-        if (ctrl_reg.chr_split) {
-            // 2x 4KB switchable CHR.
-            if (address <= 0x0FFF) {
-                return chr_bank0 * 0x1000 + (address & 0x0FFF);
-            }
-            else {
-                return chr_bank1 * 0x1000 + (address & 0x0FFF);
-            }
+    if (ctrl_reg.chr_split) {
+        // 2x 4KB switchable CHR.
+        if (address <= 0x0FFF) {
+            return chr_bank0 * 0x1000 + (address & 0x0FFF);
         }
         else {
-            // 8KB switchable CHR.
-            return chr_bank0 * 0x2000 + (address & 0x1FFF);
+            return chr_bank1 * 0x1000 + (address & 0x0FFF);
         }
-    // }
+    }
+    else {
+        // 8KB switchable CHR.
+        return chr_bank0 * 0x2000 + (address & 0x1FFF);
+    }
 }
