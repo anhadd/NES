@@ -34,6 +34,11 @@ int main(int argc, char *argv[])
     }
     printf("Window Opened!\n");
 
+    if (argc < 2) {
+        printf("Usage: ./main [ROM FILE PATH]\n");
+        return 0;
+    }
+
     if (nes.initialize(argv[1]) != 0) {
         printf("Error: Could not open ROM file!\n");
         return 0;
