@@ -107,8 +107,8 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
         rom->PRG_ram[rom->mapper->cpuMap(address, true, value)] = value;
     }
     else if (address >= 0x8000 && address <= 0xFFFF) {
-        // TODO: Check if writing is not allowed for PRG memory.
-        rom->PRG_memory[rom->mapper->cpuMap(address, true, value)] = value;
+        // Writing to rom is not allowed, however starting a write could do stuff in the mapper.
+        rom->mapper->cpuMap(address, true, value);
     }
     return 0;
 }
