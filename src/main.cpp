@@ -52,6 +52,19 @@ int main(int argc, char *argv[])
         sleep_until(system_clock::from_time_t(next_frame_time));
     }
 
+    if (nes.rom.mapper->prg_ram_enabled) {
+        // Saving (works only for DW1 for now).
+        printf("Saving game...\n");
+        remove("saves/DW1_save.bin");
+        ofstream save_file("saves/DW1_save.bin", ios::out | ios::binary);
+        if (!save_file.is_open()) {
+            printf("Error: Could not save tha game: %s\n", strerror(errno));
+        }
+        ostream_iterator<uint8_t> file_iterator(save_file);
+        copy(nes.rom.PRG_ram.begin(), nes.rom.PRG_ram.end(), file_iterator);
+        save_file.close();
+    }
+
     SDL_Quit();
     printf("Finished!\n");
     return 0;
