@@ -27,9 +27,9 @@ CPU::CPU() {
 		{ 0x60, "RTS", &CPU::RTS, IMP, 6, 0 },{ 0x61, "ADC", &CPU::ADC, IZX, 6, 0 },{ 0x62, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0x63, "RRA", &CPU::RRA, IZX, 8, 0 },{ 0x64, "NOP", &CPU::NOP, ZPN, 3, 0 },{ 0x65, "ADC", &CPU::ADC, ZPN, 3, 0 },{ 0x66, "ROR", &CPU::ROR, ZPN, 5, 0 },{ 0x67, "RRA", &CPU::RRA, ZPN, 5, 0 },{ 0x68, "PLA", &CPU::PLA, IMP, 4, 0 },{ 0x69, "ADC", &CPU::ADC, IMM, 2, 0 },{ 0x6A, "ROR", &CPU::ROR, ACC, 2, 0 },{ 0x6B, "ARR", &CPU::ARR, IMM, 2, 0 },{ 0x6C, "JMP", &CPU::JMP, IND, 5, 0 },{ 0x6D, "ADC", &CPU::ADC, ABS, 4, 0 },{ 0x6E, "ROR", &CPU::ROR, ABS, 6, 0 },{ 0x6F, "RRA", &CPU::RRA, ABS, 6, 0 },
 		{ 0x70, "BVS", &CPU::BVS, REL, 2, 1 },{ 0x71, "ADC", &CPU::ADC, IZY, 5, 1 },{ 0x72, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0x73, "RRA", &CPU::RRA, IZY, 8, 0 },{ 0x74, "NOP", &CPU::NOP, ZPX, 4, 0 },{ 0x75, "ADC", &CPU::ADC, ZPX, 4, 0 },{ 0x76, "ROR", &CPU::ROR, ZPX, 6, 0 },{ 0x77, "RRA", &CPU::RRA, ZPX, 6, 0 },{ 0x78, "SEI", &CPU::SEI, IMP, 2, 0 },{ 0x79, "ADC", &CPU::ADC, ABY, 4, 1 },{ 0x7A, "NOP", &CPU::NOP, IMP, 2, 0 },{ 0x7B, "RRA", &CPU::RRA, ABY, 7, 0 },{ 0x7C, "NOP", &CPU::NOP, ABX, 4, 1 },{ 0x7D, "ADC", &CPU::ADC, ABX, 4, 1 },{ 0x7E, "ROR", &CPU::ROR, ABX, 7, 0 },{ 0x7F, "RRA", &CPU::RRA, ABX, 7, 0 },
 		{ 0x80, "NOP", &CPU::NOP, IMM, 2, 0 },{ 0x81, "STA", &CPU::STA, IZX, 6, 0 },{ 0x82, "NOP", &CPU::NOP, IMM, 2, 0 },{ 0x83, "SAX", &CPU::SAX, IZX, 6, 0 },{ 0x84, "STY", &CPU::STY, ZPN, 3, 0 },{ 0x85, "STA", &CPU::STA, ZPN, 3, 0 },{ 0x86, "STX", &CPU::STX, ZPN, 3, 0 },{ 0x87, "SAX", &CPU::SAX, ZPN, 3, 0 },{ 0x88, "DEY", &CPU::DEY, IMP, 2, 0 },{ 0x89, "NOP", &CPU::NOP, IMM, 2, 0 },{ 0x8A, "TXA", &CPU::TXA, IMP, 2, 0 },{ 0x8B, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0x8C, "STY", &CPU::STY, ABS, 4, 0 },{ 0x8D, "STA", &CPU::STA, ABS, 4, 0 },{ 0x8E, "STX", &CPU::STX, ABS, 4, 0 },{ 0x8F, "SAX", &CPU::SAX, ABS, 4, 0 },
-		{ 0x90, "BCC", &CPU::BCC, REL, 2, 1 },{ 0x91, "STA", &CPU::STA, IZY, 6, 0 },{ 0x92, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0x93, "UNK", &CPU::UNK, IMP, 6, 0 },{ 0x94, "STY", &CPU::STY, ZPX, 4, 0 },{ 0x95, "STA", &CPU::STA, ZPX, 4, 0 },{ 0x96, "STX", &CPU::STX, ZPY, 4, 0 },{ 0x97, "SAX", &CPU::SAX, ZPY, 4, 0 },{ 0x98, "TYA", &CPU::TYA, IMP, 2, 0 },{ 0x99, "STA", &CPU::STA, ABY, 5, 0 },{ 0x9A, "TXS", &CPU::TXS, IMP, 2, 0 },{ 0x9B, "UNK", &CPU::UNK, IMP, 5, 0 },{ 0x9C, "UNK", &CPU::UNK, IMP, 5, 0 },{ 0x9D, "STA", &CPU::STA, ABX, 5, 0 },{ 0x9E, "UNK", &CPU::UNK, IMP, 5, 0 },{ 0x9F, "UNK", &CPU::UNK, IMP, 5, 0 },
+		{ 0x90, "BCC", &CPU::BCC, REL, 2, 1 },{ 0x91, "STA", &CPU::STA, IZY, 6, 0 },{ 0x92, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0x93, "UNK", &CPU::UNK, IMP, 6, 0 },{ 0x94, "STY", &CPU::STY, ZPX, 4, 0 },{ 0x95, "STA", &CPU::STA, ZPX, 4, 0 },{ 0x96, "STX", &CPU::STX, ZPY, 4, 0 },{ 0x97, "SAX", &CPU::SAX, ZPY, 4, 0 },{ 0x98, "TYA", &CPU::TYA, IMP, 2, 0 },{ 0x99, "STA", &CPU::STA, ABY, 5, 0 },{ 0x9A, "TXS", &CPU::TXS, IMP, 2, 0 },{ 0x9B, "UNK", &CPU::UNK, IMP, 5, 0 },{ 0x9C, "SHY", &CPU::SHY, ABX, 5, 0 },{ 0x9D, "STA", &CPU::STA, ABX, 5, 0 },{ 0x9E, "SHX", &CPU::SHX, ABY, 5, 0 },{ 0x9F, "UNK", &CPU::UNK, IMP, 5, 0 },
 		{ 0xA0, "LDY", &CPU::LDY, IMM, 2, 0 },{ 0xA1, "LDA", &CPU::LDA, IZX, 6, 0 },{ 0xA2, "LDX", &CPU::LDX, IMM, 2, 0 },{ 0xA3, "LAX", &CPU::LAX, IZX, 6, 0 },{ 0xA4, "LDY", &CPU::LDY, ZPN, 3, 0 },{ 0xA5, "LDA", &CPU::LDA, ZPN, 3, 0 },{ 0xA6, "LDX", &CPU::LDX, ZPN, 3, 0 },{ 0xA7, "LAX", &CPU::LAX, ZPN, 3, 0 },{ 0xA8, "TAY", &CPU::TAY, IMP, 2, 0 },{ 0xA9, "LDA", &CPU::LDA, IMM, 2, 0 },{ 0xAA, "TAX", &CPU::TAX, IMP, 2, 0 },{ 0xAB, "LAX", &CPU::LAX, IMM, 2, 0 },{ 0xAC, "LDY", &CPU::LDY, ABS, 4, 0 },{ 0xAD, "LDA", &CPU::LDA, ABS, 4, 0 },{ 0xAE, "LDX", &CPU::LDX, ABS, 4, 0 },{ 0xAF, "LAX", &CPU::LAX, ABS, 4, 0 },
-		{ 0xB0, "BCS", &CPU::BCS, REL, 2, 1 },{ 0xB1, "LDA", &CPU::LDA, IZY, 5, 1 },{ 0xB2, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0xB3, "LAX", &CPU::LAX, IZY, 5, 1 },{ 0xB4, "LDY", &CPU::LDY, ZPX, 4, 0 },{ 0xB5, "LDA", &CPU::LDA, ZPX, 4, 0 },{ 0xB6, "LDX", &CPU::LDX, ZPY, 4, 0 },{ 0xB7, "LAX", &CPU::LAX, ZPY, 4, 0 },{ 0xB8, "CLV", &CPU::CLV, IMP, 2, 0 },{ 0xB9, "LDA", &CPU::LDA, ABY, 4, 1 },{ 0xBA, "TSX", &CPU::TSX, IMP, 2, 0 },{ 0xBB, "UNK", &CPU::UNK, IMP, 4, 1 },{ 0xBC, "LDY", &CPU::LDY, ABX, 4, 1 },{ 0xBD, "LDA", &CPU::LDA, ABX, 4, 1 },{ 0xBE, "LDX", &CPU::LDX, ABY, 4, 1 },{ 0xBF, "LAX", &CPU::LAX, ABY, 4, 1 },
+		{ 0xB0, "BCS", &CPU::BCS, REL, 2, 1 },{ 0xB1, "LDA", &CPU::LDA, IZY, 5, 1 },{ 0xB2, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0xB3, "LAX", &CPU::LAX, IZY, 5, 1 },{ 0xB4, "LDY", &CPU::LDY, ZPX, 4, 0 },{ 0xB5, "LDA", &CPU::LDA, ZPX, 4, 0 },{ 0xB6, "LDX", &CPU::LDX, ZPY, 4, 0 },{ 0xB7, "LAX", &CPU::LAX, ZPY, 4, 0 },{ 0xB8, "CLV", &CPU::CLV, IMP, 2, 0 },{ 0xB9, "LDA", &CPU::LDA, ABY, 4, 1 },{ 0xBA, "TSX", &CPU::TSX, IMP, 2, 0 },{ 0xBB, "LAS", &CPU::LAS, ABY, 4, 1 },{ 0xBC, "LDY", &CPU::LDY, ABX, 4, 1 },{ 0xBD, "LDA", &CPU::LDA, ABX, 4, 1 },{ 0xBE, "LDX", &CPU::LDX, ABY, 4, 1 },{ 0xBF, "LAX", &CPU::LAX, ABY, 4, 1 },
 		{ 0xC0, "CPY", &CPU::CPY, IMM, 2, 0 },{ 0xC1, "CMP", &CPU::CMP, IZX, 6, 0 },{ 0xC2, "NOP", &CPU::NOP, IMM, 2, 0 },{ 0xC3, "DCP", &CPU::DCP, IZX, 8, 0 },{ 0xC4, "CPY", &CPU::CPY, ZPN, 3, 0 },{ 0xC5, "CMP", &CPU::CMP, ZPN, 3, 0 },{ 0xC6, "DEC", &CPU::DEC, ZPN, 5, 0 },{ 0xC7, "DCP", &CPU::DCP, ZPN, 5, 0 },{ 0xC8, "INY", &CPU::INY, IMP, 2, 0 },{ 0xC9, "CMP", &CPU::CMP, IMM, 2, 0 },{ 0xCA, "DEX", &CPU::DEX, IMP, 2, 0 },{ 0xCB, "AXS", &CPU::AXS, IMM, 2, 0 },{ 0xCC, "CPY", &CPU::CPY, ABS, 4, 0 },{ 0xCD, "CMP", &CPU::CMP, ABS, 4, 0 },{ 0xCE, "DEC", &CPU::DEC, ABS, 6, 0 },{ 0xCF, "DCP", &CPU::DCP, ABS, 6, 0 },
 		{ 0xD0, "BNE", &CPU::BNE, REL, 2, 1 },{ 0xD1, "CMP", &CPU::CMP, IZY, 5, 1 },{ 0xD2, "UNK", &CPU::UNK, IMP, 2, 0 },{ 0xD3, "DCP", &CPU::DCP, IZY, 8, 0 },{ 0xD4, "NOP", &CPU::NOP, ZPX, 4, 0 },{ 0xD5, "CMP", &CPU::CMP, ZPX, 4, 0 },{ 0xD6, "DEC", &CPU::DEC, ZPX, 6, 0 },{ 0xD7, "DCP", &CPU::DCP, ZPX, 6, 0 },{ 0xD8, "CLD", &CPU::CLD, IMP, 2, 0 },{ 0xD9, "CMP", &CPU::CMP, ABY, 4, 1 },{ 0xDA, "NOP", &CPU::NOP, IMP, 2, 0 },{ 0xDB, "DCP", &CPU::DCP, ABY, 7, 0 },{ 0xDC, "NOP", &CPU::NOP, ABX, 4, 1 },{ 0xDD, "CMP", &CPU::CMP, ABX, 4, 1 },{ 0xDE, "DEC", &CPU::DEC, ABX, 7, 0 },{ 0xDF, "DCP", &CPU::DCP, ABX, 7, 0 },
 		{ 0xE0, "CPX", &CPU::CPX, IMM, 2, 0 },{ 0xE1, "SBC", &CPU::SBC, IZX, 6, 0 },{ 0xE2, "NOP", &CPU::NOP, IMM, 2, 0 },{ 0xE3, "ISC", &CPU::ISC, IZX, 8, 0 },{ 0xE4, "CPX", &CPU::CPX, ZPN, 3, 0 },{ 0xE5, "SBC", &CPU::SBC, ZPN, 3, 0 },{ 0xE6, "INC", &CPU::INC, ZPN, 5, 0 },{ 0xE7, "ISC", &CPU::ISC, ZPN, 5, 0 },{ 0xE8, "INX", &CPU::INX, IMP, 2, 0 },{ 0xE9, "SBC", &CPU::SBC, IMM, 2, 0 },{ 0xEA, "NOP", &CPU::NOP, IMP, 2, 0 },{ 0xEB, "SBC", &CPU::SBC, IMM, 2, 0 },{ 0xEC, "CPX", &CPU::CPX, ABS, 4, 0 },{ 0xED, "SBC", &CPU::SBC, ABS, 4, 0 },{ 0xEE, "INC", &CPU::INC, ABS, 6, 0 },{ 0xEF, "ISC", &CPU::ISC, ABS, 6, 0 },
@@ -330,7 +330,10 @@ void CPU::ASL() {
         accumulator = temp & 0x00FF;
     }
     else {
-        temp = (uint16_t)cpuRead(absolute_address) << 1;
+        // Writes the original value once, then the updated value.
+        read_data = cpuRead(absolute_address);
+        cpuWrite(absolute_address, read_data);
+        temp = (uint16_t)read_data << 1;
         cpuWrite(absolute_address, temp & 0x00FF);
     }
     
@@ -566,7 +569,10 @@ void CPU::LSR() {
         accumulator = temp & 0x00FF;
     }
     else {
+        // Writes the original value once, then the updated value.
         read_data = cpuRead(absolute_address);
+        cpuWrite(absolute_address, read_data);
+
         temp = read_data >> 1;
         status.carry =      (read_data & CARRY_MASK) != 0;
         cpuWrite(absolute_address, temp & 0x00FF);
@@ -621,7 +627,10 @@ void CPU::ROL() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
+        // Writes the original value once, then the updated value.
         read_data = cpuRead(absolute_address);
+        cpuWrite(absolute_address, read_data);
+
         temp = ((uint16_t)read_data << 1) | status.carry;
         status.carry =      (read_data & NEGATIVE_MASK) != 0;
 
@@ -644,7 +653,10 @@ void CPU::ROR() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
+        // Writes the original value once, then the updated value.
         read_data = cpuRead(absolute_address);
+        cpuWrite(absolute_address, read_data);
+
         temp = ((uint16_t)read_data >> 1) | ((uint16_t)status.carry << 7);
         status.carry =      (read_data & CARRY_MASK) != 0;
 
@@ -683,8 +695,6 @@ void CPU::RTS() {
 }
 
 void CPU::SBC() {
-    // cpuWrite(absolute_address, cpuRead(absolute_address) ^ 0xFF);
-    // ADD();
     read_data = cpuRead(absolute_address) ^ 0xFF;
     temp = (uint16_t)accumulator + (uint16_t)read_data + (uint16_t)status.carry;
     
@@ -774,7 +784,16 @@ void CPU::UNK() {
 
 
 
-// ILLEGAL OPCODES
+
+/* ILLEGAL INSTRUCTIONS
+   Illegal instructions are instructions that are not "officially" supported, however 
+   these instructions still do stuff which could be used by games. It is usually a good idea
+   to implement these instructions, since that is how a real NES would behave as well.
+   
+   note: XAA and LAX are highly unstable and should not be used, so they are not implemented.
+         AHX, SHY, SHX, and TAS are also unstable, so they might not be completely correct.
+   (from: http://www.oxyron.de/html/opcodes02.html)
+*/
 void CPU::SRE() {
     LSR();
     EOR();
@@ -815,46 +834,60 @@ void CPU::RRA() {
 }
 
 void CPU::ANC() {
-    UNK();
-    // AND();
-    // Copies bit 7 to the carry flag (like ASL happened).
-    // status.carry =      (accumulator & NEGATIVE_MASK) != 0;
+    AND();
+    // Copies bit 7 to the carry flag (as if ASL happened).
+    status.carry =      (accumulator & NEGATIVE_MASK) != 0;
 }
 
 void CPU::ALR() {
-    UNK();
-    // AND();
+    AND();
 
-    // // LSR ACC
-    // temp = accumulator >> 1;
-    // status.carry =      (accumulator & CARRY_MASK) != 0;
-    // accumulator = temp & 0x00FF;
+    // LSR ACC
+    temp = accumulator >> 1;
+    status.carry =      (accumulator & CARRY_MASK) != 0;
+    accumulator = temp & 0x00FF;
 
-    // status.zero =       (temp & 0x00FF) == 0;
-    // status.negative =   (temp & NEGATIVE_MASK) != 0;
+    status.zero =       (temp & 0x00FF) == 0;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
 void CPU::ARR() {
-    UNK();
-    // AND();
+    AND();
     
-    // // ROR ACC
-    // temp = ((uint16_t)accumulator >> 1) | ((uint16_t)status.carry << 7);
-    // status.carry =      (accumulator & 0x40) != 0;
-    // status.overflow =   ((accumulator & 0x40) ^ (accumulator & 0x20)) != 0;
+    // ROR ACC
+    temp = ((uint16_t)accumulator >> 1) | ((uint16_t)status.carry << 7);
 
-    // accumulator = temp & 0x00FF;
+    accumulator = temp & 0x00FF;
 
-    // status.zero =       accumulator == 0;
-    // status.negative =   (accumulator & NEGATIVE_MASK) != 0;
+    status.zero =       accumulator == 0;
+    status.negative =   (accumulator & NEGATIVE_MASK) != 0;
+
+    status.carry =      (accumulator & 0x40) != 0;
+    status.overflow =   ((accumulator & 0x40) ^ (accumulator & 0x20)) != 0;
 }
 
 void CPU::AXS() {
-    UNK();
-    // read_data = cpuRead(absolute_address);
-    // X = (accumulator & X) - read_data;
+    read_data = cpuRead(absolute_address) ^ 0xFF;
+    temp = (accumulator & X) + read_data;
 
-    // status.zero =       X == 0;
-    // status.negative =   (X & NEGATIVE_MASK) != 0;
-    // status.carry =      (accumulator & X) >= read_data;
+    status.zero =       temp > 0xFF;
+    status.negative =   (temp & NEGATIVE_MASK) != 0;
+    status.carry =      (accumulator & X) >= read_data;
+}
+
+void CPU::SHX() {
+    temp = X & ((absolute_address - Y) >> 8);
+    cpuWrite(absolute_address, temp);
+}
+
+void CPU::SHY() {
+    temp = Y & ((absolute_address - X) >> 8);
+    cpuWrite(absolute_address, temp);
+}
+
+void CPU::LAS() {
+    read_data = cpuRead(absolute_address);
+    accumulator =   read_data & status.full;
+    X =             read_data & status.full;
+    status.full =   read_data & status.full;
 }

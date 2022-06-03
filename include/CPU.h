@@ -176,7 +176,8 @@ class CPU {
 
         // Illegal opcode operations.
         void SRE(); void ISC(); void LAX(); void SAX(); void DCP(); void SLO(); void RLA(); void RRA();
-        void ANC(); void ALR(); void ARR(); void AXS();
+        void ANC(); void ALR(); void ARR(); void AXS(); void LAS(); void AHX(); void SHY(); void SHX();
+        void TAS();
 
         // Helper functions.
         void checkBranch(bool flag);
