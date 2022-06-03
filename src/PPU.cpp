@@ -214,21 +214,41 @@ uint8_t PPU::ppuRead(uint16_t address) {
     // If the address if between 0x2000 and 0x3EFF the data is from nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
-        if (vertical_mirorring) {
-            if ((address >= 0 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+        switch (rom->mapper->mirroring) {
+            case MIRROR_VERTICAL:
+                if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
+                    return ppu_nametable[0][address & 0x03FF];
+                }
+                else {
+                    return ppu_nametable[1][address & 0x03FF];
+                }
+            case MIRROR_HORIZONTAL:
+                if (address >= 0x0000 && address <= 0x07FF) {
+                    return ppu_nametable[0][address & 0x03FF];
+                }
+                else {
+                    return ppu_nametable[1][address & 0x03FF];
+                }
+            case MIRROR_SINGLE_LOWER:
                 return ppu_nametable[0][address & 0x03FF];
-            }
-            else {
+            case MIRROR_SINGLE_UPPER:
                 return ppu_nametable[1][address & 0x03FF];
-            }
-        }
-        else {
-            if (address >= 0 && address < 0x0800) {
-                return ppu_nametable[0][address & 0x03FF];
-            }
-            else {
-                return ppu_nametable[1][address & 0x03FF];
-            }
+            // case MIRROR_4_SCREEN:
+            //     if (address >= 0x0000 && address <= 0x03FF) {
+            //         return ppu_nametable[0][address & 0x03FF];
+            //     }
+            //     else if (address >= 0x0400 && address <= 0x07FF) {
+            //         return ppu_nametable[1][address & 0x03FF];
+            //     }
+            //     else if (address >= 0x0800 && address <= 0x0BFF) {
+            //         return ppu_nametable[2][address & 0x03FF];
+            //     }
+            //     else if (address >= 0x0C00 && address <= 0x0FFF) {
+            //         return ppu_nametable[3][address & 0x03FF];
+            //     }
+            default:
+                fprintf(stderr, "Error: Unsupported mirroring mode.\n");
+                exit(0);
         }
     }
     // If the address is between 0x3F00 and 0x3FFF the data is from the palette memory.
@@ -273,21 +293,46 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             If the mirroring is horizontal, 01==02 and 03==04
             If the mirroring is vertical,   01==03 and 02==04
         */
-        if (vertical_mirorring) {
-            if ((address >= 0x0000 && address < 0x0400) || (address >= 0x0800 && address < 0x0C00)) {
+        switch (rom->mapper->mirroring) {
+            case MIRROR_VERTICAL:
+                if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
+                    ppu_nametable[0][address & 0x03FF] = value;
+                }
+                else {
+                    ppu_nametable[1][address & 0x03FF] = value;
+                }
+                break;
+            case MIRROR_HORIZONTAL:
+                if (address >= 0x0000 && address <= 0x07FF) {
+                    ppu_nametable[0][address & 0x03FF] = value;
+                }
+                else {
+                    ppu_nametable[1][address & 0x03FF] = value;
+                }
+                break;
+            case MIRROR_SINGLE_LOWER: 
                 ppu_nametable[0][address & 0x03FF] = value;
-            }
-            else {
+                break;
+            case MIRROR_SINGLE_UPPER: 
                 ppu_nametable[1][address & 0x03FF] = value;
-            }
-        }
-        else {
-            if (address >= 0x0000 && address < 0x0800) {
-                ppu_nametable[0][address & 0x03FF] = value;
-            }
-            else {
-                ppu_nametable[1][address & 0x03FF] = value;
-            }
+                break;
+            // case MIRROR_4_SCREEN:
+            //     if (address >= 0x0000 && address <= 0x03FF) {
+            //         ppu_nametable[0][address & 0x03FF] = value;
+            //     }
+            //     else if (address >= 0x0400 && address <= 0x07FF) {
+            //         ppu_nametable[1][address & 0x03FF] = value;
+            //     }
+            //     else if (address >= 0x0800 && address <= 0x0BFF) {
+            //         ppu_nametable[2][address & 0x03FF] = value;
+            //     }
+            //     else if (address >= 0x0C00 && address <= 0x0FFF) {
+            //         ppu_nametable[3][address & 0x03FF] = value;
+            //     }
+            //     break;
+            default:
+                fprintf(stderr, "Error: Unsupported mirroring mode.\n");
+                exit(0);
         }
     }
     // If the address is between 0x3F00 and 0x3FFF the data is for the palette memory.
@@ -457,13 +502,31 @@ void PPU::drawDebugPixels() {
                     uint8_t pattern_id = 0x00;
                     uint8_t pattern_id2 = 0x00;
 
-                    if (vertical_mirorring) {
-                        pattern_id = ppuRead(0x2000 + (i*32 + j));
-                        pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
-                    }
-                    else {
-                        pattern_id = ppuRead(0x2000 + (i*32 + j));
-                        pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                    switch (rom->mapper->mirroring) {
+                        case MIRROR_VERTICAL:
+                            pattern_id = ppuRead(0x2000 + (i*32 + j));
+                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            break;
+                        case MIRROR_HORIZONTAL:
+                            pattern_id = ppuRead(0x2000 + (i*32 + j));
+                            pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                            break;
+                        case MIRROR_SINGLE_LOWER:
+                            pattern_id = ppuRead(0x2000 + (i*32 + j));
+                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            break;
+                        case MIRROR_SINGLE_UPPER:
+                            pattern_id = ppuRead(0x2000 + (i*32 + j));
+                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            break;
+                        // case MIRROR_4_SCREEN:
+                        //     // Only shows the first 2 nametables.
+                        //     pattern_id = ppuRead(0x2000 + (i*32 + j));
+                        //     pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                        //     break;
+                        default:
+                            fprintf(stderr, "Error: Unsupported mirroring mode.\n");
+                            exit(0);
                     }
 
                     for (int k = 0; k < 8; k++) {
