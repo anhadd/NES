@@ -31,7 +31,7 @@ vector<string> splitPath(const string &path_str) {
   std::string element;
   std::vector<string> split_str;
 
-  while (std::getline(split_str, element, '/')) {
+  while (std::getline(ss, element, '/')) {
     split_str.push_back(element);
   }
 
