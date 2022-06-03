@@ -8,6 +8,8 @@ ROM::ROM() {
     mapper = nullptr;
     mapper_id = 0;
 
+    CHR_is_ram = false;
+
     // fill(begin(PRG_memory), end(PRG_memory), 0);
     // fill(begin(PRG_ram), end(PRG_ram), 0);
     // fill(begin(CHR_memory), end(CHR_memory), 0);
@@ -81,6 +83,7 @@ bool ROM::loadRom(string romName) {
     uint8_t buff2[buff2_size];
 
     if (h.chr_rom_size == 0) {
+        CHR_is_ram = true;
         buff2_size = CHR_BLOCK_SIZE;
     }
 
@@ -94,7 +97,7 @@ bool ROM::loadRom(string romName) {
     CHR_memory.resize(buff2_size);
     memcpy(&CHR_memory[0x0000], buff2, buff2_size * sizeof(char));
 
-    // TODO: Check if PRG RAM is really always necessary.
+
     PRG_ram.resize(0x2000);
     Expansion_ROM.resize(0x1FE0);
     fill(begin(PRG_ram), end(PRG_ram), 0);

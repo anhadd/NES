@@ -118,6 +118,7 @@ class ROM {
         vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper.
         vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
                                         // Stores the pattern table.
+        bool CHR_is_ram;
         vector<uint8_t> Expansion_ROM;  // Expansion ROM.
 
         string save_path;
