@@ -29,3 +29,8 @@ To change the current color palette use:
 
 To quit the emulator use:
 `ESC`: Closes the emulator.
+
+Others:
+`Space`: Pause the emulator.
+`F`: Execute a single frame.
+`L`: Log debug information to file.
