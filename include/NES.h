@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <iostream>
+#include <tuple>
 
 #include "GUI.h"
 #include "CPU.h"
@@ -29,30 +30,40 @@
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
 
-#define SHOW_DEBUG false
+#define INPUT_PAUSE SDLK_SPACE
+
+#define INPUT_LOG SDLK_l
+#define INPUT_FRAME SDLK_f
+#define SHOW_DEBUG true
 
 using namespace std;
 
 
 class NES {
     public:
+        CPU cpu;
         BUS bus;
         PPU ppu;
         GUI gui;
+        ROM rom;
+
+        bool quit;
+        int FPS;
+
+        bool paused;
+        bool run_frame;
+        bool debug_log;
 
         const uint8_t* key_state;
 
         NES();
         ~NES();
 
-        uint8_t initialize(char* romName);
+        uint8_t initialize(string romName);
         void executeFrame();
         void reset();
 
     private:
-        CPU cpu;
-        ROM rom;
-
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 };
 

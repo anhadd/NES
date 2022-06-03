@@ -22,15 +22,11 @@ int main(int argc, char *argv[])
     NES nes;
 
     remove("nes_error.log");
-    freopen("nes_error.log", "w", stderr);
+    setbuf(freopen("nes_error.log", "w", stderr), NULL);
     
-
-    bool quit = false;
-    int FPS = 60;
     std::time_t next_frame_time = 0;
 
     SDL_ShowWindow(nes.gui.window);
-
     if (SHOW_DEBUG) {
         SDL_ShowWindow(nes.gui.pattern_window);
         SDL_ShowWindow(nes.gui.palette_window);
@@ -38,18 +34,42 @@ int main(int argc, char *argv[])
     }
     printf("Window Opened!\n");
 
+    if (argc < 2) {
+        printf("Usage: ./main [ROM FILE PATH]\n");
+        return 0;
+    }
+
     if (nes.initialize(argv[1]) != 0) {
         printf("Error: Could not open ROM file!\n");
         return 0;
     }
     printf("Rom Loaded!\n");
 
-    while (!quit) {
-        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/FPS));
-        quit = handleInput(quit, nes.gui.sdlevent, nes, FPS);
-        nes.executeFrame();
+    while (!nes.quit) {
+        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/nes.FPS));
+        handleInput(nes);
 
+        if (!nes.paused || nes.run_frame) {
+            nes.run_frame = false;
+            nes.executeFrame();
+        }
+        
         sleep_until(system_clock::from_time_t(next_frame_time));
+    }
+
+    if (nes.rom.mapper->prg_ram_enabled) {
+        // Saving to save file.
+        printf("Saving game...\n");
+        remove(nes.rom.save_path.c_str());
+        ofstream save_file(nes.rom.save_path, ios::out | ios::binary);
+        if (!save_file.is_open()) {
+            printf("Error: Could not save the game: %s\n", strerror(errno));
+        }
+        else {
+            ostream_iterator<uint8_t> file_iterator(save_file);
+            copy(nes.rom.PRG_ram.begin(), nes.rom.PRG_ram.end(), file_iterator);
+            save_file.close();
+        }
     }
 
     SDL_Quit();

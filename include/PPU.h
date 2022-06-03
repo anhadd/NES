@@ -46,6 +46,7 @@ SRAM offset:
 #include <vector>
 
 #include "GUI.h"
+#include "ROM.h"
 
 using namespace std;
 
@@ -62,7 +63,7 @@ using namespace std;
 #define PPU_DATA    0x2007
 
 
-struct color {
+struct Color {
     uint16_t index;
     uint8_t r;
     uint8_t g;
@@ -158,12 +159,10 @@ struct OAM_sprite {
 
 class PPU {
     public:
-        bool vertical_mirorring;                // 0: Horizontal / 1: Vertical
         bool signal_nmi;
         bool finished;
         bool show_debug;
 
-        uint8_t ppu_patterntable[0x2000];       // PPU memory
         uint8_t* OAM;
 
         uint8_t curr_palette;
@@ -172,6 +171,7 @@ class PPU {
         ~PPU();
 
         void passGUI(GUI* nesGUI);
+        void passROM(ROM* nesROM);
         bool executeCycle();
         void reset();
 
@@ -181,20 +181,28 @@ class PPU {
         uint8_t readRegister(uint16_t address);
         uint8_t writeRegister(uint16_t address, uint8_t value);
 
-    private:
-        GUI* gui;
-        
-        uint16_t total_frames;                  // Used for updating the debug screens.
+        // Used for printing debug log.
+        union loopy_register ppu_addr;
+        uint8_t fine_x;
+
         uint16_t cycles;
         int16_t scanlines;
+
+    private:
+        GUI* gui;
+        ROM* rom;
+        
+        uint16_t total_frames;                  // Used for updating the debug screens.
+        // uint16_t cycles;
+        // int16_t scanlines;
         bool address_latch;
         bool odd_frame;
 
-        struct color curr_color;
-        vector<struct color> palette_lookup;
+        struct Color curr_color;
+        vector<struct Color> palette_lookup;
 
-        uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables
-        uint8_t ppu_palette[0x0020];            // PPU memory
+        uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables.
+        uint8_t ppu_palette[0x0020];            // PPU memory: Palettes.
         
         PPUCTRL ppu_ctrl;
         PPUMASK ppu_mask;
@@ -204,11 +212,12 @@ class PPU {
         uint8_t ppu_scroll;
 
         // uint16_t ppu_addr;
-        union loopy_register ppu_addr;
+        // union loopy_register ppu_addr;
         union loopy_register ppu_buff;
-        uint8_t fine_x;
+        // uint8_t fine_x;
 
         uint8_t ppu_data;
+        uint8_t bus_value;
 
         OAM_sprite sprite_OAM[0x40];
         OAM_sprite sprite_secondary_OAM[0x08];
@@ -218,7 +227,8 @@ class PPU {
         uint8_t sprite_shifter_high[0x08];
         uint8_t sprite_shifter_low[0x08];
 
-        bool sprite_zero;
+        bool sprite_zero_in_sOAM;
+        bool sprite_zero_rendering;
 
         uint8_t data_read_buffer;
 
@@ -235,7 +245,7 @@ class PPU {
 
         uint16_t getColorIndex(uint8_t palette, uint8_t index);
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);
-        void showPatterntablePixel();
+        void drawDebugPixels();
 
         void loadShifters();
         void updateShifters();

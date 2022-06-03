@@ -5,7 +5,7 @@
 #include "NES.h"
 
 
-bool handleInput(bool quit, SDL_Event sdlevent, NES &nes, int &FPS);
+void handleInput(NES &nes);
 
 
 #endif

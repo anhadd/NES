@@ -1,0 +1,1 @@
+All the savefiles for games will be stored in this directory.

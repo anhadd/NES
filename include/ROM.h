@@ -2,7 +2,19 @@
 #define ROM_H
 
 #include <SDL2/SDL.h>
+
+#include <unistd.h>
 #include <fstream>
+#include <sstream>
+
+#include <vector>
+
+#include "Mapper.h"
+
+#include "Mapper0.h"
+#include "Mapper1.h"
+#include "Mapper2.h"
+#include "Mapper3.h"
 
 using namespace std;
 
@@ -98,11 +110,25 @@ union header {
 class ROM {
     public:
         union header h;
+        Mapper* mapper;
+        uint8_t mapper_id;
+
+        vector<uint8_t> PRG_memory;     // PRG memory, vector so it is resizable for each mapper.
+                                        // Stores the actual ROM program data (instructions etc).
+        vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper.
+        vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
+                                        // Stores the pattern table.
+        bool CHR_is_ram;
+        vector<uint8_t> Expansion_ROM;  // Expansion ROM.
+
+        string save_path;
 
         ROM();
         ~ROM();
 
-        bool loadRom(char* romName, uint8_t (&memory)[MEMORY_ARRAY_SIZE], uint8_t (&ppu_patterntable)[0x2000]);
+        void reset();
+
+        bool loadRom(string romName);
 
     private:
         void dumpContents(ifstream* romFile);
