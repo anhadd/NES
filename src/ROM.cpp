@@ -26,6 +26,19 @@ void ROM::reset() {
 }
 
 
+vector<string> splitPath(const string &path_str) {
+  std::stringstream ss(path_str);
+  std::string element;
+  std::vector<string> split_str;
+
+  while (std::getline(split_str, element, '/')) {
+    elems.push_back(element);
+  }
+  
+  return split_str;
+}
+
+
 void ROM::dumpContents(ifstream* romFile) {
     uint8_t x = 0;
     uint32_t counter = 0;
@@ -44,7 +57,7 @@ void ROM::dumpContents(ifstream* romFile) {
 }
 
 
-bool ROM::loadRom(char* romName) {
+bool ROM::loadRom(string romName) {
     ifstream romFile(romName, ios::in | ios::binary);
 
     if (romFile.fail()) {
@@ -55,7 +68,7 @@ bool ROM::loadRom(char* romName) {
 
     // Trainer data is skipped.
     if (h.f6.trainer_present) {
-        printf("Mapper found in ROM file, skipped.\n");
+        printf("Trainer found in ROM file, skipped.\n");
         romFile.ignore(TRAINER_SIZE);
     }
     
@@ -109,18 +122,25 @@ bool ROM::loadRom(char* romName) {
             printf("Error: Unsupported Mapper %u\n", mapper_id);
             exit(0);
     }
-    printf("PRG BANKS: %u       CHR BANKS: %u\n", mapper->PRG_banks, mapper->CHR_banks);
+    printf("Prg banks: %u       Chr banks: %u\n", mapper->PRG_banks, mapper->CHR_banks);
 
     if (mapper->prg_ram_enabled) {
-        // Saving (works only for DW1 for now).
-        printf("Loading saved game...\n");
-        uint32_t buff3_size = 0x2000;
-        uint8_t buff3[0x2000];
+        // Loading save file.
+        vector<string> path_elems = splitPath(romName);
+        save_path = "saves/" + path_elems.back();
+        if (access(save_path.c_str(), F_OK) != -1) {
+            printf("Loading saved game...\n");
+            uint32_t buff3_size = 0x2000;
+            uint8_t buff3[0x2000];
 
-        ifstream save_file("saves/DW1_save.bin", ios::in | ios::binary);
-        save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
-        memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
-        save_file.close();
+            ifstream save_file(save_path, ios::in | ios::binary);
+            save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
+            memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
+            save_file.close();
+        }
+        else {
+            printf("No save file found.\n");
+        }
     }
 
     // Set mirroring mode.

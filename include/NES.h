@@ -59,7 +59,7 @@ class NES {
         NES();
         ~NES();
 
-        uint8_t initialize(char* romName);
+        uint8_t initialize(string romName);
         void executeFrame();
         void reset();
 

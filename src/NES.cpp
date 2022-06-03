@@ -32,13 +32,11 @@ NES::~NES() {
     // Destructor
 }
 
-uint8_t NES::initialize(char* romName) {
+uint8_t NES::initialize(string romName) {
     if (rom.loadRom(romName) != 0) {
         return 1;
     }
-
     reset();
-    
     return 0;
 }
 

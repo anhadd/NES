@@ -2,7 +2,11 @@
 #define ROM_H
 
 #include <SDL2/SDL.h>
+
+#include <unistd.h>
 #include <fstream>
+#include <sstream>
+
 #include <vector>
 
 #include "Mapper.h"
@@ -116,12 +120,14 @@ class ROM {
                                         // Stores the pattern table.
         vector<uint8_t> Expansion_ROM;  // Expansion ROM.
 
+        string save_path;
+
         ROM();
         ~ROM();
 
         void reset();
 
-        bool loadRom(char* romName);
+        bool loadRom(string romName);
 
     private:
         void dumpContents(ifstream* romFile);
