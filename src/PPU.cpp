@@ -194,11 +194,31 @@ void PPU::passROM(ROM* nesROM) {
 
 // Increment the PPU address register depending on the increment mode.
 void PPU::incrementPPUAddr() {
-    if (ppu_ctrl.ppu_increment) {
-        ppu_addr.full += 32;
+    // If rendering, the ppu address increment causes coarse_x and coarse_y.
+    if ((ppu_mask.showbg || ppu_mask.showsprites) && (scanlines >= -1 && scanlines <= 239)){
+        if (ppu_addr.coarse_x == 31) {
+            ppu_addr.coarse_x = 0;
+            ppu_addr.nametable_x ^= 1;
+        }
+        else {
+            ppu_addr.coarse_x += 1;
+        }
+        // If the y tile goes above 29 move to the next nametable (a nametable is 30 tiles high).
+        if (ppu_addr.coarse_y == 29) {
+            ppu_addr.coarse_y = 0;
+            ppu_addr.nametable_y ^= 1;
+        }
+        else {
+            ppu_addr.coarse_y += 1;
+        }
     }
     else {
-        ppu_addr.full += 1;
+        if (ppu_ctrl.ppu_increment) {
+            ppu_addr.full += 32;
+        }
+        else {
+            ppu_addr.full += 1;
+        }
     }
 }
 
@@ -214,6 +234,20 @@ uint8_t PPU::ppuRead(uint16_t address) {
     // If the address if between 0x2000 and 0x3EFF the data is from nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
+        /*  Select the correct nametable depending on the mirroring:
+                     H
+            |--------|--------|
+            |-- 01 --|-- 02 --|
+            |--------|--------|
+            |=================|-V
+            |--------|--------|
+            |-- 03 --|-- 04 --|
+            |--------|--------|
+            If the mirroring is horizontal,     01==02 and 03==04
+            If the mirroring is vertical,       01==03 and 02==04
+            If the mirroring is single lower,   01== 02== 03== 04 == nametable 0
+            If the mirroring is single lower,   01== 02== 03== 04 == nametable 1
+        */
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
                 if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
@@ -255,17 +289,17 @@ uint8_t PPU::ppuRead(uint16_t address) {
     else {
         address &= 0x001F;
 
-        // if (ppu_mask.showbg || ppu_mask.showsprites) {
-        //     if (address == 0x0010 | address == 0x0014 | address == 0x0018 | address == 0x001C) {
-        //         address = 0x0000;
-        //     }
-        // }
         if (address == 0x0010) address = 0x0000;
         else if (address == 0x0014) address = 0x0004;
         else if (address == 0x0018) address = 0x0008;
         else if (address == 0x001C) address = 0x000C;
-    
-        return ppu_palette[address];
+
+        if (ppu_mask.greyscale) {
+            return ppu_palette[address] & 0x30;
+        }
+        else {
+            return ppu_palette[address];
+        }
     }
 }
 
@@ -276,7 +310,13 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
 
     // If the address is between 0x0000 and 0x1FFF the data is for CHR_memory (pattern tables).
     if (address <= 0x1FFF) {
-        rom->CHR_memory[rom->mapper->ppuMap(address, true, value)] = value;
+        // Only write to CHR_memory if it is RAM.
+        if (rom->CHR_is_ram) {
+            rom->CHR_memory[rom->mapper->ppuMap(address, true, value)] = value;
+        }
+        else {
+            rom->mapper->ppuMap(address, true, value);
+        }
     }
     // If the address if between 0x2000 and 0x3EFF the data is for nametables.
     else if (address <= 0x3EFF) {
@@ -290,8 +330,10 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             |--------|--------|
             |-- 03 --|-- 04 --|
             |--------|--------|
-            If the mirroring is horizontal, 01==02 and 03==04
-            If the mirroring is vertical,   01==03 and 02==04
+            If the mirroring is horizontal,     01==02 and 03==04
+            If the mirroring is vertical,       01==03 and 02==04
+            If the mirroring is single lower,   01== 02== 03== 04 == nametable 0
+            If the mirroring is single lower,   01== 02== 03== 04 == nametable 1
         */
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
@@ -339,7 +381,6 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
     else {
         address &= 0x001F;
 
-        // TODO maybe remove this, and just remap on read.
         if (address == 0x0010) address = 0x0000;
         else if (address == 0x0014) address = 0x0004;
         else if (address == 0x0018) address = 0x0008;
@@ -360,33 +401,41 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case STATUS:
-            temp = ppu_status.full & 0xE0 | bus_value & 0x1F; // TODO: MAYBE bus_value IS ALREADY data_read_buffer, CHECK IF bus_value CAN BE REMOVED THEN.
+            temp = ppu_status.full & 0xE0 | bus_value & 0x1F;
             ppu_status.v_blank = 0; 
             address_latch = false;
+            bus_value = temp;
             return temp;
         case OAM_ADDR:
             // No reading allowed.
             break;
         case OAM_DATA:
+            bus_value = OAM[oam_addr & 0xFF];
             return OAM[oam_addr & 0xFF];
         case SCROLL:
         case PPU_ADDR:
             // No reading allowed.
             break;
         case PPU_DATA:
+            uint8_t temp_data = 0x00;
+            uint8_t read_data = ppuRead(ppu_addr.full);
+
             if (ppu_addr.full <= 0x3EFF) {
                 // Reading is buffered.
-                uint8_t temp_data = data_read_buffer;
-                data_read_buffer = ppuRead(ppu_addr.full);
+                temp_data = data_read_buffer;
+                data_read_buffer = read_data;
                 incrementPPUAddr();
+                bus_value = temp_data;
                 return temp_data;
             }
             else {
                 // Reading from palettes is instant.
                 // Buffer gets set to value in VRAM, palette value is returned.
+                temp_data = bus_value;
                 data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
                 incrementPPUAddr();
-                return bus_value & 0xB0 | (ppuRead(ppu_addr.full) & 0x3F);
+                bus_value = temp_data & 0xB0 | (read_data & 0x3F);
+                return temp_data & 0xB0 | (read_data & 0x3F);
             }
     }
     return bus_value;
@@ -434,7 +483,6 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
                 fine_x = value & 0x07;
                 address_latch = true;
             }
-            // ppu_buff.full &= 0x3FFF;
             break;
         case PPU_ADDR:
             if (address_latch) {
@@ -445,8 +493,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
             }
             else {
                 // Write to high bytes.
-                ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8); // TODO: Check if this is necessary:  & 0x3FFF
-                // ppu_buff.full &= 0x3FFF;
+                ppu_buff.full = (ppu_buff.full & 0x00FF) | (uint16_t)(value << 8);
                 address_latch = true;
             }
             break;
@@ -931,7 +978,7 @@ bool PPU::executeCycle() {
     }
 
     // Draw only the visible onscreen pixels.
-    if (scanlines >= 0 && scanlines <= 240 && cycles >= 1 && cycles <= 256) {
+    if (scanlines >= 0 && scanlines <= 239 && cycles >= 1 && cycles <= 256) {
         drawPixelOnSurface(gui->surface_buff, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
     }
     // Draw the pixels on the debug windows if debugging is enabled.
