@@ -63,7 +63,7 @@ using namespace std;
 #define PPU_DATA    0x2007
 
 
-struct color {
+struct Color {
     uint16_t index;
     uint8_t r;
     uint8_t g;
@@ -159,7 +159,6 @@ struct OAM_sprite {
 
 class PPU {
     public:
-        bool vertical_mirorring;                // 0: Horizontal / 1: Vertical
         bool signal_nmi;
         bool finished;
         bool show_debug;
@@ -199,11 +198,11 @@ class PPU {
         bool address_latch;
         bool odd_frame;
 
-        struct color curr_color;
-        vector<struct color> palette_lookup;
+        struct Color curr_color;
+        vector<struct Color> palette_lookup;
 
-        uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables
-        uint8_t ppu_palette[0x0020];            // PPU memory
+        uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables.
+        uint8_t ppu_palette[0x0020];            // PPU memory: Palettes.
         
         PPUCTRL ppu_ctrl;
         PPUMASK ppu_mask;
