@@ -23,8 +23,6 @@ BUS::~BUS() {
 }
 
 void BUS::reset() {
-    // fill(begin(memory), &memory[0x7FF], 0);
-    
     fill(begin(controller), end(controller), 0);
     fill(begin(controller_shift), end(controller_shift), 0);
 
