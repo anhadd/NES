@@ -32,9 +32,9 @@ vector<string> splitPath(const string &path_str) {
   std::vector<string> split_str;
 
   while (std::getline(split_str, element, '/')) {
-    elems.push_back(element);
+    split_str.push_back(element);
   }
-  
+
   return split_str;
 }
 
