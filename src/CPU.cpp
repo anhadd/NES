@@ -63,16 +63,15 @@ void CPU::reset() {
     decrementSP();
     decrementSP();
 
-    // accumulator = 0;
-    // X = 0;
-    // Y = 0;
     temp = 0x0000;
 
     absolute_address = 0x0000;
     relative_offset = 0x00;
     total_cycles = 0;
 
-    PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC); // For normal ROMs.
+
+    // Load the PC from a fixed area in memory.
+    PC = (cpuRead(0xFFFD) << 8) | cpuRead(0xFFFC);
 
     cycles = 7;
     additional_cycle = false;
@@ -764,7 +763,7 @@ void CPU::UNK() {
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
     // Exits whenever an illegal opcode is encountered.
-    printf("Exiting: Invalid OPCode encountered!\n");
+    printf("Exiting: Invalid opcode encountered!\n");
     exit(0);
 }
 
