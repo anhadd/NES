@@ -22,7 +22,7 @@ ROM::~ROM() {
 
 
 void ROM::reset() {
-    fill(begin(PRG_ram), end(PRG_ram), 0);
+    // Resetting ROM does nothing.
 }
 
 
@@ -109,8 +109,28 @@ bool ROM::loadRom(char* romName) {
             printf("Error: Unsupported Mapper %u\n", mapper_id);
             exit(0);
     }
-
     printf("PRG BANKS: %u       CHR BANKS: %u\n", mapper->PRG_banks, mapper->CHR_banks);
+
+    if (mapper->prg_ram_enabled) {
+        // Saving (works only for DW1 for now).
+        printf("Loading saved game...\n");
+        uint32_t buff3_size = 0x2000;
+        uint8_t buff3[0x2000];
+
+        ifstream save_file("saves/DW1_save.bin", ios::in | ios::binary);
+        save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
+        memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
+        save_file.close();
+    }
+
+    // Set mirroring mode.
+    if (h.f6.mirroring) {
+        mapper->mirroring = MIRROR_VERTICAL;
+    }
+    else {
+        mapper->mirroring = MIRROR_HORIZONTAL;
+    }
+
     romFile.close();
     return 0;
 }
