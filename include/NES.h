@@ -3,13 +3,16 @@
 
 #include <SDL2/SDL.h>
 #include <iostream>
-#include <tuple>
+
+#include <chrono>
+#include <thread>
 
 #include "GUI.h"
 #include "CPU.h"
 #include "ROM.h"
 #include "PPU.h"
 #include "BUS.h"
+#include "APU.h"
 
 
 #define INPUT_A SDL_SCANCODE_Z
@@ -37,6 +40,8 @@
 #define SHOW_DEBUG true
 
 using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
 
 
 class NES {
@@ -46,6 +51,7 @@ class NES {
         PPU ppu;
         GUI gui;
         ROM rom;
+        APU apu;
 
         bool quit;
         int FPS;
@@ -55,6 +61,9 @@ class NES {
         bool debug_log;
 
         const uint8_t* key_state;
+
+        // std::time_t next_cycle_time;
+        uint32_t cycle_time_ns;
 
         NES();
         ~NES();

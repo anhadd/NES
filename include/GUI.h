@@ -11,6 +11,7 @@
 
 class GUI {
     public:
+        // Visual
         SDL_Window *window;
         SDL_Surface *surface;
         SDL_Surface *surface_buff;
@@ -30,6 +31,13 @@ class GUI {
         SDL_Surface *nametable_surface;
         SDL_Surface *nametable_surface_buff;
         SDL_Rect scaled_nametable_rect;
+
+        // Audio
+        SDL_AudioDeviceID audio_device;
+        SDL_AudioSpec audio_spec;
+
+        uint16_t volume;
+
 
         SDL_Event sdlevent;
 

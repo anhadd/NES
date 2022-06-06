@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "PPU.h"
+#include "APU.h"
 #include "ROM.h"
 
 using namespace std;
@@ -29,6 +30,7 @@ class BUS {
 
         void passPPU(PPU* nesPPU);      // Used for receiving the PPU from the NES.
         void passROM(ROM* nesROM);
+        void passAPU(APU* nesAPU);
 
         void reset();
 
@@ -37,6 +39,7 @@ class BUS {
 
     private:
         PPU* ppu;                                               // The PPU received from NES.
+        APU* apu;
         uint8_t controller_shift[2];                            // The shift registers for handling input.
 };
 

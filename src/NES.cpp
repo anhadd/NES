@@ -9,7 +9,11 @@ NES::NES() {
 
     bus.passPPU(&ppu);
     bus.passROM(&rom);
+    bus.passAPU(&apu);
+    
     cpu.passBUS(&bus);
+
+    apu.passGUI(&gui);
 
     key_state = SDL_GetKeyboardState(NULL);
 
@@ -25,6 +29,10 @@ NES::NES() {
     if (SHOW_DEBUG) {
         gui.createDebugWindows();
     }
+
+    // next_cycle_time = 0;
+    // cycle_time_ns = 1 / 0.00179;
+    // printf("CYCLE NS: %u\n", cycle_time_ns);
 }
 
 
@@ -50,6 +58,7 @@ void NES::reset() {
 
 void NES::executeFrame() {
     while (!ppu.finished) {
+        // next_cycle_time = system_clock::to_time_t(system_clock::now() + nanoseconds(cycle_time_ns));
         // Prints debug log information.
         if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
                 fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
@@ -60,7 +69,7 @@ void NES::executeFrame() {
                         cpu.cpuRead(cpu.PC + 2),
                         cpu.accumulator, 
                         cpu.X, 
-                        cpu.Y, 
+                        cpu.Y,
                         cpu.status.full,
                         cpu.SP, 
                         ppu.scanlines, 
@@ -72,13 +81,17 @@ void NES::executeFrame() {
         ppu.executeCycle();
         ppu.executeCycle();
         ppu.executeCycle();
-        
+
         if (!bus.oam_writing) {
             if (ppu.signal_nmi) {
                 cpu.execute_nmi = true;
                 ppu.signal_nmi = false;
             }
             cpu.executeCycle();
+            // One APU cycle every 2 CPU cycles.
+            if (total_cycles % 2 == 0) {
+                apu.executeCycle();
+            }
         }
         else {
             if (bus.cpu_synchronized) {
@@ -105,8 +118,9 @@ void NES::executeFrame() {
                 }
             }
         }
-
+    
         total_cycles += 1;
+        // sleep_for(nanoseconds(cycle_time_ns)); // DOES NOT WORK, SLEEPS A LOT LONGER THAN WHATS ASKED.
     }
     ppu.finished = false;
 }

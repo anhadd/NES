@@ -4,6 +4,7 @@
 
 GUI::GUI(int width, int height, int scale) {
     // Constructor
+    // Visual elements
     window = SDL_CreateWindow("NES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width*scale, height*scale, SDL_WINDOW_SHOWN);
 
     surface = SDL_GetWindowSurface(window);
@@ -15,6 +16,18 @@ GUI::GUI(int width, int height, int scale) {
     SDL_GetWindowSize(window, NULL, &scaled_screen_rect.h);
 
     debug_windows_created = false;
+
+    // Audio elements
+    SDL_zero(audio_spec);
+    audio_spec.freq = 44100;
+    audio_spec.format = AUDIO_S16SYS;
+    audio_spec.channels = 1;
+    audio_spec.samples = 1024;
+    audio_spec.callback = NULL;
+
+    audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
+
+    volume = 3000;
 }
 
 
@@ -33,6 +46,8 @@ GUI::~GUI() {
         SDL_DestroyWindow(nametable_window);
         SDL_FreeSurface(nametable_surface_buff);
     }
+
+    SDL_CloseAudioDevice(audio_device);
 }
 
 

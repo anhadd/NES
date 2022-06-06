@@ -40,6 +40,10 @@ void BUS::passROM(ROM* nesROM) {
     rom = nesROM;
 }
 
+void BUS::passAPU(APU* nesAPU) {
+    apu = nesAPU;
+}
+
 
 // CPU reading from the BUS.
 uint8_t BUS::busReadCPU(uint16_t address) {
@@ -62,7 +66,7 @@ uint8_t BUS::busReadCPU(uint16_t address) {
     }
     else if (address >= 0x4020 && address <= 0x5FFF) {
         // TODO: Expansion ROM.
-        return rom->Expansion_ROM[address % 0x4020];
+        return rom->Expansion_ROM[address - 0x4020];
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {
         // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULDNT ?)
@@ -87,8 +91,9 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
         oam_index = 0x00;
         oam_writing = true;
     }
-    else if (address >= 0x4000 && address <= 0x4015 && address != 0x4014) {
+    else if (address >= 0x4000 && address <= 0x4015 && address != 0x4014) { // TODO: CHECK WHAT TO DO WITH 2017 !! CONTROLLER OR APU?
         // TODO: These registers are not yet implemented.
+        apu->writeRegister(address, value);
     }
     else if (address == 0x4016 || address == 0x4017) {
         controller_shift[address % 0x4016] = controller[address % 0x4016];
@@ -98,7 +103,7 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     }
     else if (address >= 0x4020 && address <= 0x5FFF) {
         // TODO: Expansion ROM.
-        rom->Expansion_ROM[address % 0x4020] = value;
+        rom->Expansion_ROM[address - 0x4020] = value; // TODO: WAS %
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {
         // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULDNT ?)
