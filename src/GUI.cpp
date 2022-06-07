@@ -22,12 +22,12 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.freq = 44100;
     audio_spec.format = AUDIO_S16SYS;
     audio_spec.channels = 1;
-    audio_spec.samples = 1024;
+    audio_spec.samples = 0xFFFF;
     audio_spec.callback = NULL;
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
 
-    volume = 3000;
+    volume = 5000;
 }
 
 

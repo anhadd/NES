@@ -4,10 +4,22 @@
 
 APU::APU() {
     // Constructor
-    p1_ctrl.full = 0x00;
-    p1_sweep.full = 0x00;
-    p1_timer_low = 0x00;
-    p1_timer_high.full = 0x00;
+    p1.reset();
+    p2.reset();
+
+    sequence_lookup[0] = 0b01000000;
+    sequence_lookup[1] = 0b01100000;
+    sequence_lookup[2] = 0b01111000;
+    sequence_lookup[3] = 0b10011111;
+
+    partition_lookup[0] = 0.125;
+    partition_lookup[1] = 0.250;
+    partition_lookup[2] = 0.500;
+    partition_lookup[3] = 0.750;
+
+    apu_status.full = 0x00;
+    current_time = 0.0;
+    frame_counter = 0x00000000;
 }
 
 
@@ -34,20 +46,25 @@ uint8_t APU::readRegister(uint16_t address) {
 
 // Write to the APU registers (Used by the CPU).
 uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
-    uint16_t real_address = 0x2000 + (address & 0x0007);
+    uint16_t real_address = 0x4000 + (address & 0x0017);
 
     switch (real_address) {
         case P1_CONTROL:
-            p1_ctrl.full = value;
+            p1.ctrl.full = value;
+            p1.wave_sequence = sequence_lookup[p1.ctrl.duty];
+            p1.duty_partition = partition_lookup[p1.ctrl.duty];
             break;
         case P1_SWEEP:
-            p1_sweep.full = value;
+            p1.sweep.full = value;
             break;
         case P1_TIMER_LOW:
-            p1_timer_low = value;
+            p1.timer_low = value;
+            p1.reload = (p1.reload & 0xFF00) | p1.timer_low;
             break;
         case P1_TIMER_HIGH:
-            p1_timer_high.full = value;
+            p1.timer_high.full = value;
+            p1.reload = ((p1.timer_high.full & 0x07) << 8) | (p1.reload & 0x00FF);
+            p1.timer = p1.reload;
             break;
 
         case P2_CONTROL:
@@ -70,52 +87,81 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
         case DMC_ADDRESS:
         case DMC_LENGTH:
             break;
+        case APU_STATUS:
+            apu_status.enable_p1 = value & 0x01;
+            if (!apu_status.enable_p1) {
+                p1.timer_high.length_counter = 0;
+            }
+            break;
     }
     return 0;
 }
 
-// from: https://stackoverflow.com/questions/62290079/writing-a-wave-generator-with-sdl
-double APU::normalize(double phase) {
-    double cycles = phase/(2.0*M_PI);
-    phase -= trunc(cycles) * 2.0 * M_PI;
-    if (phase < 0) {
-        phase += 2.0*M_PI;
+// Used for approximating sin, since the sin function is very slow.
+// from: OLC.
+float approxsin(float offset) {
+    float j = offset * 0.15915;
+    j = j - (int)j;
+    return 20.785 * j * (j - 0.5) * (j - 1.0f);
+}
+
+// TODO: check this for testing, from olc.
+float APU::square(struct full_pulse pulse, float offset) {
+    float temp = 0.0;
+    float sin1 = 0.0;
+    float sin2 = 0.0;
+    // float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
+    float frequency = CPU_CLOCK / (16 * (offset + 1));
+    // float frequency = p1.timer;
+    float phase_offset = pulse.duty_partition;
+
+    // fprintf(stderr, "FREQUENCY: %f\n", frequency);
+
+    for (float counter = 1; counter < 20; counter++) {
+        temp = counter * frequency * 2.0 * M_PI * offset;
+
+        sin1 += -approxsin(temp) / counter;
+        sin2 += -approxsin(temp - phase_offset * counter) / counter;
     }
-    return phase;
-}
 
-double APU::square(double phase) {
-    return (normalize(phase) < M_PI) ? 1.0 : -1.0;
-}
-
-double APU::triangle(double phase) {
-    phase = normalize(phase);
-    if (phase >= M_PI) {
-        phase = 2*M_PI - phase;
-    }
-    return -1.0 + 2.0 * phase / M_PI;
+    return (2.0 / M_PI) * (sin1 - sin2); 
 }
 
 
-// TODO: FIGURE OUT EVERYTHING ABOUT THE API, AND HOW IT GETS THE SOUND
+// TODO: FIGURE OUT EVERYTHING ABOUT THE APU, AND HOW IT GETS THE SOUND
     // ALSO CHECK HOW THE TIMING SHOULD BE, MAYBE ADD A COUNTER OR DELAY / TIMING.
 
+// CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
+
 bool APU::executeCycle() {
-    // TODO: Tests playing audio, remove later.
-    float x = 0;
-    // for (int i = 0; i < gui->audio_spec.freq; i++) {
-    //     x += .010f;
+    // current_time += (2 / CPU_CLOCK);
+    current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
+    // current_time += 1 / (CPU_CLOCK / 2);
 
-    //     // SDL_QueueAudio expects a signed 16-bit value
-    //     int16_t sample = square(x * 4) * gui->volume;
-    //     const int sample_size = sizeof(int16_t) * 1;
+    if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+        // Quarter frame.
+    }
+    else if (frame_counter == HALF_FRAME) {
+        // Quarter and Half frame.
+    }
+    else if (frame_counter == FULL_FRAME) {
+        // Quarter and Half frame.
+        frame_counter = 0;
+    }
 
-    //     SDL_QueueAudio(gui->audio_device, &sample, sample_size);
-    // }
+    p1.executeCycle(apu_status.enable_p1);
 
-    int16_t sample = square(x * 100) * gui->volume;
-    const int sample_size = sizeof(int16_t) * 1;
+    if (apu_status.enable_p1) {
+        // p1.wave_sequence = ((p1.wave_sequence & 0x01) << 7) || (p1.wave_sequence >> 1);
 
-    SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+        // int16_t sample = square(p1, current_time * 4) * gui->volume;
+        
+        int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+        const int sample_size = sizeof(int16_t);
+        
+        SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+    }
+
+    frame_counter += 1;
     return 0;
 }
