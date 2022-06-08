@@ -31,7 +31,6 @@ void handleInput(NES &nes) {
                 case INPUT_LOG:
                     fprintf(stderr, "\n\n       !!! LOG START !!!          \n\n\n");
                     nes.debug_log = !nes.debug_log;
-                    nes.bus.debug_log = !nes.bus.debug_log;
                     break;
                 case INPUT_FRAME:
                     nes.run_frame = true;

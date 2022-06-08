@@ -110,7 +110,7 @@ union PPUSTATUS {
 };
 
 
-// The repeating screen is fixed here! Apparently there is a real difference between:
+// The repeating screen is fixed here! Apparently there is a big difference between:
     // uint16_t X : 5
     // uint8_t X : 5
 union loopy_register {
@@ -126,7 +126,6 @@ union loopy_register {
 };
 
 // Sprite attributes:
-
 // 76543210
 // ||||||||
 // ||||||++- Palette (4 to 7) of sprite
@@ -145,7 +144,6 @@ union sprite_attributes {
     uint8_t full;
 };
 
-
 // Used for accessing the sprite information in OAM memory.
 struct OAM_sprite {
     uint8_t y;
@@ -153,7 +151,6 @@ struct OAM_sprite {
     union sprite_attributes flags;
     uint8_t x;
 };
-
 
 
 

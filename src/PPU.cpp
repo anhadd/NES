@@ -267,19 +267,6 @@ uint8_t PPU::ppuRead(uint16_t address) {
                 return ppu_nametable[0][address & 0x03FF];
             case MIRROR_SINGLE_UPPER:
                 return ppu_nametable[1][address & 0x03FF];
-            // case MIRROR_4_SCREEN:
-            //     if (address >= 0x0000 && address <= 0x03FF) {
-            //         return ppu_nametable[0][address & 0x03FF];
-            //     }
-            //     else if (address >= 0x0400 && address <= 0x07FF) {
-            //         return ppu_nametable[1][address & 0x03FF];
-            //     }
-            //     else if (address >= 0x0800 && address <= 0x0BFF) {
-            //         return ppu_nametable[2][address & 0x03FF];
-            //     }
-            //     else if (address >= 0x0C00 && address <= 0x0FFF) {
-            //         return ppu_nametable[3][address & 0x03FF];
-            //     }
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
                 exit(0);
@@ -358,20 +345,6 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             case MIRROR_SINGLE_UPPER: 
                 ppu_nametable[1][address & 0x03FF] = value;
                 break;
-            // case MIRROR_4_SCREEN:
-            //     if (address >= 0x0000 && address <= 0x03FF) {
-            //         ppu_nametable[0][address & 0x03FF] = value;
-            //     }
-            //     else if (address >= 0x0400 && address <= 0x07FF) {
-            //         ppu_nametable[1][address & 0x03FF] = value;
-            //     }
-            //     else if (address >= 0x0800 && address <= 0x0BFF) {
-            //         ppu_nametable[2][address & 0x03FF] = value;
-            //     }
-            //     else if (address >= 0x0C00 && address <= 0x0FFF) {
-            //         ppu_nametable[3][address & 0x03FF] = value;
-            //     }
-            //     break;
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
                 exit(0);
@@ -566,11 +539,6 @@ void PPU::drawDebugPixels() {
                             pattern_id = ppuRead(0x2000 + (i*32 + j));
                             pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
                             break;
-                        // case MIRROR_4_SCREEN:
-                        //     // Only shows the first 2 nametables.
-                        //     pattern_id = ppuRead(0x2000 + (i*32 + j));
-                        //     pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
-                        //     break;
                         default:
                             fprintf(stderr, "Error: Unsupported mirroring mode.\n");
                             exit(0);

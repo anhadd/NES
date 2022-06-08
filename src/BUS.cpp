@@ -13,8 +13,6 @@ BUS::BUS() {
     oam_index = 0x00;
     oam_writing = false;
     cpu_synchronized = false;
-
-    debug_log = false;
 }
 
 BUS::~BUS() {
@@ -50,7 +48,7 @@ uint8_t BUS::busReadCPU(uint16_t address) {
         return ppu->readRegister(address);
     }
     else if (address >= 0x4000 && address <= 0x4015) {
-        // TODO: These registers are not yet implemented.
+        // TODO: These audio registers are not yet implemented.
     }
     else if (address == 0x4016 || address == 0x4017) {
         uint8_t temp = controller_shift[address % 0x4016];
@@ -61,7 +59,6 @@ uint8_t BUS::busReadCPU(uint16_t address) {
         // TODO: APU and I/O functionality that is normally disabled.
     }
     else if (address >= 0x4020 && address <= 0x5FFF) {
-        // TODO: Expansion ROM.
         return rom->Expansion_ROM[address % 0x4020];
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {
@@ -97,7 +94,6 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
         // TODO: APU and I/O functionality that is normally disabled.
     }
     else if (address >= 0x4020 && address <= 0x5FFF) {
-        // TODO: Expansion ROM.
         rom->Expansion_ROM[address % 0x4020] = value;
     }
     else if (address >= 0x6000 && address <= 0x7FFF) {

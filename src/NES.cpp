@@ -4,13 +4,16 @@
 
 NES::NES() {
     // Constructor
+    // Pass the necessary components to each class.
     ppu.passGUI(&gui);
     ppu.passROM(&rom);
 
     bus.passPPU(&ppu);
     bus.passROM(&rom);
+
     cpu.passBUS(&bus);
 
+    // Initialize other variables.
     key_state = SDL_GetKeyboardState(NULL);
 
     quit = false;
@@ -20,8 +23,9 @@ NES::NES() {
 
     debug_log = false;
 
+    // Tell the ppu whether to render debug screens.
     ppu.show_debug = SHOW_DEBUG;
-
+    // Create the debug windows if debugging is turned on.
     if (SHOW_DEBUG) {
         gui.createDebugWindows();
     }
@@ -52,21 +56,21 @@ void NES::executeFrame() {
     while (!ppu.finished) {
         // Prints debug log information.
         if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
-                fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d\n", //  CYC:%u 
-                        cpu.PC, 
-                        cpu.cpuRead(cpu.PC), 
-                        cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
-                        cpu.cpuRead(cpu.PC + 1),
-                        cpu.cpuRead(cpu.PC + 2),
-                        cpu.accumulator, 
-                        cpu.X, 
-                        cpu.Y, 
-                        cpu.status.full,
-                        cpu.SP, 
-                        ppu.scanlines, 
-                        ppu.cycles
-                        // cpu.total_cycles
-                        );
+            fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n",
+                cpu.PC, 
+                cpu.cpuRead(cpu.PC), 
+                cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
+                cpu.cpuRead(cpu.PC + 1),
+                cpu.cpuRead(cpu.PC + 2),
+                cpu.accumulator, 
+                cpu.X, 
+                cpu.Y, 
+                cpu.status.full,
+                cpu.SP, 
+                ppu.scanlines, 
+                ppu.cycles,
+                cpu.total_cycles
+            );
         }
 
         ppu.executeCycle();
