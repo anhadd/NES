@@ -20,6 +20,9 @@ APU::APU() {
     apu_status.full = 0x00;
     current_time = 0.0;
     frame_counter = 0x00000000;
+
+    current_sample_cycle = 0x00;
+    cycles_per_sample = 0x00;
 }
 
 
@@ -112,6 +115,7 @@ float APU::square(struct full_pulse pulse, float offset) {
     float sin2 = 0.0;
     // float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
     float frequency = CPU_CLOCK / (16 * (offset + 1));
+    // float frequency = 440.0f;
     // float frequency = p1.timer;
     float phase_offset = pulse.duty_partition;
 
@@ -120,8 +124,8 @@ float APU::square(struct full_pulse pulse, float offset) {
     for (float counter = 1; counter < 20; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
-        sin1 += -approxsin(temp) / counter;
-        sin2 += -approxsin(temp - phase_offset * counter) / counter;
+        sin1 += approxsin(temp) / counter;
+        sin2 += approxsin(temp - phase_offset * counter) / counter;
     }
 
     return (2.0 / M_PI) * (sin1 - sin2); 
@@ -134,34 +138,39 @@ float APU::square(struct full_pulse pulse, float offset) {
 // CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
 
 bool APU::executeCycle() {
-    // current_time += (2 / CPU_CLOCK);
-    current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
-    // current_time += 1 / (CPU_CLOCK / 2);
+    if (current_sample_cycle == cycles_per_sample) {
+        current_sample_cycle = 0x00;
+        // current_time += (2 / CPU_CLOCK);
+        current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
+        // current_time += 1 / (CPU_CLOCK / 2);
 
-    if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-        // Quarter frame.
+        if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+            // Quarter frame.
+        }
+        else if (frame_counter == HALF_FRAME) {
+            // Quarter and Half frame.
+        }
+        else if (frame_counter == FULL_FRAME) {
+            // Quarter and Half frame.
+            frame_counter = 0;
+        }
+
+        p1.executeCycle(apu_status.enable_p1);
+
+        if (apu_status.enable_p1) {
+            // p1.wave_sequence = ((p1.wave_sequence & 0x01) << 7) || (p1.wave_sequence >> 1);
+
+            int16_t sample = square(p1, current_time) * gui->volume; // Was current_time * 4
+            
+            // int16_t sample = (p1.wave_sequence << 8) | p1.wave_sequence;
+            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            const int sample_size = sizeof(int16_t);
+            
+            SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+        }
+
+        frame_counter += 1;
     }
-    else if (frame_counter == HALF_FRAME) {
-        // Quarter and Half frame.
-    }
-    else if (frame_counter == FULL_FRAME) {
-        // Quarter and Half frame.
-        frame_counter = 0;
-    }
-
-    p1.executeCycle(apu_status.enable_p1);
-
-    if (apu_status.enable_p1) {
-        // p1.wave_sequence = ((p1.wave_sequence & 0x01) << 7) || (p1.wave_sequence >> 1);
-
-        // int16_t sample = square(p1, current_time * 4) * gui->volume;
-        
-        int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
-        const int sample_size = sizeof(int16_t);
-        
-        SDL_QueueAudio(gui->audio_device, &sample, sample_size);
-    }
-
-    frame_counter += 1;
+    current_sample_cycle += 1;
     return 0;
 }

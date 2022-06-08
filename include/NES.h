@@ -37,7 +37,7 @@
 
 #define INPUT_LOG SDLK_l
 #define INPUT_FRAME SDLK_f
-#define SHOW_DEBUG true
+#define SHOW_DEBUG false
 
 using namespace std;
 using namespace std::this_thread;
@@ -63,7 +63,7 @@ class NES {
         const uint8_t* key_state;
 
         // std::time_t next_cycle_time;
-        uint32_t cycle_time_ns;
+        // uint32_t cycle_time_ns;
 
         NES();
         ~NES();

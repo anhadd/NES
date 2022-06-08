@@ -5,7 +5,7 @@
 
 #define GUI_WIDTH 256
 #define GUI_HEIGHT 240
-#define GUI_SCALE 2
+#define GUI_SCALE 3
 
 
 

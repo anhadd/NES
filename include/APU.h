@@ -43,7 +43,7 @@ using namespace std;
 #define THREE_QUARTER_FRAME 11186
 #define FULL_FRAME 14916
 
-#define SAMPLE_TIME_DELTA 0.00002267573f
+#define SAMPLE_TIME_DELTA (1.0 / 44100.0)
 
 
 union pulse_control {
@@ -143,6 +143,8 @@ class APU {
 
         float current_time;
         uint32_t frame_counter;
+        uint16_t cycles_per_sample;
+        uint16_t current_sample_cycle;
 
         uint16_t test_freq = 20;
 

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     SDL_PauseAudioDevice(nes.gui.audio_device, 0);
 
     while (!nes.quit) {
-        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/nes.FPS));
+        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/nes.FPS + 1));
         handleInput(nes);
 
         if (!nes.paused || nes.run_frame) {
@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
         }
         
         sleep_until(system_clock::from_time_t(next_frame_time));
+        SDL_UpdateWindowSurface(nes.gui.window);
     }
 
     if (nes.rom.mapper->prg_ram_enabled) {
