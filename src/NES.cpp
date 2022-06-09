@@ -21,7 +21,7 @@ NES::NES() {
     run_frame = false;
     FPS = 60;
 
-    debug_log = false;
+    // debug_log = false;
 
     // Tell the ppu whether to render debug screens.
     ppu.show_debug = SHOW_DEBUG;
@@ -55,23 +55,23 @@ void NES::reset() {
 void NES::executeFrame() {
     while (!ppu.frame_finished) {
         // Prints debug log information.
-        if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
-            fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n",
-                cpu.PC, 
-                cpu.cpuRead(cpu.PC), 
-                cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
-                cpu.cpuRead(cpu.PC + 1),
-                cpu.cpuRead(cpu.PC + 2),
-                cpu.accumulator, 
-                cpu.X, 
-                cpu.Y, 
-                cpu.status.full,
-                cpu.SP, 
-                ppu.scanlines, 
-                ppu.cycles,
-                cpu.total_cycles
-            );
-        }
+        // if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
+        //     fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n",
+        //         cpu.PC, 
+        //         cpu.cpuRead(cpu.PC), 
+        //         cpu.op_lookup[cpu.cpuRead(cpu.PC)].opname, 
+        //         cpu.cpuRead(cpu.PC + 1),
+        //         cpu.cpuRead(cpu.PC + 2),
+        //         cpu.accumulator, 
+        //         cpu.X, 
+        //         cpu.Y, 
+        //         cpu.status.full,
+        //         cpu.SP, 
+        //         ppu.scanlines, 
+        //         ppu.cycles,
+        //         cpu.total_cycles
+        //     );
+        // }
 
         ppu.executeCycle();
         ppu.executeCycle();
