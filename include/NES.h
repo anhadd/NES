@@ -25,7 +25,7 @@
 
 #define INPUT_PALETTE SDLK_p
 #define INPUT_SLOW SDLK_9
-#define INPUT_FAST SDLK_8
+#define INPUT_FAST SDLK_0
 
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
@@ -55,7 +55,7 @@ class NES {
 
         const uint8_t* key_state;   // For reading keyboard input.
 
-        bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
+        // bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
 
         NES();
         ~NES();
