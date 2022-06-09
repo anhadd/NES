@@ -10,7 +10,7 @@ PPU::PPU() {
     total_frames = 0;
     cycles = 0;
     scanlines = 0;
-    finished = false;
+    frame_finished = false;
     address_latch = false;
     odd_frame = false;
 
@@ -22,7 +22,6 @@ PPU::PPU() {
     ppu_status.full = 0x00;
     oam_addr = 0x00;
     oam_data = 0x00;
-    ppu_scroll = 0x00;
 
     ppu_addr.full = 0x0000;
     ppu_buff.full = 0x0000;
@@ -141,7 +140,7 @@ void PPU::reset() {
     total_frames = 0;
     cycles = 0;
     scanlines = 0;
-    finished = false;
+    frame_finished = false;
     address_latch = false;
     odd_frame = false;
 
@@ -151,7 +150,6 @@ void PPU::reset() {
     ppu_ctrl.full = 0x00;
     ppu_mask.full = 0x00;
     oam_data = 0x00;
-    ppu_scroll = 0x00;
 
     ppu_buff.full = 0x0000;
     fine_x = 0x00;
@@ -195,6 +193,7 @@ void PPU::passROM(ROM* nesROM) {
 // Increment the PPU address register depending on the increment mode.
 void PPU::incrementPPUAddr() {
     // If rendering, the ppu address increment causes coarse_x and coarse_y.
+    // TODO: CHECK THIS SPECIAL BEHAVIOR STUFF.
     if ((ppu_mask.showbg || ppu_mask.showsprites) && (scanlines >= -1 && scanlines <= 239)){
         if (ppu_addr.coarse_x == 31) {
             ppu_addr.coarse_x = 0;
@@ -666,15 +665,15 @@ bool PPU::executeCycle() {
                             + ((ppu_addr.coarse_y / 4) * 0x08)
                             + (ppu_addr.coarse_x / 4);
                     bg_attribute = ppuRead(byte_addr);
-                    // Shifts the attribute byte to get the palette of the correct quarter of the tile.
+                    // Shift the attribute byte to get the palette of the correct quarter of the tile.
                     if ((ppu_addr.coarse_y % 4) >= 2) {
                         // Top half of attribute 2x2 tile.
-                        // Shifts the bg_attribute 4 bits to the right to get there.
+                        // Shift the bg_attribute 4 bits to the right to get there.
                         bg_attribute >>= 4;
                     }
                     if (ppu_addr.coarse_x % 4 >= 2) {
                         // Left half of attribute 2x2 tile.
-                        // Shifts the bg_attribute 2 bits to the right to get there.
+                        // Shift the bg_attribute 2 bits to the right to get there.
                         bg_attribute >>= 2;
                     }
                     bg_attribute &= 0x03;
@@ -963,7 +962,7 @@ bool PPU::executeCycle() {
         scanlines += 1;
 		if (scanlines >= MAX_SCANLINES) {
 			scanlines = -1;
-			finished = true;
+			frame_finished = true;
 
             total_frames += 1;
             odd_frame = !odd_frame;

@@ -4,6 +4,7 @@
 
 
 CPU::CPU() {
+    // Constructor.
     status.full = 0x00 | UNUSED_MASK | BREAK_COMMAND_MASK | INTERRUPT_DISABLED_MASK;
     PC = 0x0000;
     SP = 0x00;
@@ -102,25 +103,24 @@ void CPU::NMI() {
 bool CPU::executeCycle() {
     // Execute a single cycle.
     if (cycles == 0) {
-        /* 
-            Set current opcode 
-            -> set addressing mode 
-            -> set required cycles 
-            -> call readaddress to get the absolute address 
-            -> call opcode function.
-        */
+        // Set current opcode.
         opcode = cpuRead(PC);
-        
         PC += 1;
+        // Set addressing mode.
         mode = op_lookup[opcode].opmode;
+        // Set required cycles.
         cycles = op_lookup[opcode].opcycles;
         additional_cycle = op_lookup[opcode].extra_cycle;
+        // Call readAddress to get the absolute address.
         readAddress();
+        // Call opcode function.
         (this->*op_lookup[opcode].opFunction)();
     }
+    // Decrement the amount of cycles until an instruction is finished.
     cycles -= 1;
     total_cycles += 1;
 
+    // If the instruction is finished and there is a pending NMI, execute the NMI.
     if (cycles == 0 && execute_nmi) {
         NMI();
         execute_nmi = false;
@@ -267,7 +267,7 @@ void CPU::decrementSP() {
     }
 }
 
-// Decrements the stack pointer (SP).
+// Increments the stack pointer (SP).
 void CPU::incrementSP() {
     if (SP == 0xFF) {
         SP = 0x00;
@@ -296,19 +296,41 @@ void CPU::pushStatusToStack(bool is_instruction) {
     decrementSP();
 }
 
+
+
 /*
 ========================================================================
 ============================< INSTRUCTIONS >============================
 ========================================================================
+
+The information for the official instructions is not difficult to find.
+If there is a special scenario that is not obvious there will be comment pointing it out.
+
+The unofficial (illegal) instructions are more difficult to find information about.
+By far most released games do not use these instructions, but test ROMs might.
+Adding them will also put the emulator a step closer to being complete, so it is recommended
+to add them, even if they do not work perfectly.
+
+Amazing sources for instruction information:
+----- Official Instructions Only -----
+http://www.6502.org/tutorials/6502opcodes.html#ASL
+https://www.middle-engine.com/blog/posts/2020/06/23/programming-the-nes-the-6502-in-detail
+http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf
+
+----- Official and Unofficial Instructions -----
+http://www.oxyron.de/html/opcodes02.html
+https://www.masswerk.at/6502/6502_instruction_set.html#SRE
 */
 
+// Addition.
 void CPU::ADC() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)accumulator + (uint16_t)read_data + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    // status.overflow =   ((accumulator & NEGATIVE_MASK) && (read_data & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
-    //                 || (!(accumulator & NEGATIVE_MASK) && !(read_data & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
+    // The overflow is decided by checking whether the sign of the number has changed.
+    // If the sign before the instruction is either - or + for both operands, then the
+    // result should match that. If it does not then there has been an overflow.
     status.overflow =   ((accumulator & NEGATIVE_MASK) == (read_data & NEGATIVE_MASK))
                         && ((temp & NEGATIVE_MASK) != (read_data & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
@@ -317,6 +339,7 @@ void CPU::ADC() {
     accumulator = temp & 0x00FF;
 }
 
+// Bitwise and.
 void CPU::AND() {
     accumulator &= cpuRead(absolute_address);
     
@@ -324,13 +347,14 @@ void CPU::AND() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Shift left.
 void CPU::ASL() {
     if (mode == ACC) {
         temp = (uint16_t)accumulator << 1;
         accumulator = temp & 0x00FF;
     }
     else {
-        // Writes the original value once, then the updated value.
+        // Writes the original value once, then the updated value (Dummy write).
         read_data = cpuRead(absolute_address);
         cpuWrite(absolute_address, read_data);
         temp = (uint16_t)read_data << 1;
@@ -342,18 +366,22 @@ void CPU::ASL() {
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
+// Branch if carry flag is clear (Branch on Carry Clear).
 void CPU::BCC() {
     checkBranch(!status.carry);
 }
 
+// Branch if carry flag is set (Branch on Carry Set).
 void CPU::BCS() {
     checkBranch(status.carry);
 }
 
+// Branch if zero flag is set.
 void CPU::BEQ() {
     checkBranch(status.zero);
 }
 
+// Test the bit in memory using the accumulator.
 void CPU::BIT() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)accumulator & (uint16_t)read_data;
@@ -363,22 +391,27 @@ void CPU::BIT() {
     status.overflow =   (read_data & OVERFLOW_MASK) != 0;
 }
 
+// Branch if negative flag is set.
 void CPU::BMI() {
     checkBranch(status.negative);
 }
 
+// Branch if zero flag is clear.
 void CPU::BNE() {
     checkBranch(!status.zero);
 }
 
+// Branch if negative flag is clear.
 void CPU::BPL() {
     checkBranch(!status.negative);
 }
 
+// Break.
 void CPU::BRK() {
-    // Dummy read (all 1 byte operations should do it).
+    // Dummy read.
     cpuRead(PC);
 
+    // Pushes the PC+1 onto the stack.
     PC += 1;
     pushPCToStack();
 
@@ -388,30 +421,37 @@ void CPU::BRK() {
     PC = (cpuRead(0xFFFF) << 8) | cpuRead(0xFFFE);
 }
 
+// Branch if overflow flag is clear (Branch on V Clear).
 void CPU::BVC() {
     checkBranch(!status.overflow);
 }
 
+// Branch if overflow flag is set (Branch on V Set).
 void CPU::BVS() {
     checkBranch(status.overflow);
 }
 
+// Clear carry flag.
 void CPU::CLC() {
     status.carry = 0;
 }
 
+// Clear decimal mode flag.
 void CPU::CLD() {
     status.decimal_mode = 0;
 }
 
+// Clear interrupt disabled flag.
 void CPU::CLI() {
     status.interrupt_disabled = 0;
 }
 
+// Clear overflow flag.
 void CPU::CLV() {
     status.overflow = 0;
 }
 
+// Compare data in memory to the accumulator.
 void CPU::CMP() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)accumulator - (uint16_t)read_data;
@@ -421,6 +461,7 @@ void CPU::CMP() {
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
+// Compare data in memory to X.
 void CPU::CPX() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)X - (uint16_t)read_data;
@@ -430,6 +471,7 @@ void CPU::CPX() {
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
+// Compare data in memory to Y.
 void CPU::CPY() {
     read_data = cpuRead(absolute_address);
     temp = (uint16_t)Y - (uint16_t)read_data;
@@ -439,8 +481,9 @@ void CPU::CPY() {
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
+// Decrement value in memory.
 void CPU::DEC() {
-    // Writes the original value once, then the updated value.
+    // Writes the original value once, then the updated value (Dummy write).
     read_data = cpuRead(absolute_address);
     cpuWrite(absolute_address, read_data);
 
@@ -457,7 +500,10 @@ void CPU::DEC() {
     status.negative =   (read_data & NEGATIVE_MASK) != 0;
 }
 
+// Decrement X
 void CPU::DEX() {
+    // If X would go below 0 it wraps around to 255.
+    // This is jst to make it clear what happens, since it would happen automatically for uint_8 anyway.
     if (X == 0) {
         X = 0xFF;
     }
@@ -469,7 +515,10 @@ void CPU::DEX() {
     status.negative =   (X & NEGATIVE_MASK) != 0;
 }
 
+// Decrement Y
 void CPU::DEY() {
+    // If Y would go below 0 it wraps around to 255.
+    // This is jst to make it clear what happens, since it would happen automatically for uint_8 anyway.
     if (Y == 0) {
         Y = 0xFF;
     }
@@ -481,6 +530,7 @@ void CPU::DEY() {
     status.negative =   (Y & NEGATIVE_MASK) != 0;
 }
 
+// Bitwise Exclusive OR.
 void CPU::EOR() {
     accumulator ^= cpuRead(absolute_address);
 
@@ -488,6 +538,7 @@ void CPU::EOR() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Increment value in memory.
 void CPU::INC() {
     // Writes the original value once, then the updated value.
     read_data = cpuRead(absolute_address);
@@ -506,6 +557,7 @@ void CPU::INC() {
     status.negative =   (read_data & NEGATIVE_MASK) != 0;
 }
 
+// Increment X.
 void CPU::INX() {
     if (X == 0xFF) {
         X = 0;
@@ -518,6 +570,7 @@ void CPU::INX() {
     status.negative =   (X & NEGATIVE_MASK) != 0;
 }
 
+// Increment Y.
 void CPU::INY() {
     if (Y == 0xFF) {
         Y = 0;
@@ -530,10 +583,12 @@ void CPU::INY() {
     status.negative =   (Y & NEGATIVE_MASK) != 0;
 }
 
+// Jump.
 void CPU::JMP() {
     PC = absolute_address;
 }
 
+// Jump to Sub Routine.
 void CPU::JSR() {
     PC -= 1;
     pushPCToStack();
@@ -541,6 +596,7 @@ void CPU::JSR() {
     PC = absolute_address;
 }
 
+// Load value in memory into the accumulator.
 void CPU::LDA() {
     accumulator = cpuRead(absolute_address);
 
@@ -548,6 +604,7 @@ void CPU::LDA() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Load value in memory into X.
 void CPU::LDX() {
     X = cpuRead(absolute_address);
 
@@ -555,6 +612,7 @@ void CPU::LDX() {
     status.negative =   (X & NEGATIVE_MASK) != 0;
 }
 
+// Load value in memory into Y.
 void CPU::LDY() {
     Y = cpuRead(absolute_address);
 
@@ -562,6 +620,7 @@ void CPU::LDY() {
     status.negative =   (Y & NEGATIVE_MASK) != 0;
 }
 
+// Shift right.
 void CPU::LSR() {
     if (mode == ACC) {
         temp = accumulator >> 1;
@@ -582,10 +641,12 @@ void CPU::LSR() {
     status.negative =   (temp & NEGATIVE_MASK) != 0;
 }
 
+// Does nothing.
 void CPU::NOP() {
-    // Does nothing.
+
 }
 
+// Bitwise OR.
 void CPU::ORA() {
     accumulator |= cpuRead(absolute_address);
 
@@ -593,15 +654,18 @@ void CPU::ORA() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Push accumulator onto stack.
 void CPU::PHA() {
     cpuWrite(SP + STACK_START, accumulator);
     decrementSP();
 }
 
+// Push status register onto stack.
 void CPU::PHP() {
     pushStatusToStack(true);
 }
 
+// Pull value from stack into the accumulator.
 void CPU::PLA() {
     incrementSP();
     accumulator = cpuRead(SP + STACK_START);
@@ -610,12 +674,14 @@ void CPU::PLA() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Pull value from stack into the status register.
 void CPU::PLP() {
     incrementSP();
     status.full = cpuRead(SP + STACK_START) | UNUSED_MASK;
     status.break_command = 0;
 }
 
+// Rotate left. Incoming bit is the carry flag.
 void CPU::ROL() {
     if (mode == ACC) {
         temp = ((uint16_t)accumulator << 1) | status.carry;
@@ -627,7 +693,7 @@ void CPU::ROL() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
-        // Writes the original value once, then the updated value.
+        // Writes the original value once, then the updated value (Dummy write).
         read_data = cpuRead(absolute_address);
         cpuWrite(absolute_address, read_data);
 
@@ -642,6 +708,7 @@ void CPU::ROL() {
     }
 }
 
+// Rotate right. Incoming bit is the carry flag.
 void CPU::ROR() {
     if (mode == ACC) {
         temp = ((uint16_t)accumulator >> 1) | ((uint16_t)status.carry << 7);
@@ -653,7 +720,7 @@ void CPU::ROR() {
         status.negative =   (accumulator & NEGATIVE_MASK) != 0;
     }
     else {
-        // Writes the original value once, then the updated value.
+        // Writes the original value once, then the updated value (Dummy write).
         read_data = cpuRead(absolute_address);
         cpuWrite(absolute_address, read_data);
 
@@ -668,8 +735,9 @@ void CPU::ROR() {
     }
 }
 
+// Return from interrupt.
 void CPU::RTI() {
-    // Dummy read (all 1 byte operations should do it).
+    // Dummy read.
     cpuRead(PC);
 
     incrementSP();
@@ -682,8 +750,9 @@ void CPU::RTI() {
     PC = (byte2 << 8) | byte1;
 }
 
+// Return from subroutine.
 void CPU::RTS() {
-    // Dummy read (all 1 byte operations should do it).
+    // Dummy read.
     cpuRead(PC);
 
     incrementSP();
@@ -694,13 +763,16 @@ void CPU::RTS() {
     PC += 1;
 }
 
+// Subtraction.
 void CPU::SBC() {
+    // Subtraction is the same as addition but with the bits of the read_data flipped (XOR 0xFF).
     read_data = cpuRead(absolute_address) ^ 0xFF;
     temp = (uint16_t)accumulator + (uint16_t)read_data + (uint16_t)status.carry;
     
     status.carry =      temp > 0xFF;
-    // status.overflow =   ((accumulator & NEGATIVE_MASK) && (read_data & NEGATIVE_MASK) && !(temp & NEGATIVE_MASK)) 
-    //                 || (!(accumulator & NEGATIVE_MASK) && !(read_data & NEGATIVE_MASK) && (temp & NEGATIVE_MASK));
+    // The overflow is decided by checking whether the sign of the number has changed.
+    // If the sign before the instruction is either - or + for both operands, then the
+    // result should match that. If it does not then there has been an overflow.
     status.overflow =   ((accumulator & NEGATIVE_MASK) == (read_data & NEGATIVE_MASK))
                         && ((temp & NEGATIVE_MASK) != (read_data & NEGATIVE_MASK));
     status.zero =       (temp & 0x00FF) == 0;
@@ -709,30 +781,37 @@ void CPU::SBC() {
     accumulator = temp & 0x00FF;
 }
 
+// Set carry flag.
 void CPU::SEC() {
     status.carry = 1;
 }
 
+// Set decimal mode flag.
 void CPU::SED() {
     status.decimal_mode = 1;
 }
 
+// Set interrupt flag.
 void CPU::SEI() {
     status.interrupt_disabled = 1;
 }
 
+// Store the accumulator in memory.
 void CPU::STA() {
     cpuWrite(absolute_address, accumulator);
 }
 
+// Store X in memory.
 void CPU::STX() {
     cpuWrite(absolute_address, X);
 }
 
+// Store Y in memory.
 void CPU::STY() {
     cpuWrite(absolute_address, Y);
 }
 
+// Store (Transfer) the accumulator in X.
 void CPU::TAX() {
     X = accumulator;
 
@@ -740,6 +819,7 @@ void CPU::TAX() {
     status.negative =   (X & NEGATIVE_MASK) != 0;
 }
 
+// Store (Transfer) the accumulator in Y.
 void CPU::TAY() {
     Y = accumulator;
 
@@ -747,6 +827,7 @@ void CPU::TAY() {
     status.negative =   (Y & NEGATIVE_MASK) != 0;
 }
 
+// Store (Transfer) the stack pointer in X.
 void CPU::TSX() {
     X = SP;
 
@@ -754,6 +835,7 @@ void CPU::TSX() {
     status.negative =   (X & NEGATIVE_MASK) != 0;
 }
 
+// Store (Transfer) X in the accumulator.
 void CPU::TXA() {
     accumulator = X;
 
@@ -761,10 +843,12 @@ void CPU::TXA() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Store (Transfer) X in the stack pointer.
 void CPU::TXS() {
     SP = X;
 }
 
+// Store (Transfer) Y in the accumulator.
 void CPU::TYA() {
     accumulator = Y;
 
@@ -772,11 +856,12 @@ void CPU::TYA() {
     status.negative =   (accumulator & NEGATIVE_MASK) != 0;
 }
 
+// Unknown OPCode encountered.
 void CPU::UNK() {
     fprintf(stderr, "Error: Unknown operation!\n");
     fprintf(stderr, "OPCODE: %02x     PC: %04x\n\n", opcode, PC);
     
-    // Exits whenever an illegal opcode is encountered.
+    // Exit.
     printf("Exiting: Invalid opcode encountered!\n");
     exit(0);
 }
@@ -787,8 +872,13 @@ void CPU::UNK() {
 
 /* ILLEGAL INSTRUCTIONS
    Illegal instructions are instructions that are not "officially" supported, however 
-   these instructions still do stuff which could be used by games. It is usually a good idea
+   these instructions still do stuff which could be used by ROMs. It is usually a good idea
    to implement these instructions, since that is how a real NES would behave as well.
+
+   Some illegal instructions are just 2 official instructions after each other, and these are 
+   not difficult to implement.
+   However other illegal instructions have weird side effects / differences which need to be kept
+   in mind.
    
    note: XAA and LAX are highly unstable and should not be used, so they are not implemented.
          AHX, SHY, SHX, and TAS are also unstable, so they might not be completely correct.

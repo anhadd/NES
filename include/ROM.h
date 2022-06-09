@@ -49,9 +49,11 @@ The format of the header is as follows:
 11-15: Unused padding (should be filled with zero, but some rippers put their name across bytes 7-15)
 */
 
+
+// All the flags used by the cartridge.
 union flags6 {
     struct {
-        uint8_t mirroring : 1;              // 0 = horizontal, 1 = vertical.
+        uint8_t mirroring : 1;          // 0 = horizontal, 1 = vertical.
         uint8_t persistent_memory : 1;
         uint8_t trainer_present : 1;
         uint8_t ignore_mirroring : 1;
@@ -64,7 +66,7 @@ union flags7 {
     struct {
         uint8_t vs_unisystem : 1;
         uint8_t playchoice10 : 1;
-        uint8_t nes2 : 2;                   // If == 2, use NES 2.0 format.
+        uint8_t nes2 : 2;               // If == 2, use NES 2.0 format.
         uint8_t mapper_upper : 4;
     };
     uint8_t full;
@@ -91,14 +93,15 @@ union flags10 {
     uint8_t full;
 };
 
+// Union for the header data contained in a .nes file.
 union header {
     struct {
         uint8_t constant[4];
-        uint8_t prg_rom_size;       // In 16KB units.
-        uint8_t chr_rom_size;       // In 8KB units.
+        uint8_t prg_rom_size;           // In 16KB units.
+        uint8_t chr_rom_size;           // In 8KB units.
         union flags6 f6;
         union flags7 f7;
-        uint8_t prg_ram_size;       // flags8
+        uint8_t prg_ram_size;           // flags8
         union flags9 f9;
         union flags10 f10;
         uint8_t unused[5];
@@ -109,29 +112,31 @@ union header {
 
 class ROM {
     public:
-        union header h;
-        Mapper* mapper;
-        uint8_t mapper_id;
+        Mapper* mapper;                 // The mapper that is used by the cartridge.
 
-        vector<uint8_t> PRG_memory;     // PRG memory, vector so it is resizable for each mapper.
+        vector<uint8_t> PRG_memory;     // PRG memory. Is a vector so that it is resizable for each mapper.
                                         // Stores the actual ROM program data (instructions etc).
-        vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper.
-        vector<uint8_t> CHR_memory;     // CHR memory, vector so it is resizable for each mapper.
+        vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper. Contains the save data.
+        vector<uint8_t> CHR_memory;     // CHR memory. Is a vector so that it is resizable for each mapper.
                                         // Stores the pattern table.
-        bool CHR_is_ram;
-        vector<uint8_t> Expansion_ROM;  // Expansion ROM.
+        
+        bool CHR_is_ram;                // Determines whether writes to CHR memory are allowed.
+        vector<uint8_t> Expansion_ROM;  // Expansion ROM memory.
 
-        string save_path;
+        string save_path;               // The path of the save file. Used to save and load game data.
 
+        // Constructor / Destructor.
         ROM();
         ~ROM();
 
-        void reset();
-
-        bool loadRom(string romName);
+        void reset();                   // Resets the ROM.
+        bool loadRom(string romName);   // Loads a ROM file (.nes).
 
     private:
-        void dumpContents(ifstream* romFile);
+        union header h;                 // Header data of a .nes file.
+        uint8_t mapper_id;              // The id of the mapper.
+
+        void dumpContents(ifstream* romFile);   // Dumps the ROM (.nes) file contents. Can be used for debugging.
 };
 
 

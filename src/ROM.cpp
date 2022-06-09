@@ -9,11 +9,6 @@ ROM::ROM() {
     mapper_id = 0;
 
     CHR_is_ram = false;
-
-    // fill(begin(PRG_memory), end(PRG_memory), 0);
-    // fill(begin(PRG_ram), end(PRG_ram), 0);
-    // fill(begin(CHR_memory), end(CHR_memory), 0);
-    // fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 }
 
 
