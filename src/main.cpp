@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     remove("nes_error.log");
     setbuf(freopen("nes_error.log", "w", stderr), NULL);
     
-    std::time_t next_frame_time = 0;
+    time_point<std::chrono::steady_clock> next_frame_time = steady_clock::now();
 
     SDL_ShowWindow(nes.gui.window);
     if (SHOW_DEBUG) {
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     printf("Rom Loaded!\n");
 
     while (!nes.quit) {
-        next_frame_time = system_clock::to_time_t(system_clock::now() + milliseconds(1000/nes.FPS));
+        next_frame_time += milliseconds(1000/nes.FPS);
         handleInput(nes);
 
         if (!nes.paused || nes.run_frame) {
@@ -54,7 +54,8 @@ int main(int argc, char *argv[])
             nes.executeFrame();
         }
         
-        sleep_until(system_clock::from_time_t(next_frame_time));
+        sleep_until(next_frame_time);
+        SDL_UpdateWindowSurface(nes.gui.window);
     }
 
     if (nes.rom.mapper->prg_ram_enabled) {
