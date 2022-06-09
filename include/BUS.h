@@ -14,10 +14,10 @@ class BUS {
     public:
         uint8_t controller[2];          // Used for handling input.
 
-        uint8_t oam_page;               // The page that OAM is transfered from.
+        uint8_t oam_page;               // The page that OAM is transferred from.
         uint8_t oam_index;              // The current byte index to transfer to OAM.
         uint8_t oam_data;               // The current byte to transfer to OAM.
-        bool oam_writing;               // Set when data is being transfered to OAM.
+        bool oam_writing;               // Set when data is being transferred to OAM.
         bool cpu_synchronized;          // Set when the CPU is synchronized to start transferring OAM data.
         
         BUS();                          // Constructor.

@@ -136,9 +136,9 @@ class CPU {
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
         void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
-                                    // Jumps to the address located at $FFFA and $FFFB
+                                    // Jumps to the address located at 0xFFFA and 0xFFFB
         void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
-                                    // jumps to the address located at $FFFE and $FFFF
+                                    // jumps to the address located at 0xFFFE and 0xFFFF
         void decrementSP();         // Decrements the stack pointer (SP);
         void incrementSP();         // Increments the stack pointer (SP);
         

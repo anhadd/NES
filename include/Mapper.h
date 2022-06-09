@@ -60,7 +60,7 @@ class Mapper {
         enum Mirroring mirroring;   // Mirroring type for the nametables.
         bool prg_ram_enabled;       // Whether PRG RAM is enabled, determines whether the cartridge uses persistent saves.
 
-        // Contructor / Destructor.
+        // Constructor / Destructor.
         Mapper(uint8_t nPRG = 0, uint8_t nCHR = 0);
         ~Mapper();
 

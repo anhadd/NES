@@ -95,9 +95,9 @@ union PPUMASK {
         uint8_t showsprites_left : 1;
         uint8_t showbg : 1;
         uint8_t showsprites : 1;
-        uint8_t emph_r : 1;
-        uint8_t emph_g : 1;
-        uint8_t emph_b : 1;
+        uint8_t emphasis_r : 1;
+        uint8_t emphasis_g : 1;
+        uint8_t emphasis_b : 1;
     };
     uint8_t full;
 };
@@ -247,7 +247,7 @@ class PPU {
         uint8_t bg_nametable;                   // Stores the next tile index in the nametable that needs to be rendered.
         uint8_t bg_attribute;                   // Stores the next attribute data of the background tile that needs to be rendered.
         uint8_t bg_low;                         // Stores the next low byte of the background tile that needs to be rendered.
-        uint8_t bg_high;                        // Stores the next high byte of the background tile cthat needs to be rendered.
+        uint8_t bg_high;                        // Stores the next high byte of the background tile that needs to be rendered.
 
         uint16_t getColorIndex(uint8_t palette, uint8_t index);     // Used for getting the absolute index of a color with a certain palette and index inside that palette.
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);    // Draw a single pixel on a surface.

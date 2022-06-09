@@ -38,7 +38,7 @@ class GUI {
         // Event handler for input.
         SDL_Event sdlevent;
 
-        // Contructor / Destructor.
+        // Constructor / Destructor.
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();
 
