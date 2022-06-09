@@ -967,7 +967,6 @@ bool PPU::executeCycle() {
             total_frames += 1;
             odd_frame = !odd_frame;
             SDL_BlitScaled(gui->surface_buff, NULL, gui->surface, &gui->scaled_screen_rect);
-            SDL_UpdateWindowSurface(gui->window);
 		}
 	}
     
