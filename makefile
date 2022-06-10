@@ -1,9 +1,5 @@
-CC = g++
-CFLAGS = -lSDL2
-DEPS = /include/*
-OBJECTS = /src/NES.o /src/BUS.o /src/PPU.o /src/ROM.o /src/input.o /src/GUI.o /src/CPU.o /src/main.o
-
-
+# Used in order to allow make commands from the main project directory.
+# Only executes the same make command from inside the src directory.
 all: 
 	+$(MAKE) -C src
 
