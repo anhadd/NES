@@ -52,6 +52,8 @@ using namespace std;
 
 #define MAX_COLUMNS 341
 #define MAX_SCANLINES 261
+#define TILE_SIZE_IN_BYTES 0x10
+#define NAMETABLE_SIZE_IN_BYTES 0x1000
 
 #define CONTROL     0x2000
 #define MASK        0x2001
@@ -90,7 +92,7 @@ union PPUCTRL {
 // PPU Mask register.
 union PPUMASK {
     struct {
-        uint8_t greyscale : 1;
+        uint8_t grayscale : 1;
         uint8_t showbg_left : 1;
         uint8_t showsprites_left : 1;
         uint8_t showbg : 1;
@@ -199,7 +201,7 @@ class PPU {
         ROM* rom;
         
         uint16_t total_frames;                  // Used for updating the debug screens every number of frames.
-        bool address_latch;                     // The address latch used for PPU writes.
+        bool address_latch;                     // The address latch used for PPU writes. Determines the effects of a write to the address and scroll registers.
         bool odd_frame;                         // Set when the PPU is executing an odd frame. Used for skipped a cycle every odd frame.
 
         struct Color curr_color;                // Used for temporarily storing the current color that needs to be displayed on the screen.
@@ -257,6 +259,9 @@ class PPU {
         void updateShifters();                  // Updates the shifters, which means shifting the data by 1 bit.
         void incrementPPUAddr();                // Increments the PPU address depending on the increment mode.
         uint8_t flipByte(uint8_t byte);
+
+        void incrementCoarseX();                // Move to the next horizontal tile.
+        void incrementCoarseY();                // Move to the next vertical tile.
 };
 
 
