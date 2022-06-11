@@ -69,7 +69,6 @@ uint8_t BUS::busReadCPU(uint16_t address) {
     }
     // Read from PRG RAM.
     else if (address >= 0x6000 && address <= 0x7FFF) {
-        // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULD NOT ?)
         return rom->PRG_ram[rom->mapper->cpuMap(address, false)];
     }
     // Read from PRG memory / PRG ROM.
@@ -113,7 +112,6 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     }
     // Write to PRG RAM.
     else if (address >= 0x6000 && address <= 0x7FFF) {
-        // TODO: CHECK WHY SOME MAPPER 2 ROMS USE THIS (THOUGHT THEY SHOULD NOT ?)
         rom->PRG_ram[rom->mapper->cpuMap(address, true, value)] = value;
     }
     // Write to PRG memory / PRG ROM.
