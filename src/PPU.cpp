@@ -194,12 +194,12 @@ void PPU::passROM(ROM* nesROM) {
 
 // Increment the PPU address register depending on the increment mode.
 void PPU::incrementPPUAddr() {
-    // If rendering, the ppu address increment causes coarse_x and coarse_y to be incremented.
-    // TODO: CHECK THIS SPECIAL BEHAVIOR STUFF.
+    // If rendering, the PPU address increment causes coarse_x and fine_y to be incremented instead.
     if ((ppu_mask.showbg || ppu_mask.showsprites) && (scanlines >= -1 && scanlines <= 239)){
         incrementCoarseX();
-        incrementCoarseY();
+        incrementFineY();
     }
+    // If not rendering, increment PPU address normally.
     else {
         if (ppu_ctrl.ppu_increment) {
             ppu_addr.full += 32;
@@ -624,7 +624,18 @@ void PPU::incrementCoarseY() {
     }
 }
 
-// Executes a single ppu cycle.
+void PPU::incrementFineY() {
+    // If the y pixel would become 8, it moves to the next vertical tile (A tile is 8 pixels high).
+    if (ppu_addr.fine_y == 7) {
+        ppu_addr.fine_y = 0;
+        incrementCoarseY();
+    }
+    else {
+        ppu_addr.fine_y += 1;
+    }
+}
+
+// Executes a single PPU cycle.
 bool PPU::executeCycle() {
     /*  
         - With rendering disabled (background and sprites disabled in PPUMASK ($2001)), 
@@ -724,17 +735,10 @@ bool PPU::executeCycle() {
         // If the cycle (x) is at the end of a line of pixels, move to the next line (fine_y).
         if (cycles == 256) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
-                // If fine_y would become 8 move to the next vertical tile (a tile is 8 pixels high).
-                if (ppu_addr.fine_y == 7) {
-                    ppu_addr.fine_y = 0;
-                    incrementCoarseY();
-                }
-                else {
-                    ppu_addr.fine_y += 1;
-                }
+                incrementFineY();
             }
         }
-        // At the 257th scanline, load the x values of the buffered address into the real ppu address register.
+        // At the 257th scanline, load the x values of the buffered address into the real PPU address register.
         else if (cycles == 257) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_x = ppu_buff.nametable_x;
@@ -745,7 +749,7 @@ bool PPU::executeCycle() {
         else if (cycles == 337 || cycles == 339) {
             bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
         }
-        // On the cycles 280 to 304 of the prerender scanline, load the y values of the buffered address into the real ppu address register.
+        // On the cycles 280 to 304 of the prerender scanline, load the y values of the buffered address into the real PPU address register.
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
             if (ppu_mask.showbg || ppu_mask.showsprites) {
                 ppu_addr.nametable_y = ppu_buff.nametable_y;
@@ -937,13 +941,21 @@ bool PPU::executeCycle() {
 
     // If only the sprite is being rendered, take the sprite color.
     if (bg_pixel == 0x00  && sprite_pixel > 0x00) {
-        final_pixel = sprite_pixel;
-        final_palette = sprite_palette;
+        // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
+        // This is done since rendering of the left part of the screen could be turned off.
+        if (!(cycles < 9 && !ppu_mask.showsprites_left)) {
+            final_pixel = sprite_pixel;
+            final_palette = sprite_palette;
+        }
     }
     // If only the background is being rendered, take the background color.
     else if (bg_pixel > 0x00 && sprite_pixel == 0x00) {
-        final_pixel = bg_pixel;
-        final_palette = bg_palette;
+        // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
+        // This is done since rendering of the left part of the screen could be turned off.
+        if (!(cycles < 9 && !ppu_mask.showbg_left)) {
+            final_pixel = bg_pixel;
+            final_palette = bg_palette;
+        }
     }
     // If both are being rendered, choose the background color or sprite color depending on which one should be in front.
     else if (bg_pixel > 0x00 && sprite_pixel > 0x00) {

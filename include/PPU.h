@@ -167,7 +167,7 @@ struct OAM_sprite {
 class PPU {
     public:
         bool signal_nmi;        // Set when the CPU should execute an NMI.
-        bool frame_finished;    // Set when the ppu finished an entire frame.
+        bool frame_finished;    // Set when the PPU finished an entire frame.
         bool show_debug;        // Set if debug windows should be updated.
 
         uint8_t curr_palette;   // Stores an index for the current palette, allows for changing colors in game.
@@ -262,6 +262,7 @@ class PPU {
 
         void incrementCoarseX();                // Move to the next horizontal tile.
         void incrementCoarseY();                // Move to the next vertical tile.
+        void incrementFineY();                  // Move to the next vertical pixel.
 };
 
 
