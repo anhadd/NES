@@ -97,7 +97,7 @@ void CPU::NMI() {
     status.interrupt_disabled = 1;
 
 	PC = (cpuRead(0xFFFB) << 8) | cpuRead(0xFFFA);
-	cycles = 8; // TODO: COULD BE 7?
+	cycles = 7;
 }
 
 bool CPU::executeCycle() {
