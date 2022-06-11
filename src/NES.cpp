@@ -23,7 +23,7 @@ NES::NES() {
 
     // debug_log = false;
 
-    // Tell the ppu whether to render debug screens.
+    // Tell the PPU whether to render debug screens.
     ppu.show_debug = SHOW_DEBUG;
     // Create the debug windows if debugging is turned on.
     if (SHOW_DEBUG) {
