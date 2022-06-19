@@ -131,7 +131,6 @@ class CPU {
         enum addressing_mode mode;  // Used to store the current addressing mode.
 
         BUS* bus;                   // The BUS that takes care of memory reads and writes.
-        uint16_t rom_address;       // Address to start of the rom.
 
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
