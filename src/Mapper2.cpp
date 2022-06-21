@@ -23,7 +23,9 @@ Mapper2::~Mapper2() {
 uint32_t Mapper2::cpuMap(uint16_t address, bool write, uint8_t value) {
     if (write) {
         // Writes switch the current PRG bank.
-        prg_bank0 = value & 0x0F;
+        if (address >= 0x8000 && address <= 0xFFFF) {
+            prg_bank0 = value & 0x0F;
+        }
         return address;
     }
     else {

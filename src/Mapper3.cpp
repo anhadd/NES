@@ -22,7 +22,9 @@ Mapper3::~Mapper3() {
 uint32_t Mapper3::cpuMap(uint16_t address, bool write, uint8_t value) {
     // Writes switch the current CHR bank.
     if (write) {
-        chr_bank0 = value & 0x03;
+        if (address >= 0x8000 && address <= 0xFFFF) {
+            chr_bank0 = value & 0x03;
+        }
         return address;
     }
     else {
