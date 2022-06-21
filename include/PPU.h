@@ -251,6 +251,16 @@ class PPU {
         uint8_t bg_low;                         // Stores the next low byte of the background tile that needs to be rendered.
         uint8_t bg_high;                        // Stores the next high byte of the background tile that needs to be rendered.
 
+        uint8_t bg_pixel;                       // Stores the index of the color in the palette for the bg.
+        uint8_t bg_palette;                     // Stores the index of the palette for the bg.
+        bool sprite_behind_bg;                  // Whether the sprite is behind the background or not.
+
+        uint8_t sprite_pixel;                   // Stores the index of the color in the palette for the sprite.
+        uint8_t sprite_palette;                 // Stores the index of the palette for the sprite.
+
+        uint8_t final_pixel;                    // Stores the index of the color in the palette for the final rendered pixel.
+        uint8_t final_palette;                  // Stores the index of the palette for the final rendered pixel.
+
         uint16_t getColorIndex(uint8_t palette, uint8_t index);     // Used for getting the absolute index of a color with a certain palette and index inside that palette.
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);    // Draw a single pixel on a surface.
         void drawDebugPixels();                                     // Update the debug screens.

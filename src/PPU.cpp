@@ -57,6 +57,17 @@ PPU::PPU() {
     bg_attribute = 0x00;
     bg_low = 0x00;
     bg_high = 0x00;
+
+    // Used for selecting the correct color for a pixel.
+    bg_pixel = 0x00;
+    bg_palette = 0x00;
+    sprite_behind_bg = false;
+
+    sprite_pixel = 0x00;
+    sprite_palette = 0x00;
+
+    final_pixel = 0x00;
+    final_palette = 0x00;
     
     // Lookup table for the entire NES palette.
     palette_lookup = {
@@ -173,6 +184,17 @@ void PPU::reset() {
     bg_attribute = 0x00;
     bg_low = 0x00;
     bg_high = 0x00;
+
+    // Used for selecting the correct color for a pixel.
+    bg_pixel = 0x00;
+    bg_palette = 0x00;
+    sprite_behind_bg = false;
+
+    sprite_pixel = 0x00;
+    sprite_palette = 0x00;
+
+    final_pixel = 0x00;
+    final_palette = 0x00;
 
     SDL_FillRect(gui->surface, NULL, 0x000000);
     if (show_debug) {
@@ -888,16 +910,10 @@ bool PPU::executeCycle() {
     }
 
     // Choose the correct color for every pixel by getting data from the shifter registers.
-    uint8_t bg_pixel = 0x00;
-    uint8_t bg_palette = 0x00;
-    uint8_t sprite_behind_bg = 0x00;
-
-    uint8_t sprite_pixel = 0x00;
-    uint8_t sprite_palette = 0x00;
-
-    uint8_t final_pixel = 0x00;
-    uint8_t final_palette = 0x00;
-
+    bg_pixel = 0x00;
+    bg_palette = 0x00;
+    sprite_behind_bg = false;
+    
     // Get the color of the background if background rendering is on.
     if (ppu_mask.showbg) {
         uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
@@ -911,6 +927,10 @@ bool PPU::executeCycle() {
         // Adding curr_palette allows the colors to be changed, but it is not necessary.
         bg_palette = ((palette_high << 1) | palette_low) + curr_palette;
     }
+
+    sprite_pixel = 0x00;
+    sprite_palette = 0x00;
+
     // Get the color of the sprite if sprite rendering is on.
     if (ppu_mask.showsprites) {
         sprite_zero_rendering = false;
@@ -980,6 +1000,11 @@ bool PPU::executeCycle() {
                 }
             }
         }
+    }
+    // If sprite and background rendering is off the final color is 0x00.
+    else {
+        final_pixel = 0x00;
+        final_palette = 0x00;
     }
 
     // Draw only the visible onscreen pixels.
