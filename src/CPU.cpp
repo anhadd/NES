@@ -111,7 +111,7 @@ bool CPU::executeCycle() {
         // Set required cycles.
         cycles = op_lookup[opcode].opcycles;
         additional_cycle = op_lookup[opcode].extra_cycle;
-        // Call readAddress to get the absolute address.
+        // Get the absolute address.
         readAddress();
         // Call opcode function.
         (this->*op_lookup[opcode].opFunction)();

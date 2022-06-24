@@ -14,8 +14,7 @@ using namespace std::chrono;
 
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     //set up SDL
     SDL_Init(SDL_INIT_EVERYTHING);
     

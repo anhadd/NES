@@ -15,7 +15,7 @@ void handleInput(NES &nes) {
     nes.bus.controller[0] |= nes.key_state[INPUT_RIGHT]    << 0;
 
     // Check if there is a pending SDL event.
-    while (SDL_PollEvent(&nes.gui.sdlevent)){
+    while (SDL_PollEvent(&nes.gui.sdlevent)) {
         // Quit whether the sdlevent is of type SDL_QUIT (For example when CTRL+C is pressed in the terminal).
         if (nes.gui.sdlevent.type == SDL_QUIT){
             nes.quit = true;

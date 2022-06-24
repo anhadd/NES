@@ -94,11 +94,11 @@ void NES::executeFrame() {
         else {
             // If the CPU is synchronized.
             if (bus.cpu_synchronized) {
-                // Every even cycle load new data into oam_data.
+                // Every even cycle, load new data into oam_data.
                 if (total_cycles % 2 == 0) {
                     bus.oam_data = bus.busReadCPU((bus.oam_page << 8) | bus.oam_index);
                 }
-                // Every odd cycle write that data to the PPU OAM.
+                // Every odd cycle, write that data to the PPU OAM.
                 else {
                     ppu.writeRegister(OAM_DATA, bus.oam_data);
                     // If an entire page has been written, OAM writing is done so reset everything.related to that.
@@ -115,7 +115,7 @@ void NES::executeFrame() {
                     }
                 }
             }
-            // Try tp synchronize with the CPU.
+            // Try to synchronize with the CPU.
             else {
                 if (total_cycles % 2 == 1) {
                     bus.cpu_synchronized = true;
