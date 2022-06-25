@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "PPU.h"
+#include "APU.h"
 #include "ROM.h"
 
 using namespace std;
@@ -24,6 +25,7 @@ class BUS {
         ~BUS();                         // Destructor.
 
         void passPPU(PPU* nesPPU);      // Used for receiving the PPU from the NES.
+        void passAPU(APU* nesAPU);      // Used for receiving the APU from the NES.
         void passROM(ROM* nesROM);      // Used for receiving the ROM from the NES.
 
         void reset();
@@ -33,6 +35,7 @@ class BUS {
 
     private:
         PPU* ppu;                       // The PPU received from NES.
+        APU* apu;
         ROM* rom;                       // The ROM received from NES.
 
         uint8_t memory[0x0800];         // CPU RAM.

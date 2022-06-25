@@ -8,6 +8,7 @@
 #include "GUI.h"
 #include "CPU.h"
 #include "ROM.h"
+#include "APU.h"
 #include "PPU.h"
 #include "BUS.h"
 
@@ -44,6 +45,7 @@ class NES {
         CPU cpu;
         BUS bus;
         PPU ppu;
+        APU apu;
         GUI gui;
         ROM rom;
 

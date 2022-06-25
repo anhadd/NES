@@ -38,6 +38,9 @@ void BUS::passROM(ROM* nesROM) {
     rom = nesROM;
 }
 
+void BUS::passAPU(APU* nesAPU) {
+    apu = nesAPU;
+}
 
 // CPU reading from the BUS.
 uint8_t BUS::busReadCPU(uint16_t address) {
@@ -97,6 +100,7 @@ uint8_t BUS::busWriteCPU(uint16_t address, uint8_t value) {
     // Write to audio registers
     else if (address >= 0x4000 && address <= 0x4015 && address != 0x4014) {
         // TODO: Audio registers are not implemented.
+        apu->writeRegister(address, value);
     }
     // Writes to controller registers save the current controller state to be read later.
     else if (address == 0x4016 || address == 0x4017) {
