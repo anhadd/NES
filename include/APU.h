@@ -108,7 +108,7 @@ struct full_pulse {
             timer -= 1;
             if (timer == 0xFFFF) {
                 timer = reload + 1;
-                output = wave_sequence & 0x01;
+                output = (output & 0x01 << 7) | (output & 0xFE >> 1);
             }
         }
     }

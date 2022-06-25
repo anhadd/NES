@@ -25,11 +25,11 @@ APU::APU() {
     cycles_per_sample = 0x00;
 }
 
-
 APU::~APU() {
     // Destructor
     
 }
+
 
 // Pass the GUI to the current APU.
 void APU::passGUI(GUI* nesGUI) {
@@ -113,13 +113,9 @@ float APU::square(struct full_pulse pulse, float offset) {
     float temp = 0.0;
     float sin1 = 0.0;
     float sin2 = 0.0;
-    // float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
-    float frequency = CPU_CLOCK / (16 * (offset + 1));
+    float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
     // float frequency = 440.0f;
-    // float frequency = p1.timer;
-    float phase_offset = pulse.duty_partition;
-
-    // fprintf(stderr, "FREQUENCY: %f\n", frequency);
+    float phase_offset = pulse.duty_partition * 2.0f * M_PI;
 
     for (float counter = 1; counter < 20; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
@@ -140,36 +136,30 @@ float APU::square(struct full_pulse pulse, float offset) {
 bool APU::executeCycle() {
     if (current_sample_cycle == cycles_per_sample) {
         current_sample_cycle = 0x00;
-        // // current_time += (2 / CPU_CLOCK);
         current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
-        // // current_time += 1 / (CPU_CLOCK / 2);
 
-        // if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-        //     // Quarter frame.
-        // }
-        // else if (frame_counter == HALF_FRAME) {
-        //     // Quarter and Half frame.
-        // }
-        // else if (frame_counter == FULL_FRAME) {
-        //     // Quarter and Half frame.
-        //     frame_counter = 0;
-        // }
+        if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+            // Quarter frame.
+        }
+        else if (frame_counter == HALF_FRAME) {
+            // Quarter and Half frame.
+        }
+        else if (frame_counter == FULL_FRAME) {
+            // Quarter and Half frame.
+            frame_counter = 0;
+        }
 
         p1.executeCycle(apu_status.enable_p1);
-
         if (apu_status.enable_p1) {
-            // p1.wave_sequence = ((p1.wave_sequence & 0x01) << 7) || (p1.wave_sequence >> 1);
-
-            // int16_t sample = square(p1, current_time) * gui->volume; // Was current_time * 4
-            
-            // int16_t sample = (p1.wave_sequence << 8) | p1.wave_sequence;
-            int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            int16_t sample = square(p1, current_time) * gui->volume;
+        
+            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
             const int sample_size = sizeof(int16_t);
             
             SDL_QueueAudio(gui->audio_device, &sample, sample_size);
         }
 
-    //     frame_counter += 1;
+        frame_counter += 1;
     }
     current_sample_cycle += 1;
     return 0;
