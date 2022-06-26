@@ -26,7 +26,7 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.callback = NULL;
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-    volume = 5000;
+    volume = 1500;
 }
 
 

@@ -6,6 +6,7 @@
 
 #include "GUI.h"
 
+
 using namespace std;
 
 #define CPU_CLOCK 1789773.0
@@ -43,14 +44,16 @@ using namespace std;
 #define THREE_QUARTER_FRAME 11186
 #define FULL_FRAME 14916
 
-#define SAMPLE_TIME_DELTA (1.0 / 44100.0)
+#define AUDIO_SAMPLE_RATE 44100.0
+#define SAMPLE_TIME_DELTA (1.0 / AUDIO_SAMPLE_RATE)
+#define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
 
 
 union pulse_control {
     struct {
         uint8_t volume : 4;
         uint8_t constant_volume : 1;
-        uint8_t loop : 1;
+        uint8_t length_halt : 1;
         uint8_t duty : 2;
     };
     uint8_t full;
@@ -102,16 +105,6 @@ struct full_pulse {
         reload = 0x0000;
         duty_partition = 0.00;
     }
-
-    void executeCycle(bool enabled) {
-        if (enabled) {
-            timer -= 1;
-            if (timer == 0xFFFF) {
-                timer = reload + 1;
-                output = (output & 0x01 << 7) | (output & 0xFE >> 1);
-            }
-        }
-    }
 };
 
 
@@ -143,10 +136,9 @@ class APU {
 
         float current_time;
         uint32_t frame_counter;
-        uint16_t cycles_per_sample;
-        uint16_t current_sample_cycle;
-
-        uint16_t test_freq = 20;
+        
+        float next_sample_cycle;
+        uint32_t cycles;
 
         APU();
         ~APU();

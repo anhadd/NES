@@ -21,13 +21,11 @@ APU::APU() {
     current_time = 0.0;
     frame_counter = 0x00000000;
 
-    current_sample_cycle = 0x00;
-    cycles_per_sample = 0x00;
+    next_sample_cycle = 0x0000;
 }
 
 APU::~APU() {
     // Destructor
-    
 }
 
 
@@ -108,7 +106,6 @@ float approxsin(float offset) {
     return 20.785 * j * (j - 0.5) * (j - 1.0f);
 }
 
-// TODO: check this for testing, from olc.
 float APU::square(struct full_pulse pulse, float offset) {
     float temp = 0.0;
     float sin1 = 0.0;
@@ -134,33 +131,48 @@ float APU::square(struct full_pulse pulse, float offset) {
 // CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
 
 bool APU::executeCycle() {
-    if (current_sample_cycle == cycles_per_sample) {
-        current_sample_cycle = 0x00;
-        current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
+    if (cycles >= next_sample_cycle) {
+        next_sample_cycle += CYCLES_PER_SAMPLE * 24;
+        current_time += SAMPLE_TIME_DELTA;
 
         if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-            // Quarter frame.
+            // Quarter frames.
         }
-        else if (frame_counter == HALF_FRAME) {
-            // Quarter and Half frame.
-        }
-        else if (frame_counter == FULL_FRAME) {
-            // Quarter and Half frame.
-            frame_counter = 0;
+        else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
+            // Half frames.
+            if (p1.timer_high.length_counter > 0) { // && !p1.ctrl.length_halt
+                p1.timer_high.length_counter -= 1;
+
+                if (p1.timer_high.length_counter == 0) {
+                    apu_status.enable_p1 = 0;
+                }
+            }
+            else if (p1.timer_high.length_counter == 0) {
+                apu_status.enable_p1 = 0;
+            }
+
+            if (frame_counter == FULL_FRAME) {
+                frame_counter = 0;
+            }
         }
 
-        p1.executeCycle(apu_status.enable_p1);
         if (apu_status.enable_p1) {
-            int16_t sample = square(p1, current_time) * gui->volume;
-        
-            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            p1.timer -= 1;
+            if (p1.timer == 0xFFFF) {
+                p1.timer = p1.reload + 1;
+                p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
+            }
+
             const int sample_size = sizeof(int16_t);
+
+            int16_t sample = square(p1, current_time) * gui->volume;
+            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
             
             SDL_QueueAudio(gui->audio_device, &sample, sample_size);
         }
 
         frame_counter += 1;
     }
-    current_sample_cycle += 1;
+    cycles += 24;
     return 0;
 }
