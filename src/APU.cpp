@@ -64,7 +64,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case P1_TIMER_HIGH:
             p1.timer_high.full = value;
-            p1.reload = ((p1.timer_high.full & 0x07) << 8) | (p1.reload & 0x00FF);
+            p1.reload = ((p1.timer_high.timer_high) << 8) | (p1.reload & 0x00FF);
             p1.timer = p1.reload;
             break;
 
@@ -139,13 +139,13 @@ bool APU::executeCycle() {
         if (p1.timer_high.length_counter > 0) { // && !p1.ctrl.length_halt
             p1.timer_high.length_counter -= 1;
 
-            if (p1.timer_high.length_counter == 0) {
-                apu_status.enable_p1 = 0;
-            }
+            // if (p1.timer_high.length_counter == 0) {
+            //     apu_status.enable_p1 = 0;
+            // }
         }
-        else if (p1.timer_high.length_counter == 0) {
-            apu_status.enable_p1 = 0;
-        }
+        // else if (p1.timer_high.length_counter == 0) {
+        //     apu_status.enable_p1 = 0;
+        // }
 
         if (frame_counter == FULL_FRAME) {
             frame_counter = 0;
@@ -155,8 +155,8 @@ bool APU::executeCycle() {
     if (cycles >= next_sample_cycle) {
     // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 0x4000) {
         next_sample_cycle += CYCLES_PER_SAMPLE * 24.0;
-        current_time += SAMPLE_TIME_DELTA;
         if (apu_status.enable_p1) {
+            current_time += SAMPLE_TIME_DELTA;
             if (p1.timer == 0x0000) {
                 p1.timer = p1.reload + 1;
                 p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
