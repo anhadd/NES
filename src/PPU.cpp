@@ -241,7 +241,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
     if (address <= 0x1FFF) {
         return rom->CHR_memory[rom->mapper->ppuMap(address, false)];
     }
-    // If the address if between 0x2000 and 0x3EFF the data is from the nametables.
+    // If the address is between 0x2000 and 0x3EFF the data is from the nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
         /*  Select the correct nametable depending on the mirroring:
@@ -315,7 +315,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
             rom->mapper->ppuMap(address, true, value);
         }
     }
-    // If the address if between 0x2000 and 0x3EFF the data is for the nametables.
+    // If the address is between 0x2000 and 0x3EFF the data is for the nametables.
     else if (address <= 0x3EFF) {
         address &= 0x0FFF;
         /*  Select the correct nametable depending on the mirroring:
@@ -682,7 +682,7 @@ bool PPU::executeCycle() {
             ppu_status.sprite_zerohit = 0;
         }
         // Skip a cycle at the start of every odd frame (and rendering needs to be on).
-        else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) {
+        else if (scanlines == 0 && cycles == 0 && odd_frame && (ppu_mask.showbg || ppu_mask.showsprites)) { // TODO: MAYBE JUST SHOWBG
             cycles += 1;
         }
 
