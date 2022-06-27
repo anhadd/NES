@@ -131,48 +131,48 @@ float APU::square(struct full_pulse pulse, float offset) {
 // CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
 
 bool APU::executeCycle() {
-    if (cycles >= next_sample_cycle) {
-        next_sample_cycle += CYCLES_PER_SAMPLE * 24;
-        current_time += SAMPLE_TIME_DELTA;
+    if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+        // Quarter frames.
+    }
+    else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
+        // Quarter and Half frames.
+        if (p1.timer_high.length_counter > 0) { // && !p1.ctrl.length_halt
+            p1.timer_high.length_counter -= 1;
 
-        if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-            // Quarter frames.
-        }
-        else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
-            // Half frames.
-            if (p1.timer_high.length_counter > 0) { // && !p1.ctrl.length_halt
-                p1.timer_high.length_counter -= 1;
-
-                if (p1.timer_high.length_counter == 0) {
-                    apu_status.enable_p1 = 0;
-                }
-            }
-            else if (p1.timer_high.length_counter == 0) {
+            if (p1.timer_high.length_counter == 0) {
                 apu_status.enable_p1 = 0;
             }
-
-            if (frame_counter == FULL_FRAME) {
-                frame_counter = 0;
-            }
+        }
+        else if (p1.timer_high.length_counter == 0) {
+            apu_status.enable_p1 = 0;
         }
 
-        if (apu_status.enable_p1) {
-            p1.timer -= 1;
-            if (p1.timer == 0xFFFF) {
+        if (frame_counter == FULL_FRAME) {
+            frame_counter = 0;
+        }
+    }
+
+    if (cycles >= next_sample_cycle) {
+    // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 0x4000) {
+        next_sample_cycle += CYCLES_PER_SAMPLE * 24.0;
+        current_time += SAMPLE_TIME_DELTA;
+        if (apu_status.enable_p1 || SDL_GetQueuedAudioSize(gui->audio_device) <= 0x4000) {
+            if (p1.timer == 0x0000) {
                 p1.timer = p1.reload + 1;
                 p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
             }
-
-            const int sample_size = sizeof(int16_t);
+            else {
+                p1.timer -= 1;
+            }
 
             int16_t sample = square(p1, current_time) * gui->volume;
             // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
             
-            SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+            SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
         }
-
-        frame_counter += 1;
     }
-    cycles += 24;
+
+    frame_counter += 1;
+    cycles += 77;
     return 0;
 }
