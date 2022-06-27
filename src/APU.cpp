@@ -114,7 +114,7 @@ float APU::square(struct full_pulse pulse, float offset) {
     // float frequency = 440.0f;
     float phase_offset = pulse.duty_partition * 2.0f * M_PI;
 
-    for (float counter = 1; counter < 15; counter++) {
+    for (float counter = 1; counter < 10; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
         sin1 += approxsin(temp) / counter;
@@ -155,14 +155,13 @@ bool APU::executeCycle() {
     if (cycles >= next_sample_cycle) {
     // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 0x4000) {
         next_sample_cycle += CYCLES_PER_SAMPLE * 24.0;
+        current_time += SAMPLE_TIME_DELTA;
+
         if (apu_status.enable_p1) {
-            current_time += SAMPLE_TIME_DELTA;
-            if (p1.timer == 0x0000) {
+            p1.timer -= 1;
+            if (p1.timer == 0xFFFF) {
                 p1.timer = p1.reload + 1;
                 p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
-            }
-            else {
-                p1.timer -= 1;
             }
 
             int16_t sample = square(p1, current_time) * gui->volume;
