@@ -959,6 +959,9 @@ bool PPU::executeCycle() {
         }
     }
 
+    final_pixel = 0x00;
+    final_palette = 0x00;
+
     // If only the sprite is being rendered, take the sprite color.
     if (bg_pixel == 0x00  && sprite_pixel > 0x00) {
         // Check if it is not on the left tile of the screen, and the rendering there is not disabled.
@@ -1000,11 +1003,6 @@ bool PPU::executeCycle() {
                 }
             }
         }
-    }
-    // If sprite and background rendering is off the final color is 0x00.
-    else {
-        final_pixel = 0x00;
-        final_palette = 0x00;
     }
 
     // Draw only the visible onscreen pixels.
