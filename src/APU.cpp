@@ -153,7 +153,7 @@ bool APU::executeCycle() {
     }
 
     if (cycles >= next_sample_cycle) {
-    // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 0x4000) {
+    // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 3675) {
         next_sample_cycle += CYCLES_PER_SAMPLE * 24.0;
         current_time += SAMPLE_TIME_DELTA;
 

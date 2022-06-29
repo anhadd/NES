@@ -61,7 +61,7 @@ void NES::reset() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
-        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= 0xF000) {
+        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
             // ===== Prints debug log information.
                 // if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
                 //     fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n",
