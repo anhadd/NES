@@ -519,7 +519,7 @@ void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint1
 // Draw pixels on the debug windows (pattern tables / palette / nametables).
 // Used for debugging only.
 void PPU::drawDebugPixels() {
-    if (total_frames % 30 == 0) {
+    if (total_frames % 60 == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
             drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
