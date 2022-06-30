@@ -812,7 +812,7 @@ bool PPU::executeCycle() {
                 sprite_zero_in_sOAM = false;
                 // Go through every sprite in OAM and check whether it appears on the next scanline.
                 for (int i = 0; i < 64; i++) {
-                    // The distance is the diiference in rows between the scanline and the top-left corner of the sprite.
+                    // The distance is the difference in rows between the scanline and the top-left corner of the sprite.
                     int16_t distance = scanlines - sprite_OAM[i].y;
                     // If the distance is less than 8 (or less than 16 on 8x16 sprite mode) then the sprite appears on the next scanline.
                     if (distance >= 0 && distance < (8 + ppu_ctrl.sprite_size * 8)) {
