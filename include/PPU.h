@@ -55,6 +55,7 @@ using namespace std;
 #define TILE_SIZE_IN_BYTES 0x10
 #define NAMETABLE_SIZE_IN_BYTES 0x1000
 
+#define PPU_REGISTERS_START 0x2000
 #define CONTROL     0x2000
 #define MASK        0x2001
 #define STATUS      0x2002

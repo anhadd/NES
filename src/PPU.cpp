@@ -308,7 +308,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
 
 // Read from the PPU registers (Also used by the CPU).
 uint8_t PPU::readRegister(uint16_t address) {
-    uint16_t real_address = 0x2000 + (address & 0x0007);
+    uint16_t real_address = PPU_REGISTERS_START + (address & 0x0007);
     uint8_t temp;
     switch (real_address) {
         case CONTROL:
@@ -361,7 +361,7 @@ uint8_t PPU::readRegister(uint16_t address) {
 
 // Write to the PPU registers (Also used by the CPU).
 uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
-    uint16_t real_address = 0x2000 + (address & 0x0007);
+    uint16_t real_address = PPU_REGISTERS_START + (address & 0x0007);
     uint8_t temp_nmi = 0x00;
     switch (real_address) {
         case CONTROL:
