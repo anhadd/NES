@@ -273,6 +273,9 @@ class PPU {
         void incrementCoarseX();                // Move to the next horizontal tile.
         void incrementCoarseY();                // Move to the next vertical tile.
         void incrementFineY();                  // Move to the next vertical pixel.
+
+        void loadAttributeByte();               // Load the attribute byte.
+        void loadTileByte(bool high_byte);      // Load the low or high tile byte.
 };
 
 

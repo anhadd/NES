@@ -33,6 +33,23 @@ vector<string> splitPath(const string &path_str) {
     return split_str;
 }
 
+void ROM::loadSaveFile(string romName) {
+    vector<string> path_elems = splitPath(romName);
+    save_path = "saves/" + path_elems.back();
+    if (access(save_path.c_str(), F_OK) != -1) {
+        printf("Loading saved game...\n");
+        uint32_t buff3_size = 0x2000;
+        uint8_t buff3[buff3_size];
+
+        ifstream save_file(save_path, ios::in | ios::binary);
+        save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
+        memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
+        save_file.close();
+    }
+    else {
+        printf("No save file found.\n");
+    }
+}
 
 void ROM::dumpContents(ifstream* romFile) {
     uint8_t x = 0;
@@ -96,8 +113,8 @@ bool ROM::loadRom(string romName) {
     memcpy(&CHR_memory[0x0000], buff2, buff2_size * sizeof(char));
 
     // Create PRG RAM and Expansion ROM. This is not necessarily used by every mapper.
-    PRG_ram.resize(0x2000);
-    Expansion_ROM.resize(0x1FE0);
+    PRG_ram.resize(PRG_RAM_SIZE);
+    Expansion_ROM.resize(EXPANSION_ROM_SIZE);
     fill(begin(PRG_ram), end(PRG_ram), 0);
     fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 
@@ -128,22 +145,7 @@ bool ROM::loadRom(string romName) {
 
     // If the mapper uses PRG RAM, it is allowed to use saves and loads, so load the game if possible.
     if (mapper->prg_ram_enabled) {
-        // Loading save file.
-        vector<string> path_elems = splitPath(romName);
-        save_path = "saves/" + path_elems.back();
-        if (access(save_path.c_str(), F_OK) != -1) {
-            printf("Loading saved game...\n");
-            uint32_t buff3_size = 0x2000;
-            uint8_t buff3[buff3_size];
-
-            ifstream save_file(save_path, ios::in | ios::binary);
-            save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
-            memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
-            save_file.close();
-        }
-        else {
-            printf("No save file found.\n");
-        }
+        loadSaveFile(romName);
     }
 
     // Set mirroring mode.

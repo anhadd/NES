@@ -24,6 +24,9 @@ using namespace std;
 #define TRAINER_SIZE 512
 #define MEMORY_ARRAY_SIZE 0x10000
 
+#define PRG_RAM_SIZE 0x2000
+#define EXPANSION_ROM_SIZE 0x1FE0
+
 /*
 (Taken from: https://www.nesdev.org/wiki/INES)
 An iNES file consists of the following sections, in order:
@@ -137,6 +140,7 @@ class ROM {
         uint8_t mapper_id;              // The id of the mapper.
 
         void dumpContents(ifstream* romFile);   // Dumps the ROM (.nes) file contents. Can be used for debugging.
+        void loadSaveFile(string romName);      // Load save file if present.
 };
 
 

@@ -71,77 +71,10 @@ PPU::PPU() {
     
     // Lookup table for the entire NES palette.
     palette_lookup = {
-        { 0x00, 84, 84, 84, 255 },
-        { 0x01, 0, 30, 116, 255 },
-        { 0x02, 8, 16, 144, 255 },
-        { 0x03, 48, 0, 136, 255 },
-        { 0x04, 68, 0, 100, 255 },
-        { 0x05, 92, 0, 48, 255 },
-        { 0x06, 84, 4, 0, 255 },
-        { 0x07, 60, 24, 0, 255 },
-        { 0x08, 32, 42, 0, 255 },
-        { 0x09, 8, 58, 0, 255 },
-        { 0x0A, 0, 64, 0, 255 },
-        { 0x0B, 0, 60, 0, 255 },
-        { 0x0C, 0, 50, 60, 255 },
-        { 0x0D, 0, 0, 0, 255 },
-        { 0x0E, 0, 0, 0, 255 },
-        { 0x0F, 0, 0, 0, 255 },
-
-        { 0x10, 152, 150, 152, 255 },
-        { 0x11, 8, 76, 196, 255 },
-        { 0x12, 48, 50, 236, 255 },
-        { 0x13, 92, 30, 228, 255 },
-        { 0x14, 136, 20, 176, 255 },
-        { 0x15, 160, 20, 100, 255 },
-        { 0x16, 152, 34, 32, 255 },
-        { 0x17, 120, 60, 0, 255 },
-        { 0x18, 84, 90, 0, 255 },
-        { 0x19, 40, 114, 0, 255 },
-        { 0x1A, 8, 124, 0, 255 },
-        { 0x1B, 0, 118, 40, 255 },
-        { 0x1C, 0, 102, 120, 255 },
-        { 0x1D, 0, 0, 0, 255 },
-        { 0x1E, 0, 0, 0, 255 },
-        { 0x1F, 0, 0, 0, 255 },
-
-        { 0x20, 236, 238, 236, 255 },
-        { 0x21, 76, 154, 236, 255 },
-        { 0x22, 120, 124, 236, 255 },
-        { 0x23, 176, 98, 236, 255 },
-        { 0x24, 228, 84, 236, 255 },
-        { 0x25, 236, 88, 180, 255 },
-        { 0x26, 236, 106, 100, 255 },
-        { 0x27, 212, 136, 32, 255 },
-        { 0x28, 160, 170, 0, 255 },
-        { 0x29, 116, 196, 0, 255 },
-        { 0x2A, 76, 208, 32, 255 },
-        { 0x2B, 56, 204, 108, 255 },
-        { 0x2C, 56, 180, 204, 255 },
-        { 0x2D, 60, 60, 60, 255 },
-        { 0x2E, 0, 0, 0, 255 },
-        { 0x2F, 0, 0, 0, 255 },
-
-        { 0x30, 236, 238, 236, 255 },
-        { 0x31, 168, 204, 236, 255 },
-        { 0x32, 188, 188, 236, 255 },
-
-        { 0x33, 212, 178, 236, 255 },
-        { 0x34, 236, 174, 236, 255 },
-        { 0x35, 236, 174, 212, 255 },
-
-        { 0x36, 236, 180, 176, 255 },
-        { 0x37, 228, 196, 144, 255 },
-        { 0x38, 204, 210, 120, 255 },
-
-        { 0x39, 180, 222, 120, 255 },
-        { 0x3A, 168, 226, 144, 255 },
-        { 0x3B, 152, 226, 180, 255 },
-
-        { 0x3C, 160, 214, 228, 255 },
-        { 0x3D, 160, 162, 160, 255 },
-        { 0x3E, 0, 0, 0, 255 },
-        { 0x3F, 0, 0, 0, 255 },
+        { 0x00,  84,  84,  84, 255 }, { 0x01,   0,  30, 116, 255 }, { 0x02,   8,  16, 144, 255 }, { 0x03,  48,   0, 136, 255 }, { 0x04,  68,   0, 100, 255 }, { 0x05,  92,   0,  48, 255 }, { 0x06,  84,   4,   0, 255 }, { 0x07,  60,  24,   0, 255 }, { 0x08,  32,  42,   0, 255 }, { 0x09,   8,  58,   0, 255 }, { 0x0A,   0,  64,   0, 255 }, { 0x0B,   0,  60,   0, 255 }, { 0x0C,   0,  50,  60, 255 }, { 0x0D,   0,   0,   0, 255 }, { 0x0E,   0,   0,   0, 255 }, { 0x0F,   0,   0,   0, 255 },
+        { 0x10, 152, 150, 152, 255 }, { 0x11,   8,  76, 196, 255 }, { 0x12,  48,  50, 236, 255 }, { 0x13,  92,  30, 228, 255 }, { 0x14, 136,  20, 176, 255 }, { 0x15, 160,  20, 100, 255 }, { 0x16, 152,  34,  32, 255 }, { 0x17, 120,  60,   0, 255 }, { 0x18,  84,  90,   0, 255 }, { 0x19,  40, 114,   0, 255 }, { 0x1A,   8, 124,   0, 255 }, { 0x1B,   0, 118,  40, 255 }, { 0x1C,   0, 102, 120, 255 }, { 0x1D,   0,   0,   0, 255 }, { 0x1E,   0,   0,   0, 255 }, { 0x1F,   0,   0,   0, 255 },
+        { 0x20, 236, 238, 236, 255 }, { 0x21,  76, 154, 236, 255 }, { 0x22, 120, 124, 236, 255 }, { 0x23, 176,  98, 236, 255 }, { 0x24, 228,  84, 236, 255 }, { 0x25, 236,  88, 180, 255 }, { 0x26, 236, 106, 100, 255 }, { 0x27, 212, 136,  32, 255 }, { 0x28, 160, 170,   0, 255 }, { 0x29, 116, 196,   0, 255 }, { 0x2A,  76, 208,  32, 255 }, { 0x2B,  56, 204, 108, 255 }, { 0x2C,  56, 180, 204, 255 }, { 0x2D,  60,  60,  60, 255 }, { 0x2E,   0,   0,   0, 255 }, { 0x2F,   0,   0,   0, 255 },
+        { 0x30, 236, 238, 236, 255 }, { 0x31, 168, 204, 236, 255 }, { 0x32, 188, 188, 236, 255 }, { 0x33, 212, 178, 236, 255 }, { 0x34, 236, 174, 236, 255 }, { 0x35, 236, 174, 212, 255 }, { 0x36, 236, 180, 176, 255 }, { 0x37, 228, 196, 144, 255 }, { 0x38, 204, 210, 120, 255 }, { 0x39, 180, 222, 120, 255 }, { 0x3A, 168, 226, 144, 255 }, { 0x3B, 152, 226, 180, 255 }, { 0x3C, 160, 214, 228, 255 }, { 0x3D, 160, 162, 160, 255 }, { 0x3E,   0,   0,   0, 255 }, { 0x3F,   0,   0,   0, 255 },
     };
 }
 
@@ -393,7 +326,7 @@ uint8_t PPU::readRegister(uint16_t address) {
             // No reading allowed.
             break;
         case OAM_DATA:
-            // Reads data form OAM.
+            // Reads data from OAM.
             bus_value = OAM[oam_addr & 0xFF];
             return bus_value;
         case SCROLL:
@@ -657,6 +590,55 @@ void PPU::incrementFineY() {
     }
 }
 
+void PPU::loadAttributeByte() {
+    uint16_t byte_addr = 0x0000;
+    /*  Gets the attribute byte.
+        The attribute byte is split into 4 parts: 04 03 02 01
+        Each part corresponds to one quarter of the tile in the following way:
+            |--------|--------|
+            |-- 01 --|-- 02 --|
+            |--------|--------|
+            |=================|
+            |--------|--------|
+            |-- 03 --|-- 04 --|
+            |--------|--------|
+    */
+    byte_addr = 0x23C0
+            + (ppu_addr.nametable_y * 0x0800)
+            + (ppu_addr.nametable_x * 0x0400)
+            + ((ppu_addr.coarse_y / 4) * 0x08)
+            + (ppu_addr.coarse_x / 4);
+    bg_attribute = ppuRead(byte_addr);
+    // Shift the attribute byte to get the palette of the correct quarter of the tile.
+    if ((ppu_addr.coarse_y % 4) >= 2) {
+        // Top half of attribute 2x2 tile.
+        // Shift the bg_attribute 4 bits to the right to get there.
+        bg_attribute >>= 4;
+    }
+    if (ppu_addr.coarse_x % 4 >= 2) {
+        // Left half of attribute 2x2 tile.
+        // Shift the bg_attribute 2 bits to the right to get there.
+        bg_attribute >>= 2;
+    }
+    bg_attribute &= 0x03;
+}
+
+void PPU::loadTileByte(bool high_byte) {
+    uint16_t byte_addr = 0x0000;
+
+    byte_addr = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES)
+            + (bg_nametable * TILE_SIZE_IN_BYTES)
+            + ppu_addr.fine_y;
+    // Add offset if the high_byte needs.
+    if (high_byte) {
+        byte_addr += 8;
+        bg_high = ppuRead(byte_addr);
+    }
+    else {
+        bg_low = ppuRead(byte_addr);
+    }
+}
+
 // Executes a single PPU cycle.
 bool PPU::executeCycle() {
     /*  
@@ -688,7 +670,6 @@ bool PPU::executeCycle() {
 
         // If the cycle (x) is visible.
         if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
-            uint16_t byte_addr = 0x0000;
             // Update the shifter registers.
             updateShifters();
             // Do stuff depending on the current cycle. Loads the next tile of data.
@@ -700,50 +681,15 @@ bool PPU::executeCycle() {
                     bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
-                    /*  Gets the attribute byte.
-                        The attribute byte is split into 4 parts: 04 03 02 01
-                        Each part corresponds to one quarter of the tile in the following way:
-                            |--------|--------|
-                            |-- 01 --|-- 02 --|
-                            |--------|--------|
-                            |=================|
-                            |--------|--------|
-                            |-- 03 --|-- 04 --|
-                            |--------|--------|
-                    */
-                    byte_addr = 0x23C0
-                            + (ppu_addr.nametable_y * 0x0800)
-                            + (ppu_addr.nametable_x * 0x0400)
-                            + ((ppu_addr.coarse_y / 4) * 0x08)
-                            + (ppu_addr.coarse_x / 4);
-                    bg_attribute = ppuRead(byte_addr);
-                    // Shift the attribute byte to get the palette of the correct quarter of the tile.
-                    if ((ppu_addr.coarse_y % 4) >= 2) {
-                        // Top half of attribute 2x2 tile.
-                        // Shift the bg_attribute 4 bits to the right to get there.
-                        bg_attribute >>= 4;
-                    }
-                    if (ppu_addr.coarse_x % 4 >= 2) {
-                        // Left half of attribute 2x2 tile.
-                        // Shift the bg_attribute 2 bits to the right to get there.
-                        bg_attribute >>= 2;
-                    }
-                    bg_attribute &= 0x03;
+                    loadAttributeByte();
                     break;
                 case 4:
                     // Load data of the low byte of a tile.
-                    byte_addr = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES)
-                            + (bg_nametable * TILE_SIZE_IN_BYTES)
-                            + ppu_addr.fine_y;
-                    bg_low = ppuRead(byte_addr);
+                    loadTileByte(false);
                     break;
                 case 6:
                     // Load data of the high byte of a tile.
-                    byte_addr = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES)
-                            + (bg_nametable * TILE_SIZE_IN_BYTES)
-                            + ppu_addr.fine_y 
-                            + 8;
-                    bg_high = ppuRead(byte_addr);
+                    loadTileByte(true);
                     break;
                 case 7:
                     // Increment the x tile every 8 cycles (since a tile is 8 pixels wide).

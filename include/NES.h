@@ -34,7 +34,7 @@
 
 #define INPUT_LOG SDLK_l
 #define INPUT_FRAME SDLK_f
-#define SHOW_DEBUG false
+#define SHOW_DEBUG true
 
 using namespace std;
 
@@ -55,7 +55,7 @@ class NES {
 
         const uint8_t* key_state;   // For reading keyboard input.
 
-        // bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
+        bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
 
         NES();
         ~NES();
@@ -66,6 +66,9 @@ class NES {
 
     private:
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+
+        void transferOAM();          // Either read or write 1 byte of data for OAM writing.
+        void logDebugInfo();        // Prints debug log information.
 };
 
 
