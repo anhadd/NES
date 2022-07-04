@@ -668,7 +668,7 @@ bool PPU::executeCycle() {
             cycles += 1;
         }
 
-        // If the cycle (x) is visible.
+        // If the cycle (x) is visible or for prerendering.
         if ((cycles >= 1 && cycles <= 256) || (cycles >= 321 && cycles <= 336)) {
             // Update the shifter registers.
             updateShifters();
