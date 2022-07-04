@@ -141,6 +141,8 @@ class APU {
         float next_sample_cycle;
         uint32_t cycles;
 
+        // int16_t sample;
+
         APU();
         ~APU();
 

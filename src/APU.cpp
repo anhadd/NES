@@ -164,10 +164,10 @@ bool APU::executeCycle() {
                 p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
             }
 
-            int16_t sample = square(p1, current_time) * gui->volume;
+            gui->sample = square(p1, current_time) * gui->volume;
             // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
             
-            SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
+            // SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
         }
     }
 

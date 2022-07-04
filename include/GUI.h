@@ -42,12 +42,14 @@ class GUI {
         SDL_AudioDeviceID audio_device;
         SDL_AudioSpec audio_spec;
 
+        uint16_t sample;
         uint16_t volume;
 
         // Constructor / Destructor.
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();
 
+        SDL_AudioCallback getSample();
         // Creates the debug windows. Used when debugging is turned on.
         void createDebugWindows();
 

@@ -23,7 +23,7 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.format = AUDIO_S16SYS;
     audio_spec.channels = 1;
     audio_spec.samples = 0x8000;
-    audio_spec.callback = NULL;
+    audio_spec.callback = getSample();
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
     volume = 1500;
@@ -47,6 +47,12 @@ GUI::~GUI() {
     }
 
     SDL_CloseAudioDevice(audio_device);
+}
+
+
+SDL_AudioCallback GUI::getSample() {
+    SDL_QueueAudio(audio_device, &sample, sizeof(uint16_t));
+    return NULL;
 }
 
 
