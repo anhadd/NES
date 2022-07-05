@@ -78,10 +78,10 @@ PPU::PPU() {
     };
 }
 
-
 PPU::~PPU() {
     // Destructor
 }
+
 
 void PPU::reset() {
     total_frames = 0;
@@ -194,22 +194,22 @@ uint8_t PPU::ppuRead(uint16_t address) {
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
                 if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
-                    return ppu_nametable[0][address & 0x03FF];
+                    return ppu_nametable[0][address & NAMETABLE_SIZE];
                 }
                 else {
-                    return ppu_nametable[1][address & 0x03FF];
+                    return ppu_nametable[1][address & NAMETABLE_SIZE];
                 }
             case MIRROR_HORIZONTAL:
                 if (address >= 0x0000 && address <= 0x07FF) {
-                    return ppu_nametable[0][address & 0x03FF];
+                    return ppu_nametable[0][address & NAMETABLE_SIZE];
                 }
                 else {
-                    return ppu_nametable[1][address & 0x03FF];
+                    return ppu_nametable[1][address & NAMETABLE_SIZE];
                 }
             case MIRROR_SINGLE_LOWER:
-                return ppu_nametable[0][address & 0x03FF];
+                return ppu_nametable[0][address & NAMETABLE_SIZE];
             case MIRROR_SINGLE_UPPER:
-                return ppu_nametable[1][address & 0x03FF];
+                return ppu_nametable[1][address & NAMETABLE_SIZE];
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
                 exit(0);
@@ -268,25 +268,25 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
                 if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
-                    ppu_nametable[0][address & 0x03FF] = value;
+                    ppu_nametable[0][address & NAMETABLE_SIZE] = value;
                 }
                 else {
-                    ppu_nametable[1][address & 0x03FF] = value;
+                    ppu_nametable[1][address & NAMETABLE_SIZE] = value;
                 }
                 break;
             case MIRROR_HORIZONTAL:
                 if (address >= 0x0000 && address <= 0x07FF) {
-                    ppu_nametable[0][address & 0x03FF] = value;
+                    ppu_nametable[0][address & NAMETABLE_SIZE] = value;
                 }
                 else {
-                    ppu_nametable[1][address & 0x03FF] = value;
+                    ppu_nametable[1][address & NAMETABLE_SIZE] = value;
                 }
                 break;
             case MIRROR_SINGLE_LOWER: 
-                ppu_nametable[0][address & 0x03FF] = value;
+                ppu_nametable[0][address & NAMETABLE_SIZE] = value;
                 break;
             case MIRROR_SINGLE_UPPER: 
-                ppu_nametable[1][address & 0x03FF] = value;
+                ppu_nametable[1][address & NAMETABLE_SIZE] = value;
                 break;
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
@@ -352,8 +352,8 @@ uint8_t PPU::readRegister(uint16_t address) {
                 temp_data = bus_value;
                 data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
                 incrementPPUAddr();
-                bus_value = temp_data & 0xB0 | (read_data & 0x3F);
-                return temp_data & 0xB0 | (read_data & 0x3F);
+                bus_value = temp_data & 0xB0 | (read_data & PALETTE_SIZE);
+                return temp_data & 0xB0 | (read_data & PALETTE_SIZE);
             }
     }
     return bus_value;
@@ -432,7 +432,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
 
 // Get the index of a color in the palette lookup table.
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
-    return ppuRead(0x3F00 + ((palette * 4) + index)) & 0x3F;
+    return ppuRead(0x3F00 + ((palette * 4) + index)) & PALETTE_SIZE;
 }
 
 // Draw a single pixel on a surface.
@@ -455,7 +455,7 @@ void PPU::drawDebugPixels() {
     if (total_frames % FRAMES_PER_DEBUG_UPDATE == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
-            drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & 0x3F);
+            drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & PALETTE_SIZE);
         }
         else if (scanlines == 256 && cycles == 0) {
             // Show the pattern tables.
@@ -497,11 +497,11 @@ void PPU::drawDebugPixels() {
                     for (int k = 0; k < 8; k++) {
                         for (int l = 0; l < 8; l++) {
                             // 1 Tile = 16 Bytes.
-                            uint16_t adr = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES) + (pattern_id * 16) + k;
+                            uint16_t adr = (ppu_ctrl.bgr_addr * PATTERNTABLE_SIZE) + (pattern_id * 16) + k;
                             uint8_t pixel = ((ppuRead(adr) >> (7-l)) & 0x01) + ((ppuRead(adr + 8) >> (7-l)) & 0x01) * 2;
                             drawPixelOnSurface(gui->nametable_surface_buff, j*8+l, i*8+k, getColorIndex(curr_palette, pixel));
 
-                            uint16_t adr2 = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES) + (pattern_id2 * 16) + k;
+                            uint16_t adr2 = (ppu_ctrl.bgr_addr * PATTERNTABLE_SIZE) + (pattern_id2 * 16) + k;
                             uint8_t pixel2 = ((ppuRead(adr2) >> (7-l)) & 0x01) + ((ppuRead(adr2 + 8) >> (7-l)) & 0x01) * 2;
                             drawPixelOnSurface(gui->nametable_surface_buff, j*8+l + 256, i*8+k, getColorIndex(curr_palette, pixel2));
                         }
@@ -626,7 +626,7 @@ void PPU::loadAttributeByte() {
 void PPU::loadTileByte(bool high_byte) {
     uint16_t byte_addr = 0x0000;
 
-    byte_addr = (ppu_ctrl.bgr_addr * NAMETABLE_SIZE_IN_BYTES)
+    byte_addr = (ppu_ctrl.bgr_addr * PATTERNTABLE_SIZE)
             + (bg_nametable * TILE_SIZE_IN_BYTES)
             + ppu_addr.fine_y;
     // Add offset if the high_byte needs.
@@ -794,7 +794,7 @@ bool PPU::executeCycle() {
                         // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
                         // In this case, since the ROM uses 8x16 sprites, read the bottom row of the next tile if necessary.
                         if (sprite_secondary_OAM[i].flags.flip_vertically) {
-                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * NAMETABLE_SIZE_IN_BYTES)
+                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
                                         + (((sprite_secondary_OAM[i].pattern_id & 0xFE) + 1) * TILE_SIZE_IN_BYTES)
                                         + (7 - ((scanlines - sprite_secondary_OAM[i].y) & 0x07));
                             // If the difference between the scanline and the sprite's top-left corner is >= 8,
@@ -806,7 +806,7 @@ bool PPU::executeCycle() {
                         }
                         // Otherwise just take the tile normally.
                         else {
-                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * NAMETABLE_SIZE_IN_BYTES)
+                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
                                         + ((sprite_secondary_OAM[i].pattern_id & 0xFE) * TILE_SIZE_IN_BYTES)
                                         + ((scanlines - sprite_secondary_OAM[i].y) & 0x07);
                             // If the difference between the scanline and the sprite's top-left corner is >= 8,
@@ -820,13 +820,13 @@ bool PPU::executeCycle() {
                     else {
                         // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
                         if (sprite_secondary_OAM[i].flags.flip_vertically) {
-                            sprite_addr = (ppu_ctrl.ptrn_addr * NAMETABLE_SIZE_IN_BYTES)
+                            sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
                                         + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
                                         + (7 - (scanlines - sprite_secondary_OAM[i].y));
                         }
                         // Otherwise just take the tile normally.
                         else {
-                            sprite_addr = (ppu_ctrl.ptrn_addr * NAMETABLE_SIZE_IN_BYTES)
+                            sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
                                         + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
                                         + (scanlines - sprite_secondary_OAM[i].y);
                         }
