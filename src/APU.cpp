@@ -114,7 +114,7 @@ float APU::square(struct full_pulse pulse, float offset) {
     // float frequency = 440.0f;
     float phase_offset = pulse.duty_partition * 2.0f * M_PI;
 
-    for (float counter = 1; counter < 10; counter++) {
+    for (float counter = 1; counter < 8; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
         sin1 += approxsin(temp) / counter;
@@ -138,10 +138,6 @@ bool APU::executeCycle() {
         // Quarter and Half frames.
         if (p1.timer_high.length_counter > 0) { // && !p1.ctrl.length_halt
             p1.timer_high.length_counter -= 1;
-
-            // if (p1.timer_high.length_counter == 0) {
-            //     apu_status.enable_p1 = 0;
-            // }
         }
         // else if (p1.timer_high.length_counter == 0) {
         //     apu_status.enable_p1 = 0;
@@ -156,7 +152,7 @@ bool APU::executeCycle() {
     // if (SDL_GetQueuedAudioSize(gui->audio_device) <= 3675) {
         next_sample_cycle += CYCLES_PER_SAMPLE * 24.0;
         current_time += SAMPLE_TIME_DELTA;
-
+        
         if (apu_status.enable_p1) {
             p1.timer -= 1;
             if (p1.timer == 0xFFFF) {
@@ -164,12 +160,17 @@ bool APU::executeCycle() {
                 p1.output = (p1.output & 0x01 << 7) | (p1.output & 0xFE >> 1);
             }
 
-            int16_t sample = square(p1, current_time) * gui->volume;
+            sample = square(p1, current_time) * gui->volume;
             // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
             
-            SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
+            // SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
         }
     }
+
+    // queue_size = SDL_GetQueuedAudioSize(gui->audio_device);
+    // if (queue_size < LOWER_QUEUE) next_sample_cycle += 3;
+    // if (queue_size > UPPER_QUEUE) next_sample_cycle -= 3;
+    // if (queue_size > UPPER_QUEUE) SDL_ClearQueuedAudio(gui->audio_device);
 
     frame_counter += 1;
     cycles += 24;

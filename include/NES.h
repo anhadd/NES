@@ -59,6 +59,10 @@ class NES {
 
         // bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
 
+        double apu_time = 0.0;
+        double clock_time = 0.0;
+        double sample_time = 0.0f;
+
         NES();
         ~NES();
 

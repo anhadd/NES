@@ -26,6 +26,8 @@ NES::NES() {
     FPS = 60;
 
     // debug_log = false;
+    // sample_time = 1.0 / AUDIO_SAMPLE_RATE;
+	// clock_time = 1.0 / 5369318.0;
 
     // Tell the PPU whether to render debug screens.
     ppu.show_debug = SHOW_DEBUG;
@@ -61,7 +63,8 @@ void NES::reset() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
-        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
+        // fprintf(stderr, "QUEUE SIZE: %u\n", SDL_GetQueuedAudioSize(gui.audio_device));
+        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 12)) {
             // ===== Prints debug log information.
                 // if (cpu.cycles == 0 && debug_log && !bus.oam_writing) {
                 //     fprintf(stderr, "%04x  %02x  %s  %02x %02x             A:%02x X:%02x Y:%02x P:%02x SP:%02x PPU: %03d,%03d CYC:%u\n",
@@ -133,6 +136,11 @@ void NES::executeFrame() {
                 }
             }
 
+            // apu_time += clock_time;
+            // if (apu_time >= sample_time) {
+            //     apu_time -= sample_time;
+            //     SDL_QueueAudio(gui.audio_device, &apu.sample, SAMPLE_SIZE);
+            // }
             total_cycles += 1;
         // }
     }

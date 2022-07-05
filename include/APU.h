@@ -49,6 +49,9 @@ using namespace std;
 #define SAMPLE_TIME_DELTA (1.0 / AUDIO_SAMPLE_RATE)
 #define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
 
+#define LOWER_QUEUE 4096
+#define UPPER_QUEUE 16384
+
 
 union pulse_control {
     struct {
@@ -139,7 +142,10 @@ class APU {
         uint32_t frame_counter;
         
         float next_sample_cycle;
+        uint32_t queue_size;
         uint32_t cycles;
+
+        int16_t sample;
 
         APU();
         ~APU();
