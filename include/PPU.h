@@ -50,9 +50,23 @@ SRAM offset:
 
 using namespace std;
 
-#define MAX_COLUMNS 341
-#define MAX_SCANLINES 261
+#define MAX_COLUMNS         341
+#define MAX_SCANLINES       261
+#define TILE_SIZE_IN_BYTES  0x10
+#define PATTERNTABLE_SIZE   0x1000
 
+#define NAMETABLE_START     0x2000
+#define NAMETABLE_SIZE      0x0400
+#define NAMETABLE_RANGE     0x03FF
+#define ATTRIBUTE_START     0x23C0
+
+#define PALETTE_START       0x3F00
+#define PALETTE_RANGE       0x3F
+
+#define GRAYSCALE_MASK      0x30
+
+#define PPU_REGISTERS_START 0x2000
+#define PPU_REGISTER_RANGE  0x0007
 #define CONTROL     0x2000
 #define MASK        0x2001
 #define STATUS      0x2002
@@ -62,7 +76,10 @@ using namespace std;
 #define PPU_ADDR    0x2006
 #define PPU_DATA    0x2007
 
+#define FRAMES_PER_DEBUG_UPDATE 60
 
+
+// Struct for the colors of the NES palette.
 struct Color {
     uint16_t index;
     uint8_t r;
@@ -71,6 +88,7 @@ struct Color {
     uint8_t a;
 };
 
+// PPU Control register.
 union PPUCTRL {
     struct {
         uint8_t nametable_x : 1;
@@ -85,20 +103,22 @@ union PPUCTRL {
     uint8_t full;
 };
 
+// PPU Mask register.
 union PPUMASK {
     struct {
-        uint8_t greyscale : 1;
+        uint8_t grayscale : 1;
         uint8_t showbg_left : 1;
         uint8_t showsprites_left : 1;
         uint8_t showbg : 1;
         uint8_t showsprites : 1;
-        uint8_t emph_r : 1;
-        uint8_t emph_g : 1;
-        uint8_t emph_b : 1;
+        uint8_t emphasis_r : 1;
+        uint8_t emphasis_g : 1;
+        uint8_t emphasis_b : 1;
     };
     uint8_t full;
 };
 
+// PPU Status register.
 union PPUSTATUS {
     struct {
         uint8_t prev_lsb : 5;
@@ -110,7 +130,9 @@ union PPUSTATUS {
 };
 
 
-// The repeating screen is fixed here! Apparently there is a real difference between:
+// Loopy register, convenient way to store scrolling information made by Loopy.
+// Is also used as the PPU Address register.
+// The repeating screen is fixed here! Apparently there is a big difference between:
     // uint16_t X : 5
     // uint8_t X : 5
 union loopy_register {
@@ -126,7 +148,6 @@ union loopy_register {
 };
 
 // Sprite attributes:
-
 // 76543210
 // ||||||||
 // ||||||++- Palette (4 to 7) of sprite
@@ -145,7 +166,7 @@ union sprite_attributes {
     uint8_t full;
 };
 
-
+// Struct for storing sprite information in OAM.
 // Used for accessing the sprite information in OAM memory.
 struct OAM_sprite {
     uint8_t y;
@@ -156,101 +177,119 @@ struct OAM_sprite {
 
 
 
-
+// NES PPU.
 class PPU {
     public:
-        bool signal_nmi;
-        bool finished;
-        bool show_debug;
+        bool signal_nmi;        // Set when the CPU should execute an NMI.
+        bool frame_finished;    // Set when the PPU finished an entire frame.
+        bool show_debug;        // Set if debug windows should be updated.
 
-        uint8_t* OAM;
+        uint8_t curr_palette;   // Stores an index for the current palette, allows for changing colors in game.
+                                // This is completely unnecessary and not part of the real NES, but it is nice to have.
 
-        uint8_t curr_palette;
+        // ===== These variables are set to public in order to log debug information in the NES file.
+        union loopy_register ppu_addr;  // Loopy register containing scroll information, also used as the PPU address register.
+        uint8_t fine_x;                 // Stores the pixel x offset inside a tile.
 
+        uint16_t cycles;                // Stores the current PPU cycle, corresponds to the x position on the screen.
+        int16_t scanlines;              // Stores the current scanline, corresponds to the y position on the screen.
+        // =====
+
+        // Constructor / Destructor.
         PPU();
         ~PPU();
 
-        void passGUI(GUI* nesGUI);
-        void passROM(ROM* nesROM);
-        bool executeCycle();
-        void reset();
+        void passGUI(GUI* nesGUI);  // Used for receiving the GUI from the NES.
+        void passROM(ROM* nesROM);  // Used for receiving the ROM from the NES.
+        bool executeCycle();        // Executes a single PPU cycle.
+        void reset();               // Resets the PPU.
 
-        uint8_t ppuRead(uint16_t address);
-        uint8_t ppuWrite(uint16_t address, uint8_t value);
+        uint8_t ppuRead(uint16_t address);                  // Read from PPU memory.
+        uint8_t ppuWrite(uint16_t address, uint8_t value);  // Write to PPU memory.
 
-        uint8_t readRegister(uint16_t address);
-        uint8_t writeRegister(uint16_t address, uint8_t value);
-
-        // Used for printing debug log.
-        union loopy_register ppu_addr;
-        uint8_t fine_x;
-
-        uint16_t cycles;
-        int16_t scanlines;
+        uint8_t readRegister(uint16_t address);                 // Read from PPU registers.
+        uint8_t writeRegister(uint16_t address, uint8_t value); // Write to PPU registers.
 
     private:
         GUI* gui;
         ROM* rom;
         
-        uint16_t total_frames;                  // Used for updating the debug screens.
-        // uint16_t cycles;
-        // int16_t scanlines;
-        bool address_latch;
-        bool odd_frame;
+        uint16_t total_frames;                  // Used for updating the debug screens every number of frames.
+        bool address_latch;                     // The address latch used for PPU writes. Determines the effects of a write to the address and scroll registers.
+        bool odd_frame;                         // Set when the PPU is executing an odd frame. Used for skipped a cycle every odd frame.
 
-        struct Color curr_color;
-        vector<struct Color> palette_lookup;
+        struct Color curr_color;                // Used for temporarily storing the current color that needs to be displayed on the screen.
+        vector<struct Color> palette_lookup;    // Lookup table containing all the colors of the NES palette.
 
         uint8_t ppu_nametable[2][0x0400];       // PPU memory: 2x 1KB nametables.
         uint8_t ppu_palette[0x0020];            // PPU memory: Palettes.
         
-        PPUCTRL ppu_ctrl;
-        PPUMASK ppu_mask;
-        PPUSTATUS ppu_status;
-        uint8_t oam_addr;
-        uint8_t oam_data;
-        uint8_t ppu_scroll;
+        PPUCTRL ppu_ctrl;                       // PPU Control register.
+        PPUMASK ppu_mask;                       // PPU Mask register.
+        PPUSTATUS ppu_status;                   // PPU Status register.
+        uint8_t oam_addr;                       // PPU OAM address register.
+        uint8_t oam_data;                       // PPU OAM data register.
 
-        // uint16_t ppu_addr;
-        // union loopy_register ppu_addr;
-        union loopy_register ppu_buff;
-        // uint8_t fine_x;
+        union loopy_register ppu_buff;          // Buffer for ppu_addr. Writes to ppu_addr go here first before being transferred to ppu_addr.
 
-        uint8_t ppu_data;
-        uint8_t bus_value;
+        uint8_t ppu_data;                       // PPU Data register.
+        uint8_t bus_value;                      // Current value in the BUS. Used for emulating open BUS behavior.
 
-        OAM_sprite sprite_OAM[0x40];
-        OAM_sprite sprite_secondary_OAM[0x08];
-        uint8_t* secondary_OAM;
-        uint8_t secondary_OAM_index;
+        // There is only a single OAM and a single secondary OAM. 
+        // The ones of type uint8_t is used for indexing by byte, which is useful for read and writes.
+        // The ones of type OAM_sprite are indexed by sprite, and are useful for easily getting information about sprites when rendering.
+        uint8_t* OAM;                           // Stores sprite information. Indexed by byte.
+        OAM_sprite sprite_OAM[0x40];            // Stores sprite information. Indexed by sprite.
+        
+        uint8_t* secondary_OAM;                 // Stores information of the sprites on the next scanline. Indexed by byte.
+        OAM_sprite sprite_secondary_OAM[0x08];  // Stores information of the sprites on the next scanline. Indexed by Sprite.
+        uint8_t secondary_OAM_index;            // Stores the amount of sprites stored in secondary OAM. Used for emulating sprite overflows.
 
-        uint8_t sprite_shifter_high[0x08];
-        uint8_t sprite_shifter_low[0x08];
+        // The high and low bytes of sprites are used for getting the correct palette color for every sprite.
+        uint8_t sprite_shifter_high[0x08];      // Stores the high byte of every sprite in secondary_OAM.
+        uint8_t sprite_shifter_low[0x08];       // Stores the low byte of every sprite in secondary_OAM.
 
-        bool sprite_zero_in_sOAM;
-        bool sprite_zero_rendering;
+        bool sprite_zero_in_sOAM;               // Set if sprite 0 (OAM[0]) is present in the secondary OAM.
+        bool sprite_zero_rendering;             // Set if sprite 0 (OAM[0]) is currently being rendered.
 
-        uint8_t data_read_buffer;
+        uint8_t data_read_buffer;               // For storing the previously read value from PPU memory. Used for emulating delayed reads.
 
         // Background rendering variables
-        uint16_t bg_shifter_high;
-        uint16_t bg_shifter_low;
-        uint16_t att_shifter_high;
-        uint16_t att_shifter_low;
+        uint16_t bg_shifter_high;               // Shifter register used to store the high byte of the background tiles.
+        uint16_t bg_shifter_low;                // Shifter register used to store the low byte of the background tiles.
+        uint16_t att_shifter_high;              // Stores the high byte of the background attribute corresponding to the background tile.
+        uint16_t att_shifter_low;               // Stores the low byte of the background attribute corresponding to the background tile.
 
-        uint8_t bg_nametable;
-        uint8_t bg_attribute;
-        uint8_t bg_low;
-        uint8_t bg_high;
+        uint8_t bg_nametable;                   // Stores the next tile index in the nametable that needs to be rendered.
+        uint8_t bg_attribute;                   // Stores the next attribute data of the background tile that needs to be rendered.
+        uint8_t bg_low;                         // Stores the next low byte of the background tile that needs to be rendered.
+        uint8_t bg_high;                        // Stores the next high byte of the background tile that needs to be rendered.
 
-        uint16_t getColorIndex(uint8_t palette, uint8_t index);
-        void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);
-        void drawDebugPixels();
+        uint8_t bg_pixel;                       // Stores the index of the color in the palette for the bg.
+        uint8_t bg_palette;                     // Stores the index of the palette for the bg.
+        bool sprite_behind_bg;                  // Whether the sprite is behind the background or not.
 
-        void loadShifters();
-        void updateShifters();
-        void incrementPPUAddr();
+        uint8_t sprite_pixel;                   // Stores the index of the color in the palette for the sprite.
+        uint8_t sprite_palette;                 // Stores the index of the palette for the sprite.
+
+        uint8_t final_pixel;                    // Stores the index of the color in the palette for the final rendered pixel.
+        uint8_t final_palette;                  // Stores the index of the palette for the final rendered pixel.
+
+        uint16_t getColorIndex(uint8_t palette, uint8_t index);     // Used for getting the absolute index of a color with a certain palette and index inside that palette.
+        void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);    // Draw a single pixel on a surface.
+        void drawDebugPixels();                                     // Update the debug screens.
+
+        void loadShifters();                    // Loads the next byte of data into the shifter registers.
+        void updateShifters();                  // Updates the shifters, which means shifting the data by 1 bit.
+        void incrementPPUAddr();                // Increments the PPU address depending on the increment mode.
         uint8_t flipByte(uint8_t byte);
+
+        void incrementCoarseX();                // Move to the next horizontal tile.
+        void incrementCoarseY();                // Move to the next vertical tile.
+        void incrementFineY();                  // Move to the next vertical pixel.
+
+        void loadAttributeByte();               // Load the attribute byte.
+        void loadTileByte(bool high_byte);      // Load the low or high tile byte.
 };
 
 

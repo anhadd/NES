@@ -9,6 +9,7 @@ GUI::GUI(int width, int height, int scale) {
     surface = SDL_GetWindowSurface(window);
     surface_buff = SDL_CreateRGBSurface(0, width, height, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 
+    // The scaled_screen_rect is used to rescale the NES screen to the size of the window.
     scaled_screen_rect.x = 0;
     scaled_screen_rect.y = 0;
     SDL_GetWindowSize(window, &scaled_screen_rect.w, NULL);
@@ -37,8 +38,10 @@ GUI::~GUI() {
 
 
 void GUI::createDebugWindows() {
+    // Move the main NES window to make space for the debug windows.
     SDL_SetWindowPosition(window, 50, 150);
 
+    // Create the pattern table window.
     pattern_window = SDL_CreateWindow("Pattern Tables", 575, 150, 128 * 2, 128 * 2 * 2, SDL_WINDOW_SHOWN);
     pattern_surface = SDL_GetWindowSurface(pattern_window);
     pattern_surface_buff = SDL_CreateRGBSurface(0, 128, 128 * 2, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
@@ -47,6 +50,7 @@ void GUI::createDebugWindows() {
     SDL_GetWindowSize(pattern_window, &scaled_pattern_rect.w, NULL);
     SDL_GetWindowSize(pattern_window, NULL, &scaled_pattern_rect.h);
 
+    // Create the palette window.
     palette_window = SDL_CreateWindow("Palettes", 100, 75, 32 * 10, 1 * 30, SDL_WINDOW_SHOWN);
     palette_surface = SDL_GetWindowSurface(palette_window);
     palette_surface_buff = SDL_CreateRGBSurface(0, 32, 1, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
@@ -55,6 +59,7 @@ void GUI::createDebugWindows() {
     SDL_GetWindowSize(palette_window, &scaled_palette_rect.w, NULL);
     SDL_GetWindowSize(palette_window, NULL, &scaled_palette_rect.h);
 
+    // Create the nametable window.
     nametable_window = SDL_CreateWindow("Nametables", 900, 400, 256 * 2, 256, SDL_WINDOW_SHOWN);
     nametable_surface = SDL_GetWindowSurface(nametable_window);
     nametable_surface_buff = SDL_CreateRGBSurface(0, 256 * 2, 256, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);

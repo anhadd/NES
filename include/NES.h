@@ -25,7 +25,7 @@
 
 #define INPUT_PALETTE SDLK_p
 #define INPUT_SLOW SDLK_9
-#define INPUT_FAST SDLK_8
+#define INPUT_FAST SDLK_0
 
 #define INPUT_QUIT SDLK_ESCAPE
 #define INPUT_RESET SDLK_r
@@ -47,24 +47,28 @@ class NES {
         GUI gui;
         ROM rom;
 
-        bool quit;
-        int FPS;
+        bool quit;                  // Quit the NES.
+        bool paused;                // Pause the game.
+        bool run_frame;             // Run a single frame.
+        
+        int FPS;                    // The framerate of the NES.
 
-        bool paused;
-        bool run_frame;
-        bool debug_log;
+        const uint8_t* key_state;   // For reading keyboard input.
 
-        const uint8_t* key_state;
+        bool debug_log;             // For logging debug information. Flipped using the INPUT_LOG key.
 
         NES();
         ~NES();
 
         uint8_t initialize(string romName);
-        void executeFrame();
+        void executeFrame();        // Execute an entire frame of instructions.
         void reset();
 
     private:
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+
+        void transferOAM();          // Either read or write 1 byte of data for OAM writing.
+        void logDebugInfo();        // Prints debug log information.
 };
 
 

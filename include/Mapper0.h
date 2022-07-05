@@ -8,6 +8,8 @@
 
 using namespace std;
 
+
+// Mapper0 does not need to do any mapping at all.
 class Mapper0 : public Mapper {
     public:
         Mapper0(uint8_t nPRG, uint8_t nCHR);

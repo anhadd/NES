@@ -85,23 +85,9 @@ struct instruction;
 
 class CPU {
     public:
-        bool execute_nmi;
+        bool execute_nmi;           // Execute an NMI (Non-Maskable Interrupt).
 
-        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
-                                    // jumps to the address located at $FFFC and $FFFD
-        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
-                                    // Jumps to the address located at $FFFA and $FFFB
-
-        // Constructor / Destructor
-        CPU();
-        ~CPU();
-
-        void passBUS(BUS* nesBUS);  // Used for receiving the BUS from the NES.
-        bool executeCycle();
-
-
-
-        // Public for logging debug information.
+        // ===== These variables are set to public in order to log debug information in the NES file.
         vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
 
         uint16_t PC;                // Program Counter
@@ -112,58 +98,50 @@ class CPU {
                                     // Has flags for various things.
 
         uint8_t accumulator;        // Stores results of arithmetic and logic operations.
-                                    // Can also be set to value form memory.
-        uint8_t X;
-        uint8_t Y;
+                                    // Can also be set to value from memory.
+        uint8_t X;                  // X register.
+        uint8_t Y;                  // Y register.
 
-        uint8_t cycles;
+        uint8_t cycles;             // Used to store the amount of cycles that an instruction needs to take.
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
+        //  =====
 
-        uint8_t cpuRead(uint16_t address);
+        void reset();               // Reset interrupt, on startup and when the reset button is pressed.
+                                    // jumps to the address located at $FFFC and $FFFD
+
+        CPU();                      // Constructor.
+        ~CPU();                     // Destructor.
+
+        void passBUS(BUS* nesBUS);  // Used for receiving the BUS from the NES.
+        bool executeCycle();        // Execute a single cycle.
+
+        uint8_t cpuRead(uint16_t address);  // Read from CPU memory.
 
     private:
-        // vector<struct instruction> op_lookup;   // Used to lookup data from an opcode.
         uint8_t opcode;             // Stores the current opcode.
 
-        // // union cpu_memory memory;
-        // uint16_t PC;                // Program Counter
-        // uint8_t SP;                 // Stack Pointer: Uses offset 0x0100
-        //                             // Stack pointer works top-down.
-        //                             // No overflow detection, just wraps around form 0x00 to 0xFF.
-        // union status_register status;
-        //                             // Has flags for various things.
-
-        // uint8_t accumulator;        // Stores results of arithmetic and logic operations.
-        //                             // Can also be set to value form memory.
-        // uint8_t X;
-        // uint8_t Y;
         uint16_t temp;              // Stores the temporary results of instructions.
         uint8_t read_data;          // Stores the data read form a read, so that it can be reused.
 
-        // Used to store the final address, after considering addressing modes.
-        uint16_t absolute_address;
-        // Used to store the offset of branches, if applicable.
-        int8_t relative_offset;
-        // Used to store the amount of cycles that an instruction took.
-        // uint8_t cycles;
+        uint16_t absolute_address;  // Used to store the final address, after considering addressing modes.
+        int8_t relative_offset;     // Used to store the offset of branches, if applicable.
+        
         bool additional_cycle;      // Used to store whether an instruction might take an extra cycle.
-        // uint32_t total_cycles;      // Counts the total cycles since the start of the program.
         
         enum addressing_mode mode;  // Used to store the current addressing mode.
 
         BUS* bus;                   // The BUS that takes care of memory reads and writes.
-        uint16_t rom_address;       // Address to start of the rom.
 
         // Interrupt priority: reset > NMI > IRQ
         // The NES takes 7 CPU cycles to begin executing the interrupt handler.
+        void NMI();                 // Non-Maskable Interrupts, cannot be ignored.
+                                    // Jumps to the address located at 0xFFFA and 0xFFFB
         void IRQ();                 // Maskable interrupts, ignored if interrupt_disabled is set.
-                                    // jumps to the address located at $FFFE and $FFFF
+                                    // jumps to the address located at 0xFFFE and 0xFFFF
         void decrementSP();         // Decrements the stack pointer (SP);
         void incrementSP();         // Increments the stack pointer (SP);
         
-        // enum addressing_mode mode;
-
-        // Operations: Can be 1, 2, or 3 bytes long.
+        // Operations: Can be 1, 2, or 3 bytes long depending on whether they take arguments.
         // First byte is always the opcode, the rest are arguments.
         void ADC(); void AND(); void ASL(); void BCC(); void BCS(); void BEQ(); void BIT(); void BMI();
         void BNE(); void BPL(); void BRK(); void BVC(); void BVS(); void CLC(); void CLD(); void CLI();
@@ -180,17 +158,17 @@ class CPU {
         void TAS();
 
         // Helper functions.
-        void checkBranch(bool flag);
-        void pushPCToStack();
-        void pushStatusToStack(bool is_instruction);
+        void checkBranch(bool flag);                  // Helper function for branches, since they are all almost the same.
+        void pushPCToStack();                         // Push the PC onto the stack.
+        void pushStatusToStack(bool is_instruction);  // Push the status register onto the stack.
 
-        bool readAddress();
+        bool readAddress();                         // Read the absolute_address of an instruction based on the addressing mode.
 
-        // uint8_t cpuRead(uint16_t address);
-        uint8_t cpuWrite(uint16_t address, uint8_t value);
+        uint8_t cpuWrite(uint16_t address, uint8_t value);  // Write to CPU memory.
 };
 
-// The structure of an instruction with all the data that is required.
+
+// Struct containing an instruction opcode and all the information necessary about the operation.
 struct instruction {
     uint8_t opcode;
     char opname[4];
