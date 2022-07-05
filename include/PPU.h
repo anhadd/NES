@@ -50,14 +50,23 @@ SRAM offset:
 
 using namespace std;
 
-#define MAX_COLUMNS 341
-#define MAX_SCANLINES 261
-#define TILE_SIZE_IN_BYTES 0x10
-#define PATTERNTABLE_SIZE 0x1000
-#define NAMETABLE_SIZE 0x03FF
-#define PALETTE_SIZE 0x3F
+#define MAX_COLUMNS         341
+#define MAX_SCANLINES       261
+#define TILE_SIZE_IN_BYTES  0x10
+#define PATTERNTABLE_SIZE   0x1000
+
+#define NAMETABLE_START     0x2000
+#define NAMETABLE_SIZE      0x0400
+#define NAMETABLE_RANGE     0x03FF
+#define ATTRIBUTE_START     0x23C0
+
+#define PALETTE_START       0x3F00
+#define PALETTE_RANGE       0x3F
+
+#define GRAYSCALE_MASK      0x30
 
 #define PPU_REGISTERS_START 0x2000
+#define PPU_REGISTER_RANGE  0x0007
 #define CONTROL     0x2000
 #define MASK        0x2001
 #define STATUS      0x2002

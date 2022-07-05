@@ -14,7 +14,7 @@ PPU::PPU() {
     address_latch = false;
     odd_frame = false;
 
-    fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
+    fill_n(&ppu_nametable[0][0], 2 * NAMETABLE_SIZE, 0);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
     ppu_ctrl.full = 0x00;
@@ -91,7 +91,7 @@ void PPU::reset() {
     address_latch = false;
     odd_frame = false;
 
-    fill_n(&ppu_nametable[0][0], 2 * 0x0400, 0);
+    fill_n(&ppu_nametable[0][0], 2 * NAMETABLE_SIZE, 0);
     fill(begin(ppu_palette), end(ppu_palette), 0);
 
     ppu_ctrl.full = 0x00;
@@ -194,22 +194,22 @@ uint8_t PPU::ppuRead(uint16_t address) {
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
                 if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
-                    return ppu_nametable[0][address & NAMETABLE_SIZE];
+                    return ppu_nametable[0][address & NAMETABLE_RANGE];
                 }
                 else {
-                    return ppu_nametable[1][address & NAMETABLE_SIZE];
+                    return ppu_nametable[1][address & NAMETABLE_RANGE];
                 }
             case MIRROR_HORIZONTAL:
                 if (address >= 0x0000 && address <= 0x07FF) {
-                    return ppu_nametable[0][address & NAMETABLE_SIZE];
+                    return ppu_nametable[0][address & NAMETABLE_RANGE];
                 }
                 else {
-                    return ppu_nametable[1][address & NAMETABLE_SIZE];
+                    return ppu_nametable[1][address & NAMETABLE_RANGE];
                 }
             case MIRROR_SINGLE_LOWER:
-                return ppu_nametable[0][address & NAMETABLE_SIZE];
+                return ppu_nametable[0][address & NAMETABLE_RANGE];
             case MIRROR_SINGLE_UPPER:
-                return ppu_nametable[1][address & NAMETABLE_SIZE];
+                return ppu_nametable[1][address & NAMETABLE_RANGE];
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
                 exit(0);
@@ -224,7 +224,7 @@ uint8_t PPU::ppuRead(uint16_t address) {
         }
         // Return the grayscale value if the grayscale flag is set.
         if (ppu_mask.grayscale) {
-            return ppu_palette[address] & 0x30;
+            return ppu_palette[address] & GRAYSCALE_MASK;
         }
         else {
             return ppu_palette[address];
@@ -268,25 +268,25 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
         switch (rom->mapper->mirroring) {
             case MIRROR_VERTICAL:
                 if ((address >= 0x0000 && address <= 0x03FF) || (address >= 0x0800 && address <= 0x0BFF)) {
-                    ppu_nametable[0][address & NAMETABLE_SIZE] = value;
+                    ppu_nametable[0][address & NAMETABLE_RANGE] = value;
                 }
                 else {
-                    ppu_nametable[1][address & NAMETABLE_SIZE] = value;
+                    ppu_nametable[1][address & NAMETABLE_RANGE] = value;
                 }
                 break;
             case MIRROR_HORIZONTAL:
                 if (address >= 0x0000 && address <= 0x07FF) {
-                    ppu_nametable[0][address & NAMETABLE_SIZE] = value;
+                    ppu_nametable[0][address & NAMETABLE_RANGE] = value;
                 }
                 else {
-                    ppu_nametable[1][address & NAMETABLE_SIZE] = value;
+                    ppu_nametable[1][address & NAMETABLE_RANGE] = value;
                 }
                 break;
             case MIRROR_SINGLE_LOWER: 
-                ppu_nametable[0][address & NAMETABLE_SIZE] = value;
+                ppu_nametable[0][address & NAMETABLE_RANGE] = value;
                 break;
             case MIRROR_SINGLE_UPPER: 
-                ppu_nametable[1][address & NAMETABLE_SIZE] = value;
+                ppu_nametable[1][address & NAMETABLE_RANGE] = value;
                 break;
             default:
                 fprintf(stderr, "Error: Unsupported mirroring mode.\n");
@@ -308,7 +308,7 @@ uint8_t PPU::ppuWrite(uint16_t address, uint8_t value) {
 
 // Read from the PPU registers (Also used by the CPU).
 uint8_t PPU::readRegister(uint16_t address) {
-    uint16_t real_address = PPU_REGISTERS_START + (address & 0x0007);
+    uint16_t real_address = PPU_REGISTERS_START + (address & PPU_REGISTER_RANGE);
     uint8_t temp;
     switch (real_address) {
         case CONTROL:
@@ -352,8 +352,8 @@ uint8_t PPU::readRegister(uint16_t address) {
                 temp_data = bus_value;
                 data_read_buffer = ppuRead(ppu_addr.full - 0x1000);
                 incrementPPUAddr();
-                bus_value = temp_data & 0xB0 | (read_data & PALETTE_SIZE);
-                return temp_data & 0xB0 | (read_data & PALETTE_SIZE);
+                bus_value = temp_data & 0xB0 | (read_data & PALETTE_RANGE);
+                return temp_data & 0xB0 | (read_data & PALETTE_RANGE);
             }
     }
     return bus_value;
@@ -361,7 +361,7 @@ uint8_t PPU::readRegister(uint16_t address) {
 
 // Write to the PPU registers (Also used by the CPU).
 uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
-    uint16_t real_address = PPU_REGISTERS_START + (address & 0x0007);
+    uint16_t real_address = PPU_REGISTERS_START + (address & PPU_REGISTER_RANGE);
     uint8_t temp_nmi = 0x00;
     switch (real_address) {
         case CONTROL:
@@ -432,7 +432,7 @@ uint8_t PPU::writeRegister(uint16_t address, uint8_t value) {
 
 // Get the index of a color in the palette lookup table.
 uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
-    return ppuRead(0x3F00 + ((palette * 4) + index)) & PALETTE_SIZE;
+    return ppuRead(PALETTE_START + ((palette * 4) + index)) & PALETTE_RANGE;
 }
 
 // Draw a single pixel on a surface.
@@ -455,7 +455,7 @@ void PPU::drawDebugPixels() {
     if (total_frames % FRAMES_PER_DEBUG_UPDATE == 0) {
         // Show the palette memory colors.
         if (scanlines == 0 && cycles >= 0 && cycles < 32) {
-            drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(0x3F00 + cycles) & PALETTE_SIZE);
+            drawPixelOnSurface(gui->palette_surface_buff, cycles, scanlines, ppuRead(PALETTE_START + cycles) & PALETTE_RANGE);
         }
         else if (scanlines == 256 && cycles == 0) {
             // Show the pattern tables.
@@ -474,20 +474,20 @@ void PPU::drawDebugPixels() {
 
                     switch (rom->mapper->mirroring) {
                         case MIRROR_VERTICAL:
-                            pattern_id = ppuRead(0x2000 + (i*32 + j));
-                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            pattern_id = ppuRead(NAMETABLE_START + (i*32 + j));
+                            pattern_id2 = ppuRead(NAMETABLE_START + NAMETABLE_SIZE + (i*32 + j));
                             break;
                         case MIRROR_HORIZONTAL:
-                            pattern_id = ppuRead(0x2000 + (i*32 + j));
-                            pattern_id2 = ppuRead(0x2000 + 0x800 + (i*32 + j));
+                            pattern_id = ppuRead(NAMETABLE_START + (i*32 + j));
+                            pattern_id2 = ppuRead(NAMETABLE_START + (2*NAMETABLE_SIZE) + (i*32 + j));
                             break;
                         case MIRROR_SINGLE_LOWER:
-                            pattern_id = ppuRead(0x2000 + (i*32 + j));
-                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            pattern_id = ppuRead(NAMETABLE_START + (i*32 + j));
+                            pattern_id2 = ppuRead(NAMETABLE_START + NAMETABLE_SIZE + (i*32 + j));
                             break;
                         case MIRROR_SINGLE_UPPER:
-                            pattern_id = ppuRead(0x2000 + (i*32 + j));
-                            pattern_id2 = ppuRead(0x2000 + 0x400 + (i*32 + j));
+                            pattern_id = ppuRead(NAMETABLE_START + (i*32 + j));
+                            pattern_id2 = ppuRead(NAMETABLE_START + NAMETABLE_SIZE + (i*32 + j));
                             break;
                         default:
                             fprintf(stderr, "Error: Unsupported mirroring mode.\n");
@@ -603,9 +603,9 @@ void PPU::loadAttributeByte() {
             |-- 03 --|-- 04 --|
             |--------|--------|
     */
-    byte_addr = 0x23C0
-            + (ppu_addr.nametable_y * 0x0800)
-            + (ppu_addr.nametable_x * 0x0400)
+    byte_addr = ATTRIBUTE_START
+            + (ppu_addr.nametable_y * (2*NAMETABLE_SIZE))
+            + (ppu_addr.nametable_x * NAMETABLE_SIZE)
             + ((ppu_addr.coarse_y / 4) * 0x08)
             + (ppu_addr.coarse_x / 4);
     bg_attribute = ppuRead(byte_addr);
@@ -678,7 +678,7 @@ bool PPU::executeCycle() {
                     // Load new data into the shifter registers.
                     loadShifters();
                     // Get the tile from the nametable that needs to be rendered.
-                    bg_nametable = ppuRead(0x2000 + (ppu_addr.full & 0x0FFF));
+                    bg_nametable = ppuRead(NAMETABLE_START + (ppu_addr.full & 0x0FFF));
                     break;
                 case 2:
                     loadAttributeByte();
@@ -715,7 +715,7 @@ bool PPU::executeCycle() {
         }
         // Unused reads done by the NES.
         else if (cycles == 337 || cycles == 339) {
-            bg_nametable = ppuRead(0x2000 | (ppu_addr.full & 0x0FFF));
+            bg_nametable = ppuRead(NAMETABLE_START | (ppu_addr.full & 0x0FFF));
         }
         // On the cycles 280 to 304 of the prerender scanline, load the y values of the buffered address into the real PPU address register.
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
