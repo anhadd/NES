@@ -65,6 +65,8 @@ using namespace std;
 #define PPU_ADDR    0x2006
 #define PPU_DATA    0x2007
 
+#define FRAMES_PER_DEBUG_UPDATE 60
+
 
 // Struct for the colors of the NES palette.
 struct Color {
