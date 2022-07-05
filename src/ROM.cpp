@@ -9,17 +9,11 @@ ROM::ROM() {
     mapper_id = 0;
 
     CHR_is_ram = false;
-
-    // fill(begin(PRG_memory), end(PRG_memory), 0);
-    // fill(begin(PRG_ram), end(PRG_ram), 0);
-    // fill(begin(CHR_memory), end(CHR_memory), 0);
-    // fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 }
 
 
 ROM::~ROM() {
     // Destructor
-    
 }
 
 
@@ -29,17 +23,33 @@ void ROM::reset() {
 
 
 vector<string> splitPath(const string &path_str) {
-  std::stringstream ss(path_str);
-  std::string element;
-  std::vector<string> split_str;
-
-  while (std::getline(ss, element, '/')) {
-    split_str.push_back(element);
-  }
-
-  return split_str;
+    std::stringstream ss(path_str);
+    std::string element;
+    std::vector<string> split_str;
+    // Split the entire given ROM path by '/'.
+    while (std::getline(ss, element, '/')) {
+        split_str.push_back(element);
+    }
+    return split_str;
 }
 
+void ROM::loadSaveFile(string romName) {
+    vector<string> path_elems = splitPath(romName);
+    save_path = "saves/" + path_elems.back();
+    if (access(save_path.c_str(), F_OK) != -1) {
+        printf("Loading saved game...\n");
+        uint32_t buff3_size = 0x2000;
+        uint8_t buff3[buff3_size];
+
+        ifstream save_file(save_path, ios::in | ios::binary);
+        save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
+        memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
+        save_file.close();
+    }
+    else {
+        printf("No save file found.\n");
+    }
+}
 
 void ROM::dumpContents(ifstream* romFile) {
     uint8_t x = 0;
@@ -53,7 +63,7 @@ void ROM::dumpContents(ifstream* romFile) {
             fprintf(stderr, "\n");
         }
     }
-
+    // Go back to the start of the romFile.
     romFile->clear();
     romFile->seekg(0);
 }
@@ -65,6 +75,9 @@ bool ROM::loadRom(string romName) {
     if (romFile.fail()) {
         return 1;
     }
+
+    // Dump the ROM contents. Nice to have for debugging.
+    // dumpContents(&romFile);
 
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
@@ -82,7 +95,9 @@ bool ROM::loadRom(string romName) {
     uint32_t buff2_size = h.chr_rom_size * CHR_BLOCK_SIZE;
     uint8_t buff2[buff2_size];
 
+    // If the amount of CHR banks is 0.
     if (h.chr_rom_size == 0) {
+        // The CHR memory is RAM and the size is as if there is 1 CHR bank.
         CHR_is_ram = true;
         buff2_size = CHR_BLOCK_SIZE;
     }
@@ -97,53 +112,40 @@ bool ROM::loadRom(string romName) {
     CHR_memory.resize(buff2_size);
     memcpy(&CHR_memory[0x0000], buff2, buff2_size * sizeof(char));
 
-
-    PRG_ram.resize(0x2000);
-    Expansion_ROM.resize(0x1FE0);
+    // Create PRG RAM and Expansion ROM. This is not necessarily used by every mapper.
+    PRG_ram.resize(PRG_RAM_SIZE);
+    Expansion_ROM.resize(EXPANSION_ROM_SIZE);
     fill(begin(PRG_ram), end(PRG_ram), 0);
     fill(begin(Expansion_ROM), end(Expansion_ROM), 0);
 
+    // Create the Mapper depending on the id in the ROM header.
     mapper_id = (h.f7.mapper_upper << 4) | (h.f6.mapper_lower);
     switch(mapper_id) {
         case 0:
-            printf("Mapper 0\n");
+            printf("Mapper 0 - ");
             mapper = new Mapper0(h.prg_rom_size, h.chr_rom_size);
             break;
         case 1:
-            printf("Mapper 1\n");
+            printf("Mapper 1 - ");
             mapper = new Mapper1(h.prg_rom_size, h.chr_rom_size);
             break;
         case 2:
-            printf("Mapper 2\n");
+            printf("Mapper 2 - ");
             mapper = new Mapper2(h.prg_rom_size, h.chr_rom_size);
             break;
         case 3:
-            printf("Mapper 3\n");
+            printf("Mapper 3 - ");
             mapper = new Mapper3(h.prg_rom_size, h.chr_rom_size);
             break;
         default:
             printf("Error: Unsupported Mapper %u\n", mapper_id);
             exit(0);
     }
-    printf("Prg banks: %u       Chr banks: %u\n", mapper->PRG_banks, mapper->CHR_banks);
+    printf("Prg banks: %u    Chr banks: %u\n", mapper->PRG_banks, mapper->CHR_banks);
 
+    // If the mapper uses PRG RAM, it is allowed to use saves and loads, so load the game if possible.
     if (mapper->prg_ram_enabled) {
-        // Loading save file.
-        vector<string> path_elems = splitPath(romName);
-        save_path = "saves/" + path_elems.back();
-        if (access(save_path.c_str(), F_OK) != -1) {
-            printf("Loading saved game...\n");
-            uint32_t buff3_size = 0x2000;
-            uint8_t buff3[0x2000];
-
-            ifstream save_file(save_path, ios::in | ios::binary);
-            save_file.read(reinterpret_cast<char*>(buff3), buff3_size);
-            memcpy(&PRG_ram[0x0000], buff3, buff3_size * sizeof(char));
-            save_file.close();
-        }
-        else {
-            printf("No save file found.\n");
-        }
+        loadSaveFile(romName);
     }
 
     // Set mirroring mode.

@@ -5,7 +5,7 @@
 #include "NES.h"
 
 
+// Handles all keyboard inputs for the NES.
 void handleInput(NES &nes);
-
 
 #endif

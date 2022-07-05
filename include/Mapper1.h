@@ -30,7 +30,8 @@ union control_register {
     uint8_t full;
 };
 
-
+// Mapper1 allows the CHR banks and the PRG banks to be switched.
+// It also allows for saving game data on the cartridge.
 class Mapper1 : public Mapper {
     public:
         Mapper1(uint8_t nPRG, uint8_t nCHR);
@@ -40,15 +41,17 @@ class Mapper1 : public Mapper {
         uint32_t ppuMap(uint16_t address, bool write, uint8_t value = 0x00);
     
     private:
-        uint8_t prg_bank0;
-        uint8_t prg_bank1;
+        uint8_t prg_bank0;          // Stores the number of the PRG bank corresponding to 0x8000-0xBFFF for 16K mode.
+                                    // Can also be for the entire 0x8000-0xFFFF range when in 32K mode.
+        uint8_t prg_bank1;          // Stores the number of the PRG bank corresponding to 0xC000-0xFFFF for 16K mode.
 
-        uint8_t chr_bank0;
-        uint8_t chr_bank1;
+        uint8_t chr_bank0;          // Stores the number of the CHR bank corresponding to 0x0000-0x0FFF for 4K mode.
+                                    // Can also be for the entire 0x0000-0x1FFF range when in 8K mode.
+        uint8_t chr_bank1;          // Stores the number of the CHR bank corresponding to 0x0000-0x1FFF for 4K mode.
 
-        uint8_t load_reg;
-        uint8_t load_reg_index;
-        union control_register ctrl_reg;
+        uint8_t load_reg;           // Stores the data that should be loaded into a register.
+        uint8_t load_reg_index;     // Stores the current index of the bit that has to be loaded into the load_reg.
+        union control_register ctrl_reg;    // Control register which contains flags.
 };
 
 
