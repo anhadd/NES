@@ -33,4 +33,6 @@ To quit the emulator use:
 Others:
 `Space`: Pause the emulator.
 `F`: Execute a single frame.
+
+Disabled By Default:
 `L`: Log debug information to file.
