@@ -43,15 +43,16 @@ using namespace std;
 #define THREE_QUARTER_FRAME 11186
 #define FULL_FRAME 14916
 
-#define SAMPLE_TIME_DELTA (1.0 / 44100.0)
 #define SAMPLE_SIZE sizeof(int16_t)
+#define SAMPLE_TIME_DELTA (1.0 / AUDIO_SAMPLE_RATE)
+#define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
 
 
 union pulse_control {
     struct {
         uint8_t volume : 4;
         uint8_t constant_volume : 1;
-        uint8_t loop : 1;
+        uint8_t length_halt : 1;
         uint8_t duty : 2;
     };
     uint8_t full;
@@ -70,7 +71,7 @@ union pulse_sweep {
 // pulse_timers_low are just uint8_t.
 
 // TODO: Also resets duty and starts envelope.
-union pulse_timer_high {
+union channel_timer_high {
     struct {
         uint8_t timer_high : 3;
         uint8_t length_counter : 5;
@@ -83,7 +84,7 @@ struct full_pulse {
     union pulse_control ctrl;
     union pulse_sweep sweep;
     uint8_t timer_low;
-    union pulse_timer_high timer_high;
+    union channel_timer_high timer_high;
 
     uint8_t wave_sequence;
     uint16_t timer;
@@ -103,18 +104,37 @@ struct full_pulse {
         reload = 0x0000;
         duty_partition = 0.00;
     }
-
-    void executeCycle(bool enabled) {
-        if (enabled) {
-            timer -= 1;
-            if (timer == 0xFFFF) {
-                timer = reload + 1;
-                output = (output & 0x01 << 7) | (output & 0xFE >> 1);
-            }
-        }
-    }
 };
 
+union triangle_control {
+    struct {
+        uint8_t reload : 7;
+        uint8_t counter_halt : 1;
+    };
+    uint8_t full;
+};
+
+struct full_triangle {
+    union triangle_control ctrl;
+    uint8_t timer_low;
+    union channel_timer_high timer_high;
+
+    uint16_t timer;
+    uint16_t reload;
+    uint8_t output;
+    int8_t delta;
+
+    void reset() {
+        ctrl.full = 0x00;
+        timer_low = 0x00;
+        timer_high.full = 0x00;
+
+        timer = 0x0000;
+        reload = 0x0000;
+        output = 15;
+        delta = -1;
+    }
+};
 
 union channel_status {
     struct {
@@ -139,6 +159,7 @@ class APU {
 
         struct full_pulse p1;
         struct full_pulse p2;
+        struct full_triangle triangle;
 
         union channel_status apu_status;
 
@@ -147,7 +168,7 @@ class APU {
         uint16_t cycles_per_sample;
         uint16_t current_sample_cycle;
 
-        uint16_t test_freq = 20;
+        int16_t sample;
 
         APU();
         ~APU();
@@ -159,12 +180,13 @@ class APU {
 
         uint8_t readRegister(uint16_t address);
         uint8_t writeRegister(uint16_t address, uint8_t value);
+        void cyclePulse(struct full_pulse pulse);
 
         // double normalize(double phase);
         // double square(double phase);
         float square(struct full_pulse pulse, float offset);
         // double triangle(double phase);
-        
+        float triangle_wave(struct full_triangle triangle, float offset);
 };
 
 

@@ -19,7 +19,7 @@ APU::APU() {
 
     apu_status.full = 0x00;
     current_time = 0.0;
-    frame_counter = 0x00000000;
+    frame_counter = 0x0000000F;
 
     current_sample_cycle = 0x00;
     cycles_per_sample = 0x00;
@@ -30,6 +30,14 @@ APU::~APU() {
     
 }
 
+void APU::reset() {
+    apu_status.full = 0x00;
+    frame_counter = 0x0000000F;
+
+    p1.reset();
+    p2.reset();
+    triangle.reset();
+}
 
 // Pass the GUI to the current APU.
 void APU::passGUI(GUI* nesGUI) {
@@ -66,7 +74,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case P1_TIMER_HIGH:
             p1.timer_high.full = value;
-            p1.reload = ((p1.timer_high.full & 0x07) << 8) | (p1.reload & 0x00FF);
+            p1.reload = ((p1.timer_high.timer_high) << 8) | (p1.reload & 0x00FF);
             p1.timer = p1.reload;
             break;
 
@@ -90,9 +98,20 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
 
         case TR_CONTROL:
+            triangle.ctrl.full = value;
+            break;
         case TR_UNUSED:
+            // Unused.
+            break;
         case TR_TIMER_LOW:
+            triangle.timer_low = value;
+            triangle.reload = (triangle.reload & 0xFF00) | triangle.timer_low;
+            break;
         case TR_TIMER_HIGH:
+            triangle.timer_high.full = value;
+            triangle.reload = ((triangle.timer_high.timer_high) << 8) | (triangle.reload & 0x00FF);
+            triangle.timer = triangle.reload;
+            break;
 
         case NS_CONTROL:
         case NS_UNUSED:
@@ -109,13 +128,25 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             if (!apu_status.enable_p1) {
                 p1.timer_high.length_counter = 0;
             }
-            apu_status.enable_p2 = value & 0x02;
-            if (!apu_status.enable_p1) {
+            apu_status.enable_p2 = (value & 0x02) != 0;
+            if (!apu_status.enable_p2) {
                 p2.timer_high.length_counter = 0;
+            }
+            apu_status.enable_triangle = (value & 0x04) != 0;
+            if (!apu_status.enable_triangle) {
+                triangle.timer_high.length_counter = 0;
             }
             break;
     }
     return 0;
+}
+
+void APU::cyclePulse(struct full_pulse pulse) {
+    pulse.timer -= 1;
+    if (pulse.timer == 0xFFFF) {
+        pulse.timer = pulse.reload + 1;
+        pulse.output = (pulse.output & 0x01 << 7) | (pulse.output & 0xFE >> 1);
+    }
 }
 
 // Used for approximating sin, since the sin function is very slow.
@@ -126,23 +157,36 @@ float approxsin(float offset) {
     return 20.785 * j * (j - 0.5) * (j - 1.0f);
 }
 
-// TODO: check this for testing, from olc.
 float APU::square(struct full_pulse pulse, float offset) {
     float temp = 0.0;
     float sin1 = 0.0;
     float sin2 = 0.0;
     float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
-    // float frequency = 440.0f;
     float phase_offset = pulse.duty_partition * 2.0f * M_PI;
 
-    for (float counter = 1; counter < 20; counter++) {
+    for (float counter = 1; counter < 10; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
         sin1 += approxsin(temp) / counter;
         sin2 += approxsin(temp - phase_offset * counter) / counter;
     }
 
-    return (2.0 / M_PI) * (sin1 - sin2); 
+    return (2.0 / M_PI) * (sin1 - sin2);
+}
+
+float APU::triangle_wave(struct full_triangle triangle, float offset) {
+    float n = 0.0;
+    float temp = 0.0;
+    float sin1 = 0.0;
+    float frequency = CPU_CLOCK / (32.0 * (double)(triangle.reload + 1));
+
+    for (float counter = 1; counter < 10; counter++) {
+        n = (2 * counter) + 1;
+        temp = 2.0 * M_PI * frequency * n * offset;
+        sin1 += pow(-1, counter) * pow(n, -2) * approxsin(temp) / counter;
+    }
+
+    return (8 / pow(M_PI, 2)) * sin1; 
 }
 
 
@@ -152,36 +196,57 @@ float APU::square(struct full_pulse pulse, float offset) {
 // CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
 
 bool APU::executeCycle() {
-    if (current_sample_cycle == cycles_per_sample) {
-        current_sample_cycle = 0x00;
-        current_time += SAMPLE_TIME_DELTA; // TODO: /60 for the frames?
-
-        if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-            // Quarter frame.
-        }
-        else if (frame_counter == HALF_FRAME) {
-            // Quarter and Half frame.
-        }
-        else if (frame_counter == FULL_FRAME) {
-            // Quarter and Half frame.
+    if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+        // Quarter frame.
+    }
+    else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
+        //  Half frame.
+        if (frame_counter == FULL_FRAME) {
             frame_counter = 0;
         }
+    }
 
-        int16_t sample = 0x0000;
-        p1.executeCycle(apu_status.enable_p1);
-        p2.executeCycle(apu_status.enable_p2);
+    if (current_sample_cycle >= cycles_per_sample) {
+        current_sample_cycle -= cycles_per_sample;
+        current_time += SAMPLE_TIME_DELTA;
+
+        sample = 0x0000;
         if (apu_status.enable_p1) {
-            sample += square(p1, current_time) * gui->volume;
-            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            cyclePulse(p1);
+
+            // if (p1.ctrl.constant_volume) {
+                sample += (p1.ctrl.volume != 0) * square(p1, current_time) * gui->volume;
+            // }
+            // else {
+                // sample += p1.ctrl.volume * square(p1, current_time) * gui->volume;
+            // }
         }
         if (apu_status.enable_p2) {
-            sample += square(p2, current_time) * gui->volume;
-            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            cyclePulse(p2);
+            sample += (p2.ctrl.volume != 0) * square(p2, current_time) * gui->volume;
+        }
+        if (apu_status.enable_triangle) {
+            triangle.timer -= 1;
+            if (triangle.timer == 0xFFFF) {
+                triangle.timer = triangle.reload + 1;
+                triangle.output += triangle.delta;
+                if (triangle.output == 15) {
+                    triangle.delta = -1;
+                }
+                else if (triangle.output == 0) {
+                    triangle.delta = 1;
+                }
+            }
+
+            // sample += triangle.output * gui->volume;
+            sample += triangle_wave(triangle, current_time) * gui->volume;
         }
 
+        // sample += sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
         SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
-        frame_counter += 1;
     }
-    current_sample_cycle += 1;
+    
+    frame_counter += 1;
+    current_sample_cycle += 704;
     return 0;
 }

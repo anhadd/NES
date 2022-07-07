@@ -35,7 +35,7 @@
 
 #define INPUT_LOG SDLK_l
 #define INPUT_FRAME SDLK_f
-#define SHOW_DEBUG true
+#define SHOW_DEBUG false
 
 using namespace std;
 

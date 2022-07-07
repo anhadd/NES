@@ -19,7 +19,7 @@ GUI::GUI(int width, int height, int scale) {
 
     // Audio elements
     SDL_zero(audio_spec);
-    audio_spec.freq = 44100;
+    audio_spec.freq = AUDIO_SAMPLE_RATE;
     audio_spec.format = AUDIO_S16SYS;
     audio_spec.channels = 1;
     audio_spec.samples = 0x8000;

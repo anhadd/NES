@@ -7,7 +7,7 @@
 #define GUI_HEIGHT 240
 #define GUI_SCALE 2
 
-
+#define AUDIO_SAMPLE_RATE 48000.0
 
 class GUI {
     public:
