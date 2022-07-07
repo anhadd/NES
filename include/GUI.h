@@ -38,6 +38,12 @@ class GUI {
         // Event handler for input.
         SDL_Event sdlevent;
 
+        // Audio
+        SDL_AudioDeviceID audio_device;
+        SDL_AudioSpec audio_spec;
+
+        uint16_t volume;
+
         // Constructor / Destructor.
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
         ~GUI();

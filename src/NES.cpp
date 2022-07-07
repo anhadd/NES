@@ -9,9 +9,13 @@ NES::NES() {
     ppu.passROM(&rom);
 
     bus.passPPU(&ppu);
+    bus.passAPU(&apu);
     bus.passROM(&rom);
 
     cpu.passBUS(&bus);
+
+    apu.passGUI(&gui);
+    apu.cycles_per_sample = (CPU_CLOCK / 2) / 44100;
 
     // Initialize other variables.
     key_state = SDL_GetKeyboardState(NULL);
@@ -125,6 +129,10 @@ void NES::executeFrame() {
             }
             // Run a single CPU cycle.
             cpu.executeCycle();
+            // One APU cycle every 2 CPU cycles.
+            if (total_cycles % 2 == 0) {
+                apu.executeCycle();
+            }
         }
         // If OAM is being written to.
         else {

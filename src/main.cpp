@@ -49,6 +49,9 @@ int main(int argc, char *argv[]) {
     }
     printf("Rom Loaded!\n");
 
+    // Unpause the audio device (start playing sound).
+    SDL_PauseAudioDevice(nes.gui.audio_device, 0);
+
     // Main loop. Keep going until the NES has been asked to quit.
     while (!nes.quit) {
         next_frame_time = steady_clock::now() + milliseconds(1000/nes.FPS);
