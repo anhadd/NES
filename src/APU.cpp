@@ -71,9 +71,23 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
 
         case P2_CONTROL:
+            p2.ctrl.full = value;
+            p2.wave_sequence = sequence_lookup[p2.ctrl.duty];
+            p2.duty_partition = partition_lookup[p2.ctrl.duty];
+            break;
         case P2_SWEEP:
+            p2.timer_low = value;
+            p2.reload = (p2.reload & 0xFF00) | p2.timer_low;
+            break;
         case P2_TIMER_LOW:
+            p2.timer_low = value;
+            p2.reload = (p2.reload & 0xFF00) | p2.timer_low;
+            break;
         case P2_TIMER_HIGH:
+            p2.timer_high.full = value;
+            p2.reload = ((p2.timer_high.full & 0x07) << 8) | (p2.reload & 0x00FF);
+            p2.timer = p2.reload;
+            break;
 
         case TR_CONTROL:
         case TR_UNUSED:
@@ -94,6 +108,10 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             apu_status.enable_p1 = value & 0x01;
             if (!apu_status.enable_p1) {
                 p1.timer_high.length_counter = 0;
+            }
+            apu_status.enable_p2 = value & 0x02;
+            if (!apu_status.enable_p1) {
+                p2.timer_high.length_counter = 0;
             }
             break;
     }
@@ -149,16 +167,27 @@ bool APU::executeCycle() {
             frame_counter = 0;
         }
 
+        int16_t sample = 0x0000;
+        const int sample_size = sizeof(int16_t);
         p1.executeCycle(apu_status.enable_p1);
+        p2.executeCycle(apu_status.enable_p2);
         if (apu_status.enable_p1) {
-            int16_t sample = square(p1, current_time) * gui->volume;
+            sample += square(p1, current_time) * gui->volume;
         
             // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
-            const int sample_size = sizeof(int16_t);
             
-            SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+            // SDL_QueueAudio(gui->audio_device, &sample, sample_size);
+        }
+        if (apu_status.enable_p2) {
+            sample += square(p2, current_time) * gui->volume;
+        
+            // int16_t sample = sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+            
+            
+            // SDL_QueueAudio(gui->audio_device, &sample, sample_size);
         }
 
+        SDL_QueueAudio(gui->audio_device, &sample, sample_size);
         frame_counter += 1;
     }
     current_sample_cycle += 1;
