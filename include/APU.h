@@ -90,7 +90,7 @@ struct full_pulse {
     uint8_t timer_low;
     union channel_timer_high timer_high;
 
-    uint8_t wave_sequence;
+    // uint8_t wave_sequence;
     uint16_t timer;
     uint16_t reload;
     uint8_t output;
@@ -103,7 +103,7 @@ struct full_pulse {
         timer_low = 0x00;
         timer_high.full = 0x00;
 
-        wave_sequence = 0x00;
+        // wave_sequence = 0x00;
         timer = 0x0000;
         reload = 0x0000;
         duty_partition = 0.00;
@@ -158,7 +158,7 @@ class APU {
     public:
         GUI* gui;
 
-        uint8_t sequence_lookup[5];
+        // uint8_t sequence_lookup[5];
         double partition_lookup[5];
 
         struct full_pulse p1;

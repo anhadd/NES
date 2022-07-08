@@ -113,7 +113,7 @@ void NES::logDebugInfo() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
-        if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
+        // if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
         // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
             // Logs info.
             logDebugInfo();
@@ -149,7 +149,7 @@ void NES::executeFrame() {
             // }
 
             total_cycles += 1;
-        }
+        // }
     }
     ppu.frame_finished = false;
 }

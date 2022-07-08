@@ -7,10 +7,10 @@ APU::APU() {
     p1.reset();
     p2.reset();
 
-    sequence_lookup[0] = 0b01000000;
-    sequence_lookup[1] = 0b01100000;
-    sequence_lookup[2] = 0b01111000;
-    sequence_lookup[3] = 0b10011111;
+    // sequence_lookup[0] = 0b01000000;
+    // sequence_lookup[1] = 0b01100000;
+    // sequence_lookup[2] = 0b01111000;
+    // sequence_lookup[3] = 0b10011111;
 
     partition_lookup[0] = 0.125;
     partition_lookup[1] = 0.250;
@@ -61,7 +61,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
     switch (real_address) {
         case P1_CONTROL:
             p1.ctrl.full = value;
-            p1.wave_sequence = sequence_lookup[p1.ctrl.duty];
+            // p1.wave_sequence = sequence_lookup[p1.ctrl.duty];
             p1.duty_partition = partition_lookup[p1.ctrl.duty];
             break;
         case P1_SWEEP:
@@ -79,7 +79,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
 
         case P2_CONTROL:
             p2.ctrl.full = value;
-            p2.wave_sequence = sequence_lookup[p2.ctrl.duty];
+            // p2.wave_sequence = sequence_lookup[p2.ctrl.duty];
             p2.duty_partition = partition_lookup[p2.ctrl.duty];
             break;
         case P2_SWEEP:
@@ -246,6 +246,10 @@ bool APU::executeCycle() {
         current_time += SAMPLE_TIME_DELTA;
         current_sample_cycle -= CYCLES_PER_SAMPLE;
         SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
+
+        // if (SDL_GetQueuedAudioSize(gui->audio_device) > 8192) {
+        //     SDL_DequeueAudio(gui->audio_device, NULL, 4096);
+        // }
     }
 
     apu_cycles += 1;
