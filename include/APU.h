@@ -45,7 +45,11 @@ using namespace std;
 
 #define SAMPLE_SIZE sizeof(int16_t)
 #define SAMPLE_TIME_DELTA (1.0 / AUDIO_SAMPLE_RATE)
-#define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
+// #define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
+// apu.cycles_per_sample = (CPU_CLOCK / 2) / AUDIO_SAMPLE_RATE;
+// apu.cycles_per_sample = 3125;    // For 44100Hz
+// apu.cycles_per_sample = 13125;    // For 48000Hz
+ #define CYCLES_PER_SAMPLE 13125
 
 
 union pulse_control {
@@ -165,7 +169,7 @@ class APU {
 
         float current_time;
         uint32_t frame_counter;
-        uint16_t cycles_per_sample;
+        uint32_t apu_cycles;
         uint16_t current_sample_cycle;
 
         int16_t sample;

@@ -15,9 +15,6 @@ NES::NES() {
     cpu.passBUS(&bus);
 
     apu.passGUI(&gui);
-    // apu.cycles_per_sample = (CPU_CLOCK / 2) / AUDIO_SAMPLE_RATE;
-    // apu.cycles_per_sample = 3125;    // For 44100Hz
-    apu.cycles_per_sample = 13125;    // For 48000Hz
 
     // Initialize other variables.
     key_state = SDL_GetKeyboardState(NULL);
@@ -116,6 +113,7 @@ void NES::logDebugInfo() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
+        if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
         // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
             // Logs info.
             logDebugInfo();
@@ -124,6 +122,10 @@ void NES::executeFrame() {
             ppu.executeCycle();
             ppu.executeCycle();
             ppu.executeCycle();
+
+            // One APU cycle every CPU cycles.
+            apu.executeCycle();
+
             // If there is no writing happening to OAM.
             if (!bus.oam_writing) {
                 // If PPU is asking for an NMI send that to CPU.
@@ -133,10 +135,6 @@ void NES::executeFrame() {
                 }
                 // Run a single CPU cycle.
                 cpu.executeCycle();
-                // One APU cycle every 2 CPU cycles.
-                if (total_cycles % 2 == 0) {
-                    apu.executeCycle();
-                }
             }
             // If OAM is being written to.
             else {
@@ -144,8 +142,14 @@ void NES::executeFrame() {
                 transferOAM();
             }
 
+            // if (apu.current_sample_cycle >= CYCLES_PER_SAMPLE) {
+            //     apu.current_time += SAMPLE_TIME_DELTA;
+            //     apu.current_sample_cycle -= CYCLES_PER_SAMPLE;
+            //     SDL_QueueAudio(gui.audio_device, &apu.sample, SAMPLE_SIZE);
+            // }
+
             total_cycles += 1;
-        // }
+        }
     }
     ppu.frame_finished = false;
 }

@@ -22,7 +22,6 @@ APU::APU() {
     frame_counter = 0x0000000F;
 
     current_sample_cycle = 0x00;
-    cycles_per_sample = 0x00;
 }
 
 APU::~APU() {
@@ -161,10 +160,10 @@ float APU::square(struct full_pulse pulse, float offset) {
     float temp = 0.0;
     float sin1 = 0.0;
     float sin2 = 0.0;
-    float frequency = CPU_CLOCK / (16.0 * (double)(p1.reload + 1));
+    float frequency = CPU_CLOCK / (16.0 * (double)(pulse.reload + 1));
     float phase_offset = pulse.duty_partition * 2.0f * M_PI;
 
-    for (float counter = 1; counter < 10; counter++) {
+    for (float counter = 1; counter < 2; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
         sin1 += approxsin(temp) / counter;
@@ -180,7 +179,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
     float sin1 = 0.0;
     float frequency = CPU_CLOCK / (32.0 * (double)(triangle.reload + 1));
 
-    for (float counter = 1; counter < 10; counter++) {
+    for (float counter = 1; counter < 2; counter++) {
         n = (2 * counter) + 1;
         temp = 2.0 * M_PI * frequency * n * offset;
         sin1 += pow(-1, counter) * pow(n, -2) * approxsin(temp) / counter;
@@ -195,35 +194,32 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
 
 // CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
 
-bool APU::executeCycle() {
-    if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-        // Quarter frame.
-    }
-    else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
-        //  Half frame.
-        if (frame_counter == FULL_FRAME) {
-            frame_counter = 0;
-        }
-    }
+// TODO: TEST ON A FASTER COMPUTER!!!!
 
-    if (current_sample_cycle >= cycles_per_sample) {
-        current_sample_cycle -= cycles_per_sample;
-        current_time += SAMPLE_TIME_DELTA;
+bool APU::executeCycle() {
+    if (apu_cycles % 2 == 0) {
+        if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
+            // Quarter frame.
+        }
+        else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
+            //  Half frame.
+            if (frame_counter == FULL_FRAME) {
+                frame_counter = 0;
+            }
+        }
 
         sample = 0x0000;
         if (apu_status.enable_p1) {
             cyclePulse(p1);
-
-            // if (p1.ctrl.constant_volume) {
+            if (p1.ctrl.constant_volume) {
                 sample += (p1.ctrl.volume != 0) * square(p1, current_time) * gui->volume;
-            // }
-            // else {
-                // sample += p1.ctrl.volume * square(p1, current_time) * gui->volume;
-            // }
+            }
         }
         if (apu_status.enable_p2) {
             cyclePulse(p2);
-            sample += (p2.ctrl.volume != 0) * square(p2, current_time) * gui->volume;
+            if (p2.ctrl.constant_volume) {
+                sample += (p2.ctrl.volume != 0) * square(p2, current_time) * gui->volume;
+            }
         }
         if (apu_status.enable_triangle) {
             triangle.timer -= 1;
@@ -243,10 +239,16 @@ bool APU::executeCycle() {
         }
 
         // sample += sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
+        frame_counter += 1;
+    }
+
+    if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
+        current_time += SAMPLE_TIME_DELTA;
+        current_sample_cycle -= CYCLES_PER_SAMPLE;
         SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
     }
-    
-    frame_counter += 1;
-    current_sample_cycle += 704;
+
+    apu_cycles += 1;
+    current_sample_cycle += 352;
     return 0;
 }
