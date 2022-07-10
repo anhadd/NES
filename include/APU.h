@@ -37,7 +37,6 @@ using namespace std;
 
 #define APU_STATUS           0x4015
 
-
 #define QUARTER_FRAME 3729
 #define HALF_FRAME 7457
 #define THREE_QUARTER_FRAME 11186
@@ -45,11 +44,12 @@ using namespace std;
 
 #define SAMPLE_SIZE sizeof(int16_t)
 #define SAMPLE_TIME_DELTA (1.0 / AUDIO_SAMPLE_RATE)
-// #define CYCLES_PER_SAMPLE (CPU_CLOCK / 2.0) / AUDIO_SAMPLE_RATE
-// apu.cycles_per_sample = (CPU_CLOCK / 2) / AUDIO_SAMPLE_RATE;
-// apu.cycles_per_sample = 3125;    // For 44100Hz
-// apu.cycles_per_sample = 13125;    // For 48000Hz
- #define CYCLES_PER_SAMPLE 13125
+#define CYCLES_PER_SAMPLE 13125    // For 48000Hz
+#define CYCLES_PER_CYCLE 352       // For 48000Hz
+// #define CYCLES_PER_SAMPLE 3125     // For 44100Hz
+// #define CYCLES_PER_CYCLE 77        // For 44100Hz
+
+#define AUDIO_BUFFER_SIZE 1000
 
 
 union pulse_control {
@@ -96,6 +96,7 @@ struct full_pulse {
     uint8_t output;
 
     double duty_partition;
+    float sample;
 
     void reset() {
         ctrl.full = 0x00;
@@ -107,6 +108,8 @@ struct full_pulse {
         timer = 0x0000;
         reload = 0x0000;
         duty_partition = 0.00;
+
+        sample = 0.0;
     }
 };
 
@@ -128,6 +131,8 @@ struct full_triangle {
     uint8_t output;
     int8_t delta;
 
+    float sample;
+
     void reset() {
         ctrl.full = 0x00;
         timer_low = 0x00;
@@ -137,6 +142,8 @@ struct full_triangle {
         reload = 0x0000;
         output = 15;
         delta = -1;
+
+        sample = 0.0;
     }
 };
 
@@ -173,6 +180,8 @@ class APU {
         uint16_t current_sample_cycle;
 
         int16_t sample;
+        uint16_t buff_index;
+        int16_t audio_buff[AUDIO_BUFFER_SIZE];
 
         APU();
         ~APU();
@@ -186,10 +195,7 @@ class APU {
         uint8_t writeRegister(uint16_t address, uint8_t value);
         void cyclePulse(struct full_pulse pulse);
 
-        // double normalize(double phase);
-        // double square(double phase);
-        float square(struct full_pulse pulse, float offset);
-        // double triangle(double phase);
+        float square_wave(struct full_pulse pulse, float offset);
         float triangle_wave(struct full_triangle triangle, float offset);
 };
 

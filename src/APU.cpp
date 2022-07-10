@@ -22,6 +22,9 @@ APU::APU() {
     frame_counter = 0x0000000F;
 
     current_sample_cycle = 0x00;
+
+    buff_index = 0;
+    fill(begin(audio_buff), end(audio_buff), 0);
 }
 
 APU::~APU() {
@@ -83,8 +86,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             p2.duty_partition = partition_lookup[p2.ctrl.duty];
             break;
         case P2_SWEEP:
-            p2.timer_low = value;
-            p2.reload = (p2.reload & 0xFF00) | p2.timer_low;
+            p2.sweep.full = value;
             break;
         case P2_TIMER_LOW:
             p2.timer_low = value;
@@ -92,7 +94,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case P2_TIMER_HIGH:
             p2.timer_high.full = value;
-            p2.reload = ((p2.timer_high.full & 0x07) << 8) | (p2.reload & 0x00FF);
+            p2.reload = ((p2.timer_high.timer_high) << 8) | (p2.reload & 0x00FF);
             p2.timer = p2.reload;
             break;
 
@@ -148,54 +150,52 @@ void APU::cyclePulse(struct full_pulse pulse) {
     }
 }
 
-// Used for approximating sin, since the sin function is very slow.
-// from: OLC.
+// Used for approximating sin, since the sin function is slow.
+// from: One Lone Coder.
 float approxsin(float offset) {
     float j = offset * 0.15915;
     j = j - (int)j;
     return 20.785 * j * (j - 0.5) * (j - 1.0f);
 }
 
-float APU::square(struct full_pulse pulse, float offset) {
+float APU::square_wave(struct full_pulse pulse, float offset) {
     float temp = 0.0;
     float sin1 = 0.0;
     float sin2 = 0.0;
-    float frequency = CPU_CLOCK / (16.0 * (double)(pulse.reload + 1));
+    float frequency = CPU_CLOCK / (16.0 * (float)(pulse.reload + 1));
     float phase_offset = pulse.duty_partition * 2.0f * M_PI;
-
-    for (float counter = 1; counter < 2; counter++) {
+    
+    for (float counter = 1; counter < 3; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
         sin1 += approxsin(temp) / counter;
         sin2 += approxsin(temp - phase_offset * counter) / counter;
     }
 
-    return (2.0 / M_PI) * (sin1 - sin2);
+    if (sin1 - sin2 >= 0) {
+        return 1.0;
+    }
+    else {
+        return -1.0;
+    }
 }
 
 float APU::triangle_wave(struct full_triangle triangle, float offset) {
     float n = 0.0;
     float temp = 0.0;
-    float sin1 = 0.0;
-    float frequency = CPU_CLOCK / (32.0 * (double)(triangle.reload + 1));
+    float sin = 0.0;
+    float frequency = CPU_CLOCK / (32.0 * (float)(triangle.reload + 1));
 
     for (float counter = 1; counter < 2; counter++) {
         n = (2 * counter) + 1;
         temp = 2.0 * M_PI * frequency * n * offset;
-        sin1 += pow(-1, counter) * pow(n, -2) * approxsin(temp) / counter;
+        sin += pow(-1, counter) * pow(n, -2) * approxsin(temp);
     }
 
-    return (8 / pow(M_PI, 2)) * sin1; 
+    return (8 / pow(M_PI, 2)) * sin;
 }
 
-
-// TODO: FIGURE OUT EVERYTHING ABOUT THE APU, AND HOW IT GETS THE SOUND
-    // ALSO CHECK HOW THE TIMING SHOULD BE, MAYBE ADD A COUNTER OR DELAY / TIMING.
-
-// CHECK THE FRAME COUNTER STUFF TO GET THE TIMING RIGHT! RN IT ADDS TOO QUICKLY TO THE BUFFER.
-
-// TODO: TEST ON A FASTER COMPUTER!!!!
-
+// Executes a single APU cycle.
 bool APU::executeCycle() {
     if (apu_cycles % 2 == 0) {
         if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
@@ -208,17 +208,19 @@ bool APU::executeCycle() {
             }
         }
 
-        sample = 0x0000;
+        p1.sample = 0.0;
+        p2.sample = 0.0;
+        triangle.sample = 0.0;
         if (apu_status.enable_p1) {
             cyclePulse(p1);
             if (p1.ctrl.constant_volume) {
-                sample += (p1.ctrl.volume != 0) * square(p1, current_time) * gui->volume;
+                p1.sample = (p1.ctrl.volume != 0) * square_wave(p1, current_time);
             }
         }
         if (apu_status.enable_p2) {
             cyclePulse(p2);
             if (p2.ctrl.constant_volume) {
-                sample += (p2.ctrl.volume != 0) * square(p2, current_time) * gui->volume;
+                p2.sample = (p2.ctrl.volume != 0) * square_wave(p2, current_time);
             }
         }
         if (apu_status.enable_triangle) {
@@ -233,26 +235,31 @@ bool APU::executeCycle() {
                     triangle.delta = 1;
                 }
             }
-
-            // sample += triangle.output * gui->volume;
-            sample += triangle_wave(triangle, current_time) * gui->volume;
+            triangle.sample = triangle_wave(triangle, current_time);
         }
 
-        // sample += sin(current_time * 440.0f * 2.0f * M_PI) * gui->volume;
         frame_counter += 1;
     }
 
     if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
         current_time += SAMPLE_TIME_DELTA;
         current_sample_cycle -= CYCLES_PER_SAMPLE;
-        SDL_QueueAudio(gui->audio_device, &sample, SAMPLE_SIZE);
 
-        // if (SDL_GetQueuedAudioSize(gui->audio_device) > 8192) {
-        //     SDL_DequeueAudio(gui->audio_device, NULL, 4096);
-        // }
+        sample = ((0.00752 * (p1.sample + p2.sample))
+                 + (0.00851 * triangle.sample + 0.00494 * /*noise*/0 + 0.00335 * /*DMC*/0)) * gui->volume;
+
+        // For debugging: outputs a single continuous tone.
+        // sample = sin(current_time * 440.0f * 2.0f * M_PI) * 2000;
+        
+        audio_buff[buff_index] = sample;
+        buff_index++;
+        if (buff_index == AUDIO_BUFFER_SIZE) {
+            buff_index = 0;
+            SDL_QueueAudio(gui->audio_device, &audio_buff, SAMPLE_SIZE * AUDIO_BUFFER_SIZE);
+        }
     }
 
     apu_cycles += 1;
-    current_sample_cycle += 352;
+    current_sample_cycle += CYCLES_PER_CYCLE;
     return 0;
 }
