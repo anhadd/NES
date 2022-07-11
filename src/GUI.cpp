@@ -16,6 +16,17 @@ GUI::GUI(int width, int height, int scale) {
     SDL_GetWindowSize(window, NULL, &scaled_screen_rect.h);
 
     debug_windows_created = false;
+
+    // Audio elements
+    SDL_zero(audio_spec);
+    audio_spec.freq = AUDIO_SAMPLE_RATE;
+    audio_spec.format = AUDIO_S16SYS;
+    audio_spec.channels = 1;
+    audio_spec.samples = 0x8000;
+    audio_spec.callback = NULL;
+
+    audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
+    volume = 50000;
 }
 
 
@@ -34,6 +45,8 @@ GUI::~GUI() {
         SDL_DestroyWindow(nametable_window);
         SDL_FreeSurface(nametable_surface_buff);
     }
+
+    SDL_CloseAudioDevice(audio_device);
 }
 
 

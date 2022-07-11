@@ -9,9 +9,12 @@ NES::NES() {
     ppu.passROM(&rom);
 
     bus.passPPU(&ppu);
+    bus.passAPU(&apu);
     bus.passROM(&rom);
 
     cpu.passBUS(&bus);
+
+    apu.passGUI(&gui);
 
     // Initialize other variables.
     key_state = SDL_GetKeyboardState(NULL);
@@ -51,6 +54,7 @@ void NES::reset() {
     bus.reset();
     rom.reset();
     ppu.reset();
+    apu.reset();
 }
 
 void NES::transferOAM() {
@@ -109,30 +113,43 @@ void NES::logDebugInfo() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
-        // Logs info.
-        logDebugInfo();
+        // if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
+        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
+            // Logs info.
+            logDebugInfo();
 
-        // Execute PPU cycles. There are 3 PPU cycles for each CPU cycle.
-        ppu.executeCycle();
-        ppu.executeCycle();
-        ppu.executeCycle();
-        // If there is no writing happening to OAM.
-        if (!bus.oam_writing) {
-            // If PPU is asking for an NMI send that to CPU.
-            if (ppu.signal_nmi) {
-                cpu.execute_nmi = true;
-                ppu.signal_nmi = false;
+            // Execute PPU cycles. There are 3 PPU cycles for each CPU cycle.
+            ppu.executeCycle();
+            ppu.executeCycle();
+            ppu.executeCycle();
+
+            // One APU cycle every CPU cycles.
+            apu.executeCycle();
+
+            // If there is no writing happening to OAM.
+            if (!bus.oam_writing) {
+                // If PPU is asking for an NMI send that to CPU.
+                if (ppu.signal_nmi) {
+                    cpu.execute_nmi = true;
+                    ppu.signal_nmi = false;
+                }
+                // Run a single CPU cycle.
+                cpu.executeCycle();
             }
-            // Run a single CPU cycle.
-            cpu.executeCycle();
-        }
-        // If OAM is being written to.
-        else {
-            // Read or write 1 byte of data for OAM.
-            transferOAM();
-        }
+            // If OAM is being written to.
+            else {
+                // Read or write 1 byte of data for OAM.
+                transferOAM();
+            }
 
-        total_cycles += 1;
+            // if (apu.current_sample_cycle >= CYCLES_PER_SAMPLE) {
+            //     apu.current_time += SAMPLE_TIME_DELTA;
+            //     apu.current_sample_cycle -= CYCLES_PER_SAMPLE;
+            //     SDL_QueueAudio(gui.audio_device, &apu.sample, SAMPLE_SIZE);
+            // }
+
+            total_cycles += 1;
+        // }
     }
     ppu.frame_finished = false;
 }

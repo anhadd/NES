@@ -10,6 +10,7 @@
 #include "ROM.h"
 #include "PPU.h"
 #include "BUS.h"
+#include "APU.h"
 
 
 #define INPUT_A SDL_SCANCODE_Z
@@ -34,7 +35,7 @@
 
 #define INPUT_LOG SDLK_l
 #define INPUT_FRAME SDLK_f
-#define SHOW_DEBUG true
+#define SHOW_DEBUG false
 
 using namespace std;
 
@@ -44,6 +45,7 @@ class NES {
         CPU cpu;
         BUS bus;
         PPU ppu;
+        APU apu;
         GUI gui;
         ROM rom;
 

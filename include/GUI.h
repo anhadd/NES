@@ -7,7 +7,8 @@
 #define GUI_HEIGHT 240
 #define GUI_SCALE 2
 
-
+// #define AUDIO_SAMPLE_RATE 44100.0
+#define AUDIO_SAMPLE_RATE 48000.0
 
 class GUI {
     public:
@@ -37,6 +38,12 @@ class GUI {
 
         // Event handler for input.
         SDL_Event sdlevent;
+
+        // Audio
+        SDL_AudioDeviceID audio_device;
+        SDL_AudioSpec audio_spec;
+
+        uint32_t volume;
 
         // Constructor / Destructor.
         GUI(int width = GUI_WIDTH, int height = GUI_HEIGHT, int scale = GUI_SCALE);
