@@ -3,7 +3,8 @@
 
 #include <SDL2/SDL.h>
 #include <iostream>
-#include <tuple>
+#include <chrono>
+#include <thread>
 
 #include "GUI.h"
 #include "CPU.h"
@@ -69,7 +70,7 @@ class NES {
     private:
         uint32_t total_cycles;      // Counts the total cycles since the start of the program.
 
-        void transferOAM();          // Either read or write 1 byte of data for OAM writing.
+        void transferOAM();         // Either read or write 1 byte of data for OAM writing.
         void logDebugInfo();        // Prints debug log information.
 };
 

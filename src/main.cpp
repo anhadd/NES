@@ -15,7 +15,7 @@ using namespace std::chrono;
 
 
 int main(int argc, char *argv[]) {
-    //set up SDL
+    // Set up SDL
     SDL_Init(SDL_INIT_EVERYTHING);
     
     // Create NES object. Contains everything NES related.

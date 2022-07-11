@@ -222,13 +222,6 @@ bool APU::executeCycle() {
             triangle.timer -= 1;
             if (triangle.timer == 0xFFFF) {
                 triangle.timer = triangle.reload + 1;
-                triangle.output += triangle.delta;
-                if (triangle.output == 15) {
-                    triangle.delta = -1;
-                }
-                else if (triangle.output == 0) {
-                    triangle.delta = 1;
-                }
             }
             triangle.sample = triangle_wave(triangle, current_time);
         }
