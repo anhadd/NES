@@ -3,7 +3,7 @@ A NES Emulator in C++ using SDL2.
 
 
 #### How to Run
-From the root directory, run:  
+From the project directory, run:  
 `make all`  
 Then run the created main binary with:  
 `./main <ROM file>`
