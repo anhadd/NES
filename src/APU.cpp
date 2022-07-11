@@ -203,21 +203,21 @@ bool APU::executeCycle() {
         p1.sample = 0.0;
         p2.sample = 0.0;
         triangle.sample = 0.0;
-        // Get sample for Pulse1 channel.
+        // Cycle and get the sample for Pulse1 if it is enabled.
         if (apu_status.enable_p1) {
             cyclePulse(p1);
             if (p1.ctrl.constant_volume) {
                 p1.sample = (p1.ctrl.volume != 0) * square_wave(p1, current_time);
             }
         }
-        // Get sample for Pulse2 channel.
+        // Cycle and get the sample for Pulse2 if it is enabled.
         if (apu_status.enable_p2) {
             cyclePulse(p2);
             if (p2.ctrl.constant_volume) {
                 p2.sample = (p2.ctrl.volume != 0) * square_wave(p2, current_time);
             }
         }
-        // Get sample for Triangle channel.
+        // Cycle and get the sample for Triangle if it is enabled.
         if (apu_status.enable_triangle) {
             triangle.timer -= 1;
             if (triangle.timer == 0xFFFF) {
