@@ -2,6 +2,7 @@
 #define GUI_H
 
 #include <SDL2/SDL.h>
+#include <vector>
 
 #define GUI_WIDTH 256
 #define GUI_HEIGHT 240
@@ -10,10 +11,16 @@
 // #define AUDIO_SAMPLE_RATE 44100.0
 #define AUDIO_SAMPLE_RATE 48000.0
 
+using namespace std;
 class GUI {
     public:
         // Main NES window.
         SDL_Window *window;
+        
+        SDL_Renderer *renderer;
+        SDL_Texture *texture;
+        vector<uint8_t> pixels;
+
         SDL_Surface *surface;
         SDL_Surface *surface_buff;
         SDL_Rect scaled_screen_rect;

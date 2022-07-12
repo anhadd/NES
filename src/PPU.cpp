@@ -436,6 +436,17 @@ uint16_t PPU::getColorIndex(uint8_t palette, uint8_t index) {
 }
 
 // Draw a single pixel on a surface.
+void PPU::drawPixel(vector<uint8_t> &pixels, uint16_t x, uint16_t y, uint16_t color_index) {
+    uint32_t offset = (GUI_WIDTH * y * 4) + x * 4;
+    curr_color = palette_lookup[color_index];
+
+    pixels[offset + 0] = curr_color.b;
+    pixels[offset + 1] = curr_color.g;
+    pixels[offset + 2] = curr_color.r;
+    pixels[offset + 3] = curr_color.a;
+}
+
+// Draw a single pixel on a surface.
 void PPU::drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index) {
     curr_color = palette_lookup[color_index];
 
@@ -953,7 +964,7 @@ bool PPU::executeCycle() {
 
     // Draw only the visible onscreen pixels.
     if (scanlines >= 0 && scanlines <= 239 && cycles >= 1 && cycles <= 256) {
-        drawPixelOnSurface(gui->surface_buff, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
+        drawPixel(gui->pixels, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
     }
     // Draw the pixels on the debug windows if debugging is enabled.
     if (show_debug) {
@@ -974,7 +985,13 @@ bool PPU::executeCycle() {
             total_frames += 1;
             odd_frame = !odd_frame;
             // Scale the current frame to fit inside the NES window.
-            SDL_BlitScaled(gui->surface_buff, NULL, gui->surface, &gui->scaled_screen_rect);
+            // SDL_BlitScaled(gui->surface_buff, NULL, gui->surface, &gui->scaled_screen_rect);
+            unsigned char* lockedPixels = nullptr;
+            int pitch = 0;
+            SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&lockedPixels), &pitch);
+            copy_n(gui->pixels.data(), gui->pixels.size(), lockedPixels);
+            SDL_UnlockTexture(gui->texture);
+            SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
 		}
 	}
     
