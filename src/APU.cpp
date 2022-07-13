@@ -152,6 +152,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
 }
 
 void APU::generateSample(struct full_pulse &pulse) {
+    pulse.sample = 0.0;
     // Volume source is determined by the constant_volume flag.
     if (pulse.ctrl.constant_volume) {
         pulse.sample = (pulse.ctrl.volume / 16.0) * square_wave(pulse, current_time);
@@ -263,9 +264,6 @@ bool APU::executeCycle() {
             }
         }
 
-        p1.sample = 0.0;
-        p2.sample = 0.0;
-        triangle.sample = 0.0;
         // Cycle and get the sample for Pulse1 if it is enabled.
         p1.cycle();
         if (apu_status.enable_p1 && p1.length_counter > 0 && p1.timer >= 8) {
@@ -277,6 +275,7 @@ bool APU::executeCycle() {
             generateSample(p2);
         }
         // Cycle and get the sample for Triangle if it is enabled.
+        triangle.sample = 0.0;
         if (apu_status.enable_triangle && triangle.length_counter > 0 && triangle.timer >= 8) {
             triangle.sample = triangle_wave(triangle, current_time);
         }

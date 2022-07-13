@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     // Main loop. Keep going until the NES has been asked to quit.
     while (!nes.quit) {
-        next_frame_time = steady_clock::now() + milliseconds(1000/nes.FPS - 2);
+        next_frame_time = steady_clock::now() + milliseconds(1000/nes.FPS);
         handleInput(nes);
         // Execute a frame if the NES is not paused, or if there has been a command to run a single frame.
         if (!nes.paused || nes.run_frame) {
