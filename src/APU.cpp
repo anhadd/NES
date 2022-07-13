@@ -7,10 +7,14 @@ APU::APU() {
     p1.reset();
     p2.reset();
 
-    partition_lookup[0] = 0.125;
-    partition_lookup[1] = 0.250;
-    partition_lookup[2] = 0.500;
-    partition_lookup[3] = 0.750;
+    partition_lookup = {
+        0.125, 0.250, 0.500, 0.750
+    };
+
+    length_lookup = {
+         10, 254,  20,   2,  40,   4,  80,   6, 160,   8,  60,  10,  14,  12,  26,  14,
+         12,  16,  24,  18,  48,  20,  96,  22, 192,  24,  72,  26,  16,  28,  32,  30
+    };
 
     apu_status.full = 0x00;
     current_time = 0.0;
@@ -40,16 +44,19 @@ void APU::passGUI(GUI* nesGUI) {
 }
 
 uint8_t APU::readRegister(uint16_t address) {
-    uint16_t real_address = 0x4000 + (address & 0x0017);
+    uint16_t real_address = 0x4000 + (address & 0x1F);
+    uint8_t value = 0x00;
 
-    switch (real_address) {
-        // Reading APU registers has open BUS behavior.
+    if (real_address == APU_STATUS) {
+        value |= (p1.length_counter > 0) ? 0x1 : 0;
+        value |= (p2.length_counter > 0) ? 0x2 : 0;
+        value |= (triangle.length_counter > 0) ? 0x4 : 0;
     }
-    return 0x00;
+    return value;
 }
 
 uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
-    uint16_t real_address = 0x4000 + (address & 0x0017);
+    uint16_t real_address = 0x4000 + (address & 0x1F);
 
     switch (real_address) {
         case P1_CONTROL:
@@ -65,8 +72,12 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case P1_TIMER_HIGH:
             p1.timer_high.full = value;
+            if (apu_status.enable_p1) {
+                p1.length_counter = length_lookup[p1.timer_high.length_counter_load];
+            }
             p1.reload = ((p1.timer_high.timer_high) << 8) | (p1.reload & 0x00FF);
             p1.timer = p1.reload;
+            p1.env.start_flag = true;
             break;
 
         case P2_CONTROL:
@@ -82,8 +93,12 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case P2_TIMER_HIGH:
             p2.timer_high.full = value;
+            if (apu_status.enable_p2) {
+                p2.length_counter = length_lookup[p2.timer_high.length_counter_load];
+            }
             p2.reload = ((p2.timer_high.timer_high) << 8) | (p2.reload & 0x00FF);
             p2.timer = p2.reload;
+            p2.env.start_flag = true;
             break;
 
         case TR_CONTROL:
@@ -98,46 +113,72 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             break;
         case TR_TIMER_HIGH:
             triangle.timer_high.full = value;
+            if (apu_status.enable_triangle) {
+                triangle.length_counter = length_lookup[triangle.timer_high.length_counter_load];
+            }
             triangle.reload = ((triangle.timer_high.timer_high) << 8) | (triangle.reload & 0x00FF);
             triangle.timer = triangle.reload;
             break;
 
-        case NS_CONTROL:
-        case NS_UNUSED:
-        case NS_PERIOD:
-        case NS_LOAD:
+        // case NS_CONTROL:
+        // case NS_UNUSED:
+        // case NS_PERIOD:
+        // case NS_LOAD:
 
-        case DMC_CONTROL:
-        case DMC_DIRECT:
-        case DMC_ADDRESS:
-        case DMC_LENGTH:
-            break;
+        // case DMC_CONTROL:
+        // case DMC_DIRECT:
+        // case DMC_ADDRESS:
+        // case DMC_LENGTH:
+        
         case APU_STATUS:
             // Enable/disable Pulse1.
             apu_status.enable_p1 = value & 0x01;
             if (!apu_status.enable_p1) {
-                p1.timer_high.length_counter = 0;
+                p1.length_counter = 0;
             }
             // Enable/disable Pulse2.
             apu_status.enable_p2 = (value & 0x02) != 0;
             if (!apu_status.enable_p2) {
-                p2.timer_high.length_counter = 0;
+                p2.length_counter = 0;
             }
             // Enable/disable Triangle.
             apu_status.enable_triangle = (value & 0x04) != 0;
             if (!apu_status.enable_triangle) {
-                triangle.timer_high.length_counter = 0;
+                triangle.length_counter = 0;
             }
             break;
     }
     return 0;
 }
 
-void APU::cyclePulse(struct full_pulse pulse) {
-    pulse.timer -= 1;
-    if (pulse.timer == 0xFFFF) {
-        pulse.timer = pulse.reload + 1;
-        pulse.output = (pulse.output & 0x01 << 7) | (pulse.output & 0xFE >> 1);
+void APU::generateSample(struct full_pulse &pulse) {
+    // Volume source is determined by the constant_volume flag.
+    if (pulse.ctrl.constant_volume) {
+        pulse.sample = (pulse.ctrl.volume / 16.0) * square_wave(pulse, current_time);
+    }
+    else {
+        pulse.sample = (pulse.env.decay_level / 16.0) * square_wave(pulse, current_time);
+    }
+}
+
+void APU::outputMixedSample() {
+    // Increment the time for the current sample.
+    current_time += SAMPLE_TIME_DELTA;
+    current_sample_cycle -= CYCLES_PER_SAMPLE;
+    // Mix the separate channels.
+    sample = ((0.00752 * (p1.sample + p2.sample))
+                + (0.00851 * triangle.sample + 0.00494 * /*noise*/0 + 0.00335 * /*DMC*/0)) * gui->volume;
+
+    // For debugging: outputs a single continuous tone.
+    // sample = sin(current_time * 440.0f * 2.0f * M_PI) * 2000;
+    
+    // Add sample to audio buffer.
+    audio_buff[buff_index] = sample;
+    buff_index++;
+    // If the audio buffer is full send it to output.
+    if (buff_index == AUDIO_BUFFER_SIZE) {
+        buff_index = 0;
+        SDL_QueueAudio(gui->audio_device, &audio_buff, SAMPLE_SIZE * AUDIO_BUFFER_SIZE);
     }
 }
 
@@ -155,7 +196,7 @@ float APU::square_wave(struct full_pulse pulse, float offset) {
     float sin2 = 0.0;
     // Calculate the frequency and offset for duty cycles.
     float frequency = CPU_CLOCK / (16.0 * (float)(pulse.reload + 1));
-    float phase_offset = pulse.duty_partition * 2.0f * M_PI;
+    float phase_offset = pulse.duty_partition * 2.0 * M_PI;
     // Combine multiple sine waves to get close to a square wave.
     for (float counter = 1; counter < 3; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
@@ -179,7 +220,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
     // Calculate the frequency.
     float frequency = CPU_CLOCK / (32.0 * (float)(triangle.reload + 1));
     // Combine multiple sine waves to get close to a triangle wave.
-    for (float counter = 1; counter < 2; counter++) {
+    for (float counter = 1; counter < 3; counter++) {
         n = (2 * counter) + 1;
         temp = 2.0 * M_PI * frequency * n * offset;
         sin += pow(-1, counter) * pow(n, -2) * approxsin(temp);
@@ -188,13 +229,35 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
 }
 
 bool APU::executeCycle() {
+    // Clock triangle channel every CPU cycle.
+    triangle.timer -= 1;
+    if (triangle.timer == 0xFFFF) {
+        triangle.timer = triangle.reload + 1;
+    }
+
     // Every 2 CPU/APU cycles.
     if (apu_cycles % 2 == 0) {
+        frame_counter += 1;
+        // Quarter frame.
         if (frame_counter == QUARTER_FRAME || frame_counter == THREE_QUARTER_FRAME) {
-            // Quarter frame.
+            // Clock the envelopes.
+            p1.clockEnvelope();
+            p2.clockEnvelope();
         }
+        // Half frame.
         else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
-            //  Half frame.
+            // Decrement length counters if necessary.
+            // if (!p1.ctrl.length_halt && p1.length_counter > 0) {
+            //     p1.length_counter -= 1;
+            // }
+            // if (!p2.ctrl.length_halt && p2.length_counter > 0) {
+            //     p2.length_counter -= 1;
+            // }
+            // if (!triangle.ctrl.length_halt && triangle.length_counter > 0) {
+            //     triangle.length_counter -= 1;
+            // }
+            // Sweep units.
+            // ...
             if (frame_counter == FULL_FRAME) {
                 frame_counter = 0;
             }
@@ -204,57 +267,24 @@ bool APU::executeCycle() {
         p2.sample = 0.0;
         triangle.sample = 0.0;
         // Cycle and get the sample for Pulse1 if it is enabled.
-        if (apu_status.enable_p1) {
-            cyclePulse(p1);
-            if (p1.ctrl.constant_volume) {
-                p1.sample = (p1.ctrl.volume != 0) * square_wave(p1, current_time);
-            }
+        p1.cycle();
+        if (apu_status.enable_p1 && p1.length_counter > 0 && p1.timer >= 8) {
+            generateSample(p1);
         }
         // Cycle and get the sample for Pulse2 if it is enabled.
-        if (apu_status.enable_p2) {
-            cyclePulse(p2);
-            if (p2.ctrl.constant_volume) {
-                p2.sample = (p2.ctrl.volume != 0) * square_wave(p2, current_time);
-            }
+        p2.cycle();
+        if (apu_status.enable_p2 && p2.length_counter > 0 && p2.timer >= 8) {
+            generateSample(p2);
         }
         // Cycle and get the sample for Triangle if it is enabled.
-        if (apu_status.enable_triangle) {
-            triangle.timer -= 1;
-            if (triangle.timer == 0xFFFF) {
-                triangle.timer = triangle.reload + 1;
-                triangle.output += triangle.delta;
-                if (triangle.output == 15) {
-                    triangle.delta = -1;
-                }
-                else if (triangle.output == 0) {
-                    triangle.delta = 1;
-                }
-            }
+        if (apu_status.enable_triangle && triangle.length_counter > 0 && triangle.timer >= 8) {
             triangle.sample = triangle_wave(triangle, current_time);
         }
-        frame_counter += 1;
     }
 
     // Every certain amount of cycles store a sample for audio output.
     if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
-        // Increment the time for the current sample.
-        current_time += SAMPLE_TIME_DELTA;
-        current_sample_cycle -= CYCLES_PER_SAMPLE;
-        // Mix the separate channels.
-        sample = ((0.00752 * (p1.sample + p2.sample))
-                 + (0.00851 * triangle.sample + 0.00494 * /*noise*/0 + 0.00335 * /*DMC*/0)) * gui->volume;
-
-        // For debugging: outputs a single continuous tone.
-        // sample = sin(current_time * 440.0f * 2.0f * M_PI) * 2000;
-        
-        // Add sample to audio buffer.
-        audio_buff[buff_index] = sample;
-        buff_index++;
-        // If the audio buffer is full send it to output.
-        if (buff_index == AUDIO_BUFFER_SIZE) {
-            buff_index = 0;
-            SDL_QueueAudio(gui->audio_device, &audio_buff, SAMPLE_SIZE * AUDIO_BUFFER_SIZE);
-        }
+        outputMixedSample();
     }
 
     apu_cycles += 1;

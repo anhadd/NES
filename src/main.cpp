@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <thread>
+#include <iterator>
 
 #include "../include/NES.h"
 #include "../include/input.h"
@@ -15,7 +16,7 @@ using namespace std::chrono;
 
 
 int main(int argc, char *argv[]) {
-    //set up SDL
+    // Set up SDL
     SDL_Init(SDL_INIT_EVERYTHING);
     
     // Create NES object. Contains everything NES related.
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
         printf("Usage: ./main [ROM FILE PATH]\n");
         return 0;
     }
-    // Initialize the NES works. Fails if the ROM file could not be found.
+    // Initialize the NES. Fails if the ROM file could not be found.
     if (nes.initialize(argv[1]) != 0) {
         printf("Error: Could not open ROM file!\n");
         return 0;
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
         }
         // Wait until the correct frame time to show the new frame.
         sleep_until(next_frame_time);
-        SDL_UpdateWindowSurface(nes.gui.window);
+        SDL_RenderPresent(nes.gui.renderer);
     }
 
     // Save the game if the ROM supports it.

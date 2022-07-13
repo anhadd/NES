@@ -5,9 +5,13 @@
 GUI::GUI(int width, int height, int scale) {
     // Constructor
     window = SDL_CreateWindow("NES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width*scale, height*scale, SDL_WINDOW_SHOWN);
-
-    surface = SDL_GetWindowSurface(window);
-    surface_buff = SDL_CreateRGBSurface(0, width, height, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+    pixels.resize(width * height * 4);
+    fill(begin(pixels), end(pixels), 0);
+    
+    texture_pixels = nullptr;
+    pitch = 0;
 
     // The scaled_screen_rect is used to rescale the NES screen to the size of the window.
     scaled_screen_rect.x = 0;
@@ -22,18 +26,18 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.freq = AUDIO_SAMPLE_RATE;
     audio_spec.format = AUDIO_S16SYS;
     audio_spec.channels = 1;
-    audio_spec.samples = 0x8000;
+    audio_spec.samples = 0x1000;
     audio_spec.callback = NULL;
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-    volume = 50000;
+    volume = 40000;
 }
 
 
 GUI::~GUI() {
     // Destructor
     SDL_DestroyWindow(window);
-    SDL_FreeSurface(surface_buff);
+    // SDL_FreeSurface(surface_buff);
 
     if (debug_windows_created) {
         SDL_DestroyWindow(pattern_window);

@@ -113,10 +113,9 @@ void NES::logDebugInfo() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
-        // if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
-        // if (SDL_GetQueuedAudioSize(gui.audio_device) <= (735 * 20)) {
-            // Logs info.
-            logDebugInfo();
+        if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
+            // Logs debug information.
+            // logDebugInfo();
 
             // Execute PPU cycles. There are 3 PPU cycles for each CPU cycle.
             ppu.executeCycle();
@@ -142,14 +141,11 @@ void NES::executeFrame() {
                 transferOAM();
             }
 
-            // if (apu.current_sample_cycle >= CYCLES_PER_SAMPLE) {
-            //     apu.current_time += SAMPLE_TIME_DELTA;
-            //     apu.current_sample_cycle -= CYCLES_PER_SAMPLE;
-            //     SDL_QueueAudio(gui.audio_device, &apu.sample, SAMPLE_SIZE);
-            // }
-
             total_cycles += 1;
-        // }
+        }
+        else {
+            this_thread::sleep_for(chrono::milliseconds(3));
+        }
     }
     ppu.frame_finished = false;
 }

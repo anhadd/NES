@@ -276,6 +276,7 @@ class PPU {
         uint8_t final_palette;                  // Stores the index of the palette for the final rendered pixel.
 
         uint16_t getColorIndex(uint8_t palette, uint8_t index);     // Used for getting the absolute index of a color with a certain palette and index inside that palette.
+        void drawPixel(vector<uint8_t> &pixels, uint16_t x, uint16_t y, uint16_t color_index);          // Draw a single pixel.
         void drawPixelOnSurface(SDL_Surface *surface, uint16_t x, uint16_t y, uint16_t color_index);    // Draw a single pixel on a surface.
         void drawDebugPixels();                                     // Update the debug screens.
 
