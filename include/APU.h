@@ -220,6 +220,8 @@ class APU {
         uint16_t buff_index;                                                // Current index in the audio buffer.
         int16_t audio_buff[AUDIO_BUFFER_SIZE];                              // Audio buffer.
 
+        bool debug_log = false;
+
         APU();
         ~APU();
 

@@ -115,7 +115,7 @@ void NES::executeFrame() {
     while (!ppu.frame_finished) {
         if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
             // Logs debug information.
-            // logDebugInfo();
+            logDebugInfo();
 
             // Execute PPU cycles. There are 3 PPU cycles for each CPU cycle.
             ppu.executeCycle();

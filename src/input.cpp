@@ -37,10 +37,11 @@ void handleInput(NES &nes) {
                     break;
                 // The debug log button. Starts logging NES stuff to file.
                 // Disabled since accidentally pressing this button could cause issues.
-                // case INPUT_LOG:
-                //     fprintf(stderr, "Start Logging:\n\n");
-                //     nes.debug_log = !nes.debug_log;
-                //     break;
+                case INPUT_LOG:
+                    fprintf(stderr, "Start Logging:\n\n");
+                    nes.debug_log = !nes.debug_log;
+                    nes.apu.debug_log = !nes.apu.debug_log;
+                    break;
                 // Execute a single frame.
                 case INPUT_FRAME:
                     nes.run_frame = true;
