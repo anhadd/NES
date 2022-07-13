@@ -9,6 +9,9 @@ GUI::GUI(int width, int height, int scale) {
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
     pixels.resize(width * height * 4);
     fill(begin(pixels), end(pixels), 0);
+    
+    texture_pixels = nullptr;
+    pitch = 0;
 
     // The scaled_screen_rect is used to rescale the NES screen to the size of the window.
     scaled_screen_rect.x = 0;
@@ -27,7 +30,7 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.callback = NULL;
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-    volume = 5000;
+    volume = 30000;
 }
 
 

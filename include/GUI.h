@@ -8,8 +8,8 @@
 #define GUI_HEIGHT 240
 #define GUI_SCALE 2
 
-// #define AUDIO_SAMPLE_RATE 44100.0
-#define AUDIO_SAMPLE_RATE 48000.0
+#define AUDIO_SAMPLE_RATE 44100.0
+// #define AUDIO_SAMPLE_RATE 48000.0
 
 using namespace std;
 class GUI {
@@ -20,7 +20,9 @@ class GUI {
         SDL_Renderer *renderer;
         SDL_Texture *texture;
         vector<uint8_t> pixels;
-
+        unsigned char* texture_pixels;
+        int pitch;
+        
         SDL_Surface *surface;
         SDL_Surface *surface_buff;
         SDL_Rect scaled_screen_rect;
