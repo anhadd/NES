@@ -963,13 +963,13 @@ bool PPU::executeCycle() {
     }
 
     // Draw only the visible onscreen pixels.
-    if (scanlines >= 0 && scanlines <= 239 && cycles >= 1 && cycles <= 256) {
-        drawPixel(gui->pixels, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
-    }
-    // Draw the pixels on the debug windows if debugging is enabled.
-    if (show_debug) {
-        drawDebugPixels();
-    }
+    // if (scanlines >= 0 && scanlines <= 239 && cycles >= 1 && cycles <= 256) {
+    //     drawPixel(gui->pixels, cycles - 1, scanlines, getColorIndex(final_palette, final_pixel));
+    // }
+    // // Draw the pixels on the debug windows if debugging is enabled.
+    // if (show_debug) {
+    //     drawDebugPixels();
+    // }
     
     // Increment the cycles, if the cycles is at the end of a scanline set it to 0 and increment the scanline.
     cycles += 1;
@@ -985,13 +985,12 @@ bool PPU::executeCycle() {
             total_frames += 1;
             odd_frame = !odd_frame;
             // Scale the current frame to fit inside the NES window.
-            // SDL_BlitScaled(gui->surface_buff, NULL, gui->surface, &gui->scaled_screen_rect);
-            unsigned char* lockedPixels = nullptr;
-            int pitch = 0;
-            SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&lockedPixels), &pitch);
-            copy_n(gui->pixels.data(), gui->pixels.size(), lockedPixels);
-            SDL_UnlockTexture(gui->texture);
-            SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
+            // unsigned char* lockedPixels = nullptr;
+            // int pitch = 0;
+            // SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&lockedPixels), &pitch);
+            // copy_n(gui->pixels.data(), gui->pixels.size(), lockedPixels);
+            // SDL_UnlockTexture(gui->texture);
+            // SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
 		}
 	}
     

@@ -144,7 +144,7 @@ void NES::executeFrame() {
             total_cycles += 1;
         }
         else {
-            this_thread::sleep_for(chrono::milliseconds(10));
+            this_thread::sleep_for(chrono::milliseconds(2));
         }
     }
     ppu.frame_finished = false;

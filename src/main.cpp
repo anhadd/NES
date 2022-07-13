@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         }
         // Wait until the correct frame time to show the new frame.
         sleep_until(next_frame_time);
-        SDL_RenderPresent(nes.gui.renderer);
+        // SDL_RenderPresent(nes.gui.renderer);
     }
 
     // Save the game if the ROM supports it.
