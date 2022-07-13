@@ -230,7 +230,8 @@ class APU {
 
         uint8_t readRegister(uint16_t address);                             // Read from the APU registers (Used by the CPU).
         uint8_t writeRegister(uint16_t address, uint8_t value);             // Write to the APU registers (Used by the CPU).
-        void generateSample(struct full_pulse &pulse);                       // Generate a sample for a Pulse channel.
+        void generateSample(struct full_pulse &pulse);                      // Generate a sample for a Pulse channel.
+        void outputMixedSample();                                           // Send a final mixed sample to output.
 
         float square_wave(struct full_pulse pulse, float offset);           // Generate a square wave from a pulse.
         float triangle_wave(struct full_triangle triangle, float offset);   // Generate a triangle wave from a triangle channel.

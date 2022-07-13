@@ -120,16 +120,16 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             triangle.timer = triangle.reload;
             break;
 
-        case NS_CONTROL:
-        case NS_UNUSED:
-        case NS_PERIOD:
-        case NS_LOAD:
+        // case NS_CONTROL:
+        // case NS_UNUSED:
+        // case NS_PERIOD:
+        // case NS_LOAD:
 
-        case DMC_CONTROL:
-        case DMC_DIRECT:
-        case DMC_ADDRESS:
-        case DMC_LENGTH:
-            break;
+        // case DMC_CONTROL:
+        // case DMC_DIRECT:
+        // case DMC_ADDRESS:
+        // case DMC_LENGTH:
+        
         case APU_STATUS:
             // Enable/disable Pulse1.
             apu_status.enable_p1 = value & 0x01;
@@ -161,6 +161,27 @@ void APU::generateSample(struct full_pulse &pulse) {
     }
 }
 
+void APU::outputMixedSample() {
+    // Increment the time for the current sample.
+    current_time += SAMPLE_TIME_DELTA;
+    current_sample_cycle -= CYCLES_PER_SAMPLE;
+    // Mix the separate channels.
+    sample = ((0.00752 * (p1.sample + p2.sample))
+                + (0.00851 * triangle.sample + 0.00494 * /*noise*/0 + 0.00335 * /*DMC*/0)) * gui->volume;
+
+    // For debugging: outputs a single continuous tone.
+    // sample = sin(current_time * 440.0f * 2.0f * M_PI) * 2000;
+    
+    // Add sample to audio buffer.
+    audio_buff[buff_index] = sample;
+    buff_index++;
+    // If the audio buffer is full send it to output.
+    if (buff_index == AUDIO_BUFFER_SIZE) {
+        buff_index = 0;
+        SDL_QueueAudio(gui->audio_device, &audio_buff, SAMPLE_SIZE * AUDIO_BUFFER_SIZE);
+    }
+}
+
 // Used for approximating sin, since the normal sin function is slow.
 // from: One Lone Coder.
 float approxsin(float offset) {
@@ -180,8 +201,8 @@ float APU::square_wave(struct full_pulse pulse, float offset) {
     for (float counter = 1; counter < 3; counter++) {
         temp = counter * frequency * 2.0 * M_PI * offset;
 
-        sin1 += -approxsin(temp) / counter;
-        sin2 += -approxsin(temp - phase_offset * counter) / counter;
+        sin1 += approxsin(temp) / counter;
+        sin2 += approxsin(temp - phase_offset * counter) / counter;
     }
     // Set the output to 1 or -1 depending on the sine wave value.
     if (sin1 - sin2 >= 0) {
@@ -202,7 +223,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
     for (float counter = 1; counter < 3; counter++) {
         n = (2 * counter) + 1;
         temp = 2.0 * M_PI * frequency * n * offset;
-        sin += pow(-1, counter) * pow(n, -2) * -approxsin(temp);
+        sin += pow(-1, counter) * pow(n, -2) * approxsin(temp);
     }
     return (8 / pow(M_PI, 2)) * sin;
 }
@@ -263,24 +284,7 @@ bool APU::executeCycle() {
 
     // Every certain amount of cycles store a sample for audio output.
     if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
-        // Increment the time for the current sample.
-        current_time += SAMPLE_TIME_DELTA;
-        current_sample_cycle -= CYCLES_PER_SAMPLE;
-        // Mix the separate channels.
-        sample = ((0.00752 * (p1.sample + p2.sample))
-                 + (0.00851 * triangle.sample + 0.00494 * /*noise*/0 + 0.00335 * /*DMC*/0)) * gui->volume;
-
-        // For debugging: outputs a single continuous tone.
-        // sample = sin(current_time * 440.0f * 2.0f * M_PI) * 2000;
-        
-        // Add sample to audio buffer.
-        audio_buff[buff_index] = sample;
-        buff_index++;
-        // If the audio buffer is full send it to output.
-        if (buff_index == AUDIO_BUFFER_SIZE) {
-            buff_index = 0;
-            SDL_QueueAudio(gui->audio_device, &audio_buff, SAMPLE_SIZE * AUDIO_BUFFER_SIZE);
-        }
+        outputMixedSample();
     }
 
     apu_cycles += 1;

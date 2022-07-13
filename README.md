@@ -8,6 +8,8 @@ From the project directory, run:
 Then run the created main binary with:  
 `./main <ROM file>`
 
+Make sure that SDL2 and g++11 are installed.
+
 #### Controls
 Button      | Mapped To
 ----------- | ------------

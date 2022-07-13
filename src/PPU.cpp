@@ -986,7 +986,7 @@ bool PPU::executeCycle() {
             odd_frame = !odd_frame;
             // Scale the current frame to fit inside the NES window.
             SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&gui->texture_pixels), &gui->pitch);
-            copy_n(gui->pixels.data(), gui->pixels.size(), gui->texture_pixels);
+            memcpy(gui->texture_pixels, gui->pixels.data(), gui->pixels.size());
             SDL_UnlockTexture(gui->texture);
             SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
 		}

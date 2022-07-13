@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <thread>
+#include <iterator>
 
 #include "../include/NES.h"
 #include "../include/input.h"
