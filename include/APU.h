@@ -50,7 +50,7 @@ using namespace std;
 #define CYCLES_PER_SAMPLE 3125     // For 44100Hz
 #define CYCLES_PER_CYCLE 77        // For 44100Hz
 
-#define AUDIO_BUFFER_SIZE 1024
+#define AUDIO_BUFFER_SIZE 512
 
 // Channel envelope, controls the channel volume.
 struct envelope {

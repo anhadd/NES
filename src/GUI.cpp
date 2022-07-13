@@ -26,7 +26,7 @@ GUI::GUI(int width, int height, int scale) {
     audio_spec.freq = AUDIO_SAMPLE_RATE;
     audio_spec.format = AUDIO_S16SYS;
     audio_spec.channels = 1;
-    audio_spec.samples = 0x1000;
+    audio_spec.samples = 0x0800;
     audio_spec.callback = NULL;
 
     audio_device = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);

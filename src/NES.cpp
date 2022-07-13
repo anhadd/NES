@@ -113,6 +113,7 @@ void NES::logDebugInfo() {
 void NES::executeFrame() {
     // Execute cycles until the PPU has rendered an entire frame.
     while (!ppu.frame_finished) {
+        // Only continue running if audio is not too far behind.
         if (SDL_GetQueuedAudioSize(gui.audio_device) < 8192) {
             // Logs debug information.
             // logDebugInfo();
@@ -144,7 +145,8 @@ void NES::executeFrame() {
             total_cycles += 1;
         }
         else {
-            this_thread::sleep_for(chrono::milliseconds(3));
+            // Wait for audio to catch up.
+            this_thread::sleep_for(chrono::milliseconds(7));
         }
     }
     ppu.frame_finished = false;
