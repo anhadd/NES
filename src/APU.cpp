@@ -40,7 +40,7 @@ void APU::passGUI(GUI* nesGUI) {
 }
 
 uint8_t APU::readRegister(uint16_t address) {
-    uint16_t real_address = 0x4000 + (address & 0x0017);
+    uint16_t real_address = 0x4000 + (address & 0x1F);
 
     switch (real_address) {
         // Reading APU registers has open BUS behavior.
@@ -49,7 +49,7 @@ uint8_t APU::readRegister(uint16_t address) {
 }
 
 uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
-    uint16_t real_address = 0x4000 + (address & 0x0017);
+    uint16_t real_address = 0x4000 + (address & 0x1F);
 
     switch (real_address) {
         case P1_CONTROL:
