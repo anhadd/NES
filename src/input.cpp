@@ -5,14 +5,22 @@ void handleInput(NES &nes) {
 
     // Read keyboard input into the controller register.
     nes.bus.controller[0] = 0x00;
-    nes.bus.controller[0] |= nes.key_state[INPUT_A]                                             << 7;
-    nes.bus.controller[0] |= nes.key_state[INPUT_B]                                             << 6;
-    nes.bus.controller[0] |= nes.key_state[INPUT_SELECT]                                        << 5;
-    nes.bus.controller[0] |= nes.key_state[INPUT_START]                                         << 4;
-    nes.bus.controller[0] |= nes.key_state[INPUT_UP]                                            << 3;
-    nes.bus.controller[0] |= (nes.key_state[INPUT_UP]) ? 0 : nes.key_state[INPUT_DOWN]          << 2;
-    nes.bus.controller[0] |= nes.key_state[INPUT_LEFT]                                          << 1;
-    nes.bus.controller[0] |= (nes.key_state[INPUT_LEFT]) ? 0 : nes.key_state[INPUT_RIGHT]       << 0;
+    nes.bus.controller[0] |= nes.key_state[INPUT_A]             << 7;
+    nes.bus.controller[0] |= nes.key_state[INPUT_B]             << 6;
+    nes.bus.controller[0] |= nes.key_state[INPUT_SELECT]        << 5;
+    nes.bus.controller[0] |= nes.key_state[INPUT_START]         << 4;
+    if (ALLOW_LR_UD) {
+        nes.bus.controller[0] |= nes.key_state[INPUT_UP]        << 3;
+        nes.bus.controller[0] |= nes.key_state[INPUT_DOWN]      << 2;
+        nes.bus.controller[0] |= nes.key_state[INPUT_LEFT]      << 1;
+        nes.bus.controller[0] |= nes.key_state[INPUT_RIGHT]     << 0;
+    }
+    else {
+        nes.bus.controller[0] |= (nes.key_state[INPUT_DOWN]) ? 0 : nes.key_state[INPUT_UP]          << 3;
+        nes.bus.controller[0] |= (nes.key_state[INPUT_UP]) ? 0 : nes.key_state[INPUT_DOWN]          << 2;
+        nes.bus.controller[0] |= (nes.key_state[INPUT_RIGHT]) ? 0 : nes.key_state[INPUT_LEFT]       << 1;
+        nes.bus.controller[0] |= (nes.key_state[INPUT_LEFT]) ? 0 : nes.key_state[INPUT_RIGHT]       << 0;
+    }
 
     // Check if there is a pending SDL event.
     while (SDL_PollEvent(&nes.gui.sdlevent)) {
