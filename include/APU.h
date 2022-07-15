@@ -186,6 +186,12 @@ struct full_pulse {
             }
         }
     }
+    // Clock the length counter.
+    void clockLength() {
+        if (!ctrl.length_halt && length_counter > 0) {
+            length_counter -= 1;
+        }
+    }
 };
 
 union triangle_control {

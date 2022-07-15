@@ -248,12 +248,8 @@ bool APU::executeCycle() {
         // Half frame.
         else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
             // Decrement length counters if necessary.
-            if (!p1.ctrl.length_halt && p1.length_counter > 0) {
-                p1.length_counter -= 1;
-            }
-            if (!p2.ctrl.length_halt && p2.length_counter > 0) {
-                p2.length_counter -= 1;
-            }
+            p1.clockLength();
+            p2.clockLength();
             if (!triangle.ctrl.length_halt && triangle.length_counter > 0) {
                 triangle.length_counter -= 1;
             }
