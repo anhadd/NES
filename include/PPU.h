@@ -289,8 +289,18 @@ class PPU {
         void incrementCoarseY();                // Move to the next vertical tile.
         void incrementFineY();                  // Move to the next vertical pixel.
 
+        void transferX();                       // Transfers X values from buff to ppu address.
+        void transferY();                       // Transfers Y values from buff to ppu address.
+
         void loadAttributeByte();               // Load the attribute byte.
         void loadTileByte(bool high_byte);      // Load the low or high tile byte.
+
+        void loadSecondaryOAM();                // Load sprites from OAM into the secondaryOAM.
+        void loadSpriteShifters();              // Load secondaryOAM sprites data into the sprite shifters.
+
+        void getBackgroundPixel();              // Get the current pixel for the background.
+        void getForegroundPixel();              // Get the current pixel for the foreground.
+        void finalizeFrame();                   // Finalize the current PPU frame.
 };
 
 
