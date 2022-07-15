@@ -124,8 +124,8 @@ struct full_pulse {
 
         sample = 0.0;
     }
-    // Execute a single cycle.
-    void cycle() {
+    // Execute a single clock.
+    void clock() {
         if (timer > 0) {
             timer -= 1;
         }
@@ -223,6 +223,21 @@ struct full_triangle {
         reload = 0x0000;
 
         sample = 0.0;
+    }
+    // Execute a single clock.
+    void clock() {
+        if (timer > 0) {
+            timer -= 1;
+        }
+        else {
+            timer = (reload + 1) * 2;
+        }
+    }
+    // Clock the length counter.
+    void clockLength() {
+        if (!ctrl.length_halt && length_counter > 0) {
+            length_counter -= 1;
+        }
     }
 };
 

@@ -231,11 +231,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
 
 bool APU::executeCycle() {
     // Clock triangle channel every CPU cycle.
-    triangle.timer -= 1;
-    if (triangle.timer == 0xFFFF) {
-        triangle.timer = triangle.reload + 1;
-    }
-
+    triangle.clock();
     // Every 2 CPU/APU cycles.
     if (apu_cycles % 2 == 0) {
         frame_counter += 1;
@@ -250,9 +246,7 @@ bool APU::executeCycle() {
             // Decrement length counters if necessary.
             p1.clockLength();
             p2.clockLength();
-            if (!triangle.ctrl.length_halt && triangle.length_counter > 0) {
-                triangle.length_counter -= 1;
-            }
+            triangle.clockLength();
             // Sweep units.
             p1.clockSweep();
             p2.clockSweep();
@@ -262,12 +256,12 @@ bool APU::executeCycle() {
         }
 
         // Cycle and get the sample for Pulse1 if it is enabled.
-        p1.cycle();
+        p1.clock();
         if (apu_status.enable_p1 && p1.length_counter > 0 && p1.timer >= 8 && !p1.sweep.mute) {
             generateSample(p1);
         }
         // Cycle and get the sample for Pulse2 if it is enabled.
-        p2.cycle();
+        p2.clock();
         if (apu_status.enable_p2 && p2.length_counter > 0 && p2.timer >= 8 && !p2.sweep.mute) {
             generateSample(p2);
         }
@@ -278,7 +272,7 @@ bool APU::executeCycle() {
         }
     }
 
-    // Every certain amount of cycles store a sample for audio output.
+    // Every certain number of cycles store a sample for audio output.
     if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
         outputMixedSample();
     }
