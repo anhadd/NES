@@ -68,7 +68,6 @@ union pulse_control {
     };
     uint8_t full;
 };
-
 union pulse_sweep {
     struct {
         uint8_t shift_count : 3;
@@ -77,6 +76,13 @@ union pulse_sweep {
         uint8_t enabled : 1;
     };
     uint8_t full;
+};
+
+struct pulse_sweep_full {
+    union pulse_sweep flags;
+    uint8_t divider;
+    bool reload_flag;
+    bool mute;
 };
 
 // pulse_timers_low is just uint8_t.
@@ -92,7 +98,7 @@ union channel_timer_high {
 // Full pulse channel (square wave). 
 struct full_pulse {
     union pulse_control ctrl;
-    union pulse_sweep sweep;
+    struct pulse_sweep_full sweep;
     uint8_t timer_low;
     union channel_timer_high timer_high;
     struct envelope env;
@@ -106,7 +112,9 @@ struct full_pulse {
 
     void reset() {
         ctrl.full = 0x00;
-        sweep.full = 0x00;
+        sweep.flags.full = 0x00;
+        sweep.divider = 0x00;
+        sweep.reload_flag = false;
         timer_low = 0x00;
         timer_high.full = 0x00;
 
@@ -146,6 +154,35 @@ struct full_pulse {
                         env.decay_level = 15;
                     }
                 }
+            }
+        }
+    }
+    // Clocks the sweep unit.
+    void clockSweep() {
+        uint16_t f_delta = reload >> sweep.flags.shift_count;
+        uint16_t target = 0x0000;
+        if (sweep.flags.negative) {
+            target = reload - f_delta;
+        }
+        else {
+            target = reload + f_delta;
+        }
+
+        if (reload < 8 || target > 0x7FF) {
+            sweep.mute = true;
+        }
+        else {
+            sweep.mute = false;
+        }
+
+        if (sweep.flags.enabled) {
+            if (sweep.divider > 0) {
+                sweep.divider -= 1;
+            }
+            else {
+                reload = target;
+                sweep.divider = sweep.flags.period;
+                sweep.reload_flag = false;
             }
         }
     }
