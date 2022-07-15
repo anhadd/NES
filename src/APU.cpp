@@ -64,7 +64,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             p1.duty_partition = partition_lookup[p1.ctrl.duty];
             break;
         case P1_SWEEP:
-            p1.sweep.full = value;
+            p1.sweep.flags.full = value;
             break;
         case P1_TIMER_LOW:
             p1.timer_low = value;
@@ -85,7 +85,7 @@ uint8_t APU::writeRegister(uint16_t address, uint8_t value) {
             p2.duty_partition = partition_lookup[p2.ctrl.duty];
             break;
         case P2_SWEEP:
-            p2.sweep.full = value;
+            p2.sweep.flags.full = value;
             break;
         case P2_TIMER_LOW:
             p2.timer_low = value;
@@ -231,11 +231,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
 
 bool APU::executeCycle() {
     // Clock triangle channel every CPU cycle.
-    triangle.timer -= 1;
-    if (triangle.timer == 0xFFFF) {
-        triangle.timer = triangle.reload + 1;
-    }
-
+    triangle.clock();
     // Every 2 CPU/APU cycles.
     if (apu_cycles % 2 == 0) {
         frame_counter += 1;
@@ -248,30 +244,25 @@ bool APU::executeCycle() {
         // Half frame.
         else if (frame_counter == HALF_FRAME || frame_counter == FULL_FRAME) {
             // Decrement length counters if necessary.
-            // if (!p1.ctrl.length_halt && p1.length_counter > 0) {
-            //     p1.length_counter -= 1;
-            // }
-            // if (!p2.ctrl.length_halt && p2.length_counter > 0) {
-            //     p2.length_counter -= 1;
-            // }
-            // if (!triangle.ctrl.length_halt && triangle.length_counter > 0) {
-            //     triangle.length_counter -= 1;
-            // }
+            p1.clockLength();
+            p2.clockLength();
+            triangle.clockLength();
             // Sweep units.
-            // ...
+            p1.clockSweep();
+            p2.clockSweep();
             if (frame_counter == FULL_FRAME) {
                 frame_counter = 0;
             }
         }
 
         // Cycle and get the sample for Pulse1 if it is enabled.
-        p1.cycle();
-        if (apu_status.enable_p1 && p1.length_counter > 0 && p1.timer >= 8) {
+        p1.clock();
+        if (apu_status.enable_p1 && p1.length_counter > 0 && p1.timer >= 8 && !p1.sweep.mute) {
             generateSample(p1);
         }
         // Cycle and get the sample for Pulse2 if it is enabled.
-        p2.cycle();
-        if (apu_status.enable_p2 && p2.length_counter > 0 && p2.timer >= 8) {
+        p2.clock();
+        if (apu_status.enable_p2 && p2.length_counter > 0 && p2.timer >= 8 && !p2.sweep.mute) {
             generateSample(p2);
         }
         // Cycle and get the sample for Triangle if it is enabled.
@@ -281,7 +272,7 @@ bool APU::executeCycle() {
         }
     }
 
-    // Every certain amount of cycles store a sample for audio output.
+    // Every certain number of cycles store a sample for audio output.
     if (current_sample_cycle >= CYCLES_PER_SAMPLE) {
         outputMixedSample();
     }

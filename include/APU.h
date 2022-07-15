@@ -68,7 +68,6 @@ union pulse_control {
     };
     uint8_t full;
 };
-
 union pulse_sweep {
     struct {
         uint8_t shift_count : 3;
@@ -77,6 +76,13 @@ union pulse_sweep {
         uint8_t enabled : 1;
     };
     uint8_t full;
+};
+
+struct pulse_sweep_full {
+    union pulse_sweep flags;
+    uint8_t divider;
+    bool reload_flag;
+    bool mute;
 };
 
 // pulse_timers_low is just uint8_t.
@@ -92,7 +98,7 @@ union channel_timer_high {
 // Full pulse channel (square wave). 
 struct full_pulse {
     union pulse_control ctrl;
-    union pulse_sweep sweep;
+    struct pulse_sweep_full sweep;
     uint8_t timer_low;
     union channel_timer_high timer_high;
     struct envelope env;
@@ -106,7 +112,9 @@ struct full_pulse {
 
     void reset() {
         ctrl.full = 0x00;
-        sweep.full = 0x00;
+        sweep.flags.full = 0x00;
+        sweep.divider = 0x00;
+        sweep.reload_flag = false;
         timer_low = 0x00;
         timer_high.full = 0x00;
 
@@ -116,8 +124,8 @@ struct full_pulse {
 
         sample = 0.0;
     }
-    // Execute a single cycle.
-    void cycle() {
+    // Execute a single clock.
+    void clock() {
         if (timer > 0) {
             timer -= 1;
         }
@@ -147,6 +155,41 @@ struct full_pulse {
                     }
                 }
             }
+        }
+    }
+    // Clocks the sweep unit.
+    void clockSweep() {
+        uint16_t f_delta = reload >> sweep.flags.shift_count;
+        uint16_t target = 0x0000;
+        if (sweep.flags.negative) {
+            target = reload - f_delta;
+        }
+        else {
+            target = reload + f_delta;
+        }
+
+        if (reload < 8 || target > 0x7FF) {
+            sweep.mute = true;
+        }
+        else {
+            sweep.mute = false;
+        }
+
+        if (sweep.flags.enabled) {
+            if (sweep.divider > 0) {
+                sweep.divider -= 1;
+            }
+            else {
+                reload = target;
+                sweep.divider = sweep.flags.period;
+                sweep.reload_flag = false;
+            }
+        }
+    }
+    // Clock the length counter.
+    void clockLength() {
+        if (!ctrl.length_halt && length_counter > 0) {
+            length_counter -= 1;
         }
     }
 };
@@ -180,6 +223,21 @@ struct full_triangle {
         reload = 0x0000;
 
         sample = 0.0;
+    }
+    // Execute a single clock.
+    void clock() {
+        if (timer > 0) {
+            timer -= 1;
+        }
+        else {
+            timer = (reload + 1) * 2;
+        }
+    }
+    // Clock the length counter.
+    void clockLength() {
+        if (!ctrl.length_halt && length_counter > 0) {
+            length_counter -= 1;
+        }
     }
 };
 
