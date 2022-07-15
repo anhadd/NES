@@ -9,12 +9,14 @@ void handleInput(NES &nes) {
     nes.bus.controller[0] |= nes.key_state[INPUT_B]             << 6;
     nes.bus.controller[0] |= nes.key_state[INPUT_SELECT]        << 5;
     nes.bus.controller[0] |= nes.key_state[INPUT_START]         << 4;
+    // If pressing left/right or up/down at the same time is allowed.
     if (ALLOW_LR_UD) {
         nes.bus.controller[0] |= nes.key_state[INPUT_UP]        << 3;
         nes.bus.controller[0] |= nes.key_state[INPUT_DOWN]      << 2;
         nes.bus.controller[0] |= nes.key_state[INPUT_LEFT]      << 1;
         nes.bus.controller[0] |= nes.key_state[INPUT_RIGHT]     << 0;
     }
+    // Else do not allow lr/up to be pressed at the same time.
     else {
         nes.bus.controller[0] |= (nes.key_state[INPUT_DOWN]) ? 0 : nes.key_state[INPUT_UP]          << 3;
         nes.bus.controller[0] |= (nes.key_state[INPUT_UP]) ? 0 : nes.key_state[INPUT_DOWN]          << 2;
