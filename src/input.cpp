@@ -45,7 +45,7 @@ void handleInput(NES &nes) {
                 case INPUT_PAUSE:
                     nes.paused = !nes.paused;
                     break;
-                // The debug log button. Starts logging NES stuff to file.
+                // The debug log button. Enables/Disables logging NES stuff to file.
                 // Disabled since accidentally pressing this button could cause issues.
                 // case INPUT_LOG:
                 //     fprintf(stderr, "Start Logging:\n\n");
