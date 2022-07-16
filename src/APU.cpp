@@ -232,7 +232,7 @@ float APU::triangle_wave(struct full_triangle triangle, float offset) {
 bool APU::executeCycle() {
     // Clock triangle channel every CPU cycle.
     triangle.clock();
-    // Every 2 CPU/APU cycles.
+    // Every 2 CPU (1 APU) cycles.
     if (apu_cycles % 2 == 0) {
         frame_counter += 1;
         // Quarter frame.
@@ -247,7 +247,7 @@ bool APU::executeCycle() {
             p1.clockLength();
             p2.clockLength();
             triangle.clockLength();
-            // Sweep units.
+            // Clock sweep units.
             p1.clockSweep();
             p2.clockSweep();
             if (frame_counter == FULL_FRAME) {
