@@ -9,6 +9,10 @@ void handleInput(NES &nes) {
     nes.bus.controller[0] |= nes.key_state[INPUT_B]             << 6;
     nes.bus.controller[0] |= nes.key_state[INPUT_SELECT]        << 5;
     nes.bus.controller[0] |= nes.key_state[INPUT_START]         << 4;
+    
+    // The reason that disabling lr/up is here as a user option is because it is not necessarily part of the NES.
+    // It was just physically hard to do on the NES controller, but the NES would normally allow it if it was done.
+    // The option is here since it depends on what the user wants the emulator to do, not what the NES actually did, just like showing the debug windows.
     // If pressing left/right or up/down at the same time is allowed.
     if (ALLOW_LR_UD) {
         nes.bus.controller[0] |= nes.key_state[INPUT_UP]        << 3;

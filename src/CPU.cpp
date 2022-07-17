@@ -247,11 +247,15 @@ bool CPU::readAddress() {
 
 // Helper function for branches.
 void CPU::checkBranch(bool flag) {
+    // If the branch condition holds.
     if (flag) {
+        // Calculate the new PC.
         temp = PC + relative_offset;
+        // If a page is crossed add an extra instruction cycle.
         if ((temp & 0xFF00) != (PC & 0xFF00)) {
             cycles += 1;
         }
+        // Set the new PC and add an extra instruction cycle for taking the branch.
         PC = temp;
         cycles += 1;
     }
