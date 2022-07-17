@@ -9,6 +9,10 @@ void handleInput(NES &nes) {
     nes.bus.controller[0] |= nes.key_state[INPUT_B]             << 6;
     nes.bus.controller[0] |= nes.key_state[INPUT_SELECT]        << 5;
     nes.bus.controller[0] |= nes.key_state[INPUT_START]         << 4;
+    
+    // The reason that disabling lr/up is here as a user option is because it is not necessarily part of the NES.
+    // It was just physically hard to do on the NES controller, but the NES would normally allow it if it was done.
+    // The option is here since it depends on what the user wants the emulator to do, not what the NES actually did, just like showing the debug windows.
     // If pressing left/right or up/down at the same time is allowed.
     if (ALLOW_LR_UD) {
         nes.bus.controller[0] |= nes.key_state[INPUT_UP]        << 3;
@@ -16,7 +20,7 @@ void handleInput(NES &nes) {
         nes.bus.controller[0] |= nes.key_state[INPUT_LEFT]      << 1;
         nes.bus.controller[0] |= nes.key_state[INPUT_RIGHT]     << 0;
     }
-    // Else do not allow lr/up to be pressed at the same time.
+    // Else do not allow lr/ud to be pressed at the same time.
     else {
         nes.bus.controller[0] |= (nes.key_state[INPUT_DOWN]) ? 0 : nes.key_state[INPUT_UP]          << 3;
         nes.bus.controller[0] |= (nes.key_state[INPUT_UP]) ? 0 : nes.key_state[INPUT_DOWN]          << 2;
@@ -45,7 +49,7 @@ void handleInput(NES &nes) {
                 case INPUT_PAUSE:
                     nes.paused = !nes.paused;
                     break;
-                // The debug log button. Starts logging NES stuff to file.
+                // The debug log button. Enables/Disables logging NES stuff to file.
                 // Disabled since accidentally pressing this button could cause issues.
                 // case INPUT_LOG:
                 //     fprintf(stderr, "Start Logging:\n\n");

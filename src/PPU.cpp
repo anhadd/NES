@@ -601,6 +601,21 @@ void PPU::incrementFineY() {
     }
 }
 
+void PPU::transferX() {
+    if (ppu_mask.showbg || ppu_mask.showsprites) {
+        ppu_addr.nametable_x = ppu_buff.nametable_x;
+        ppu_addr.coarse_x = ppu_buff.coarse_x;
+    }
+}
+
+void PPU::transferY() {
+    if (ppu_mask.showbg || ppu_mask.showsprites) {
+        ppu_addr.nametable_y = ppu_buff.nametable_y;
+        ppu_addr.coarse_y = ppu_buff.coarse_y;
+        ppu_addr.fine_y = ppu_buff.fine_y;
+    }
+}
+
 void PPU::loadAttributeByte() {
     uint16_t byte_addr = 0x0000;
     /*  Gets the attribute byte.
@@ -650,6 +665,167 @@ void PPU::loadTileByte(bool high_byte) {
     }
 }
 
+void PPU::loadSecondaryOAM() {
+    // Reset secondary OAM and index.
+    memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
+    secondary_OAM_index = 0;
+    // Reset sprite shifters.
+    fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
+    fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
+    // Reset this flag, since sprite zero is not in secondary OAM anymore.
+    sprite_zero_in_sOAM = false;
+    // Go through every sprite in OAM and check whether it appears on the next scanline.
+    for (int i = 0; i < 64; i++) {
+        // The distance is the difference in rows between the scanline and the top-left corner of the sprite.
+        int16_t distance = scanlines - sprite_OAM[i].y;
+        // If the distance is less than 8 (or less than 16 on 8x16 sprite mode) then the sprite appears on the next scanline.
+        if (distance >= 0 && distance < (8 + ppu_ctrl.sprite_size * 8)) {
+            // If there are not yet 8 sprites in secondary OAM add the new one.
+            if (secondary_OAM_index < 8) {
+                // If the newly added sprite is OAM[0], then sprite zero is in secondary OAM.
+                if (i == 0) {
+                    sprite_zero_in_sOAM = true;
+                }
+                sprite_secondary_OAM[secondary_OAM_index] = sprite_OAM[i];
+                secondary_OAM_index += 1;
+            }
+            // Otherwise set the overflow flag.
+            else {
+                ppu_status.sprite_overflow = 1;
+                break;
+            }
+        }
+    }
+}
+
+void PPU::loadSpriteShifters() {
+    uint8_t sprite_low = 0x00;
+    uint8_t sprite_high = 0x00;
+    uint16_t sprite_addr = 0x0000;
+    // Load the data of every sprite in secondary OAM into the sprite shifters.
+    for (int i = 0; i < secondary_OAM_index; i++) {
+        sprite_low = 0x00;
+        sprite_high = 0x00;
+        // If 8x16 sprites.
+        if (ppu_ctrl.sprite_size) {
+            // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
+            // In this case, since the ROM uses 8x16 sprites, read the bottom row of the next tile if necessary.
+            if (sprite_secondary_OAM[i].flags.flip_vertically) {
+                sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
+                            + (((sprite_secondary_OAM[i].pattern_id & 0xFE) + 1) * TILE_SIZE_IN_BYTES)
+                            + (7 - ((scanlines - sprite_secondary_OAM[i].y) & 0x07));
+                // If the difference between the scanline and the sprite's top-left corner is >= 8,
+                // Then the scanline is in the next tile of the 8x16 sprite, so move to the next tile.
+                // (Or in this case the previous tile, since the sprite is flipped vertically).
+                if (scanlines - sprite_secondary_OAM[i].y >= 8) {
+                    sprite_addr -= TILE_SIZE_IN_BYTES;
+                }
+            }
+            // Otherwise just take the tile normally.
+            else {
+                sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
+                            + ((sprite_secondary_OAM[i].pattern_id & 0xFE) * TILE_SIZE_IN_BYTES)
+                            + ((scanlines - sprite_secondary_OAM[i].y) & 0x07);
+                // If the difference between the scanline and the sprite's top-left corner is >= 8,
+                // Then the scanline is in the next tile of the 8x16 sprite, so move to the next tile.
+                if (scanlines - sprite_secondary_OAM[i].y >= 8) {
+                    sprite_addr += TILE_SIZE_IN_BYTES;
+                }
+            }
+        }
+        // Else 8x8 sprites.
+        else {
+            // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
+            if (sprite_secondary_OAM[i].flags.flip_vertically) {
+                sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
+                            + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
+                            + (7 - (scanlines - sprite_secondary_OAM[i].y));
+            }
+            // Otherwise just take the tile normally.
+            else {
+                sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
+                            + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
+                            + (scanlines - sprite_secondary_OAM[i].y);
+            }
+        }
+        // Read the sprite data from the calculated address.
+        sprite_low = ppuRead(sprite_addr);
+        sprite_high = ppuRead(sprite_addr + 8);
+        // If the sprite is flipped horizontally, flip the read byte.
+        if (sprite_secondary_OAM[i].flags.flip_horizontally) {
+            sprite_low = flipByte(sprite_low);
+            sprite_high = flipByte(sprite_high);
+        }
+        // Add the new data to the sprite shifters.
+        sprite_shifter_low[i] = sprite_low;
+        sprite_shifter_high[i] = sprite_high;
+    }
+}
+
+void PPU::getBackgroundPixel() {
+    // Choose the correct color for every pixel by getting data from the shifter registers.
+    bg_pixel = 0x00;
+    bg_palette = 0x00;
+    // Get the color of the background if background rendering is on.
+    if (ppu_mask.showbg) {
+        uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
+
+        uint8_t pixel_low = (bg_shifter_low & bit_mask) != 0;
+        uint8_t pixel_high = (bg_shifter_high & bit_mask) != 0;
+        bg_pixel = (pixel_high << 1) | pixel_low;
+
+        uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
+        uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
+        // Adding curr_palette allows the colors to be changed, but it is not necessary.
+        bg_palette = ((palette_high << 1) | palette_low) + curr_palette;
+    }
+}
+
+void PPU::getForegroundPixel() {
+    sprite_pixel = 0x00;
+    sprite_palette = 0x00;
+    sprite_behind_bg = false;
+    // Get the color of the sprite if sprite rendering is on.
+    if (ppu_mask.showsprites) {
+        sprite_zero_rendering = false;
+        for (int i = 0; i < secondary_OAM_index; i++) {
+            if ((cycles - 1) >= sprite_secondary_OAM[i].x && (cycles - 1) < sprite_secondary_OAM[i].x + 8) {
+                uint16_t bit_mask = 0x80;
+                // Take the highest bit from the shifters. This represents an color index inside a palette.
+                uint8_t pixel_low = (sprite_shifter_low[i] & bit_mask) != 0;
+                uint8_t pixel_high = (sprite_shifter_high[i] & bit_mask) != 0;
+                sprite_pixel = (pixel_high << 1) | pixel_low;
+
+                // Adding curr_palette allows the colors to be changed, but it is not necessary.
+                // The + 0x04 is to get to the sprite palettes, since this is the color of a sprite.
+                sprite_palette = sprite_secondary_OAM[i].flags.palette + 0x04 + curr_palette;
+                // Set whether the sprite is in front or behind th background.
+                sprite_behind_bg = sprite_secondary_OAM[i].flags.priority;
+                // If the sprite's is visible.
+                if (sprite_pixel != 0x00) {
+                    // If the current sprite being rendered is zero (OAM[0]).
+                    if (i == 0) {
+                        sprite_zero_rendering = true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void PPU::finalizeFrame() {
+    frame_finished = true;
+    total_frames += 1;
+    odd_frame = !odd_frame;
+
+    // Scale the current frame to fit inside the NES window.
+    SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&gui->texture_pixels), &gui->pitch);
+    memcpy(gui->texture_pixels, gui->pixels.data(), gui->pixels.size());
+    SDL_UnlockTexture(gui->texture);
+    SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
+}
+
 // Executes a single PPU cycle.
 bool PPU::executeCycle() {
     /*  
@@ -696,11 +872,11 @@ bool PPU::executeCycle() {
                     break;
                 case 4:
                     // Load data of the low byte of a tile.
-                    loadTileByte(false);
+                    loadTileByte(LOW_BYTE);
                     break;
                 case 6:
                     // Load data of the high byte of a tile.
-                    loadTileByte(true);
+                    loadTileByte(HIGH_BYTE);
                     break;
                 case 7:
                     // Increment the x tile every 8 cycles (since a tile is 8 pixels wide).
@@ -719,10 +895,7 @@ bool PPU::executeCycle() {
         }
         // At the 257th scanline, load the x values of the buffered address into the real PPU address register.
         else if (cycles == 257) {
-            if (ppu_mask.showbg || ppu_mask.showsprites) {
-                ppu_addr.nametable_x = ppu_buff.nametable_x;
-			    ppu_addr.coarse_x = ppu_buff.coarse_x;
-            }
+            transferX();
         }
         // Unused reads done by the NES.
         else if (cycles == 337 || cycles == 339) {
@@ -730,18 +903,12 @@ bool PPU::executeCycle() {
         }
         // On the cycles 280 to 304 of the prerender scanline, load the y values of the buffered address into the real PPU address register.
         else if (scanlines == -1 && cycles >= 280 && cycles <= 304) {
-            if (ppu_mask.showbg || ppu_mask.showsprites) {
-                ppu_addr.nametable_y = ppu_buff.nametable_y;
-                ppu_addr.coarse_y = ppu_buff.coarse_y;
-                ppu_addr.fine_y = ppu_buff.fine_y;
-            }
+            transferY();
         }
 
 
 
-
-        /* 
-            ===============================================================================
+        /*  ===============================================================================
             ================================== SPRITES ====================================
             ===============================================================================
 
@@ -759,101 +926,11 @@ bool PPU::executeCycle() {
         if (scanlines != -1) {
             // If at the end of the visible row of pixels, check the sprites that are in the next row of pixels.
             if (cycles == 257 && (ppu_mask.showbg || ppu_mask.showsprites)) {
-                // Reset secondary OAM and index.
-                memset(sprite_secondary_OAM, 0xFF, sizeof(sprite_secondary_OAM));
-                secondary_OAM_index = 0;
-                // Reset sprite shifters.
-                fill(begin(sprite_shifter_high), end(sprite_shifter_high), 0);
-                fill(begin(sprite_shifter_low), end(sprite_shifter_low), 0);
-                // Reset this flag, since sprite zero is not in secondary OAM anymore.
-                sprite_zero_in_sOAM = false;
-                // Go through every sprite in OAM and check whether it appears on the next scanline.
-                for (int i = 0; i < 64; i++) {
-                    // The distance is the difference in rows between the scanline and the top-left corner of the sprite.
-                    int16_t distance = scanlines - sprite_OAM[i].y;
-                    // If the distance is less than 8 (or less than 16 on 8x16 sprite mode) then the sprite appears on the next scanline.
-                    if (distance >= 0 && distance < (8 + ppu_ctrl.sprite_size * 8)) {
-                        // If there are not yet 8 sprites in secondary OAM add the new one.
-                        if (secondary_OAM_index < 8) {
-                            // If the newly added sprite is OAM[0], then sprite zero is in secondary OAM.
-                            if (i == 0) {
-                                sprite_zero_in_sOAM = true;
-                            }
-                            sprite_secondary_OAM[secondary_OAM_index] = sprite_OAM[i];
-                            secondary_OAM_index += 1;
-                        }
-                        // Otherwise set the overflow flag.
-                        else {
-                            ppu_status.sprite_overflow = 1;
-                            break;
-                        }
-                    }
-                }
+                loadSecondaryOAM();
             }
             // On the 321th cycle, load data for the next visible sprites into the sprite shifter registers.
             else if (cycles == 321) {
-                uint8_t sprite_low = 0x00;
-                uint8_t sprite_high = 0x00;
-                uint16_t sprite_addr = 0x0000;
-                // Load the data of every sprite in secondary OAM into the sprite shifters.
-                for (int i = 0; i < secondary_OAM_index; i++) {
-                    sprite_low = 0x00;
-                    sprite_high = 0x00;
-
-                    // If 8x16 sprites.
-                    if (ppu_ctrl.sprite_size) {
-                        // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
-                        // In this case, since the ROM uses 8x16 sprites, read the bottom row of the next tile if necessary.
-                        if (sprite_secondary_OAM[i].flags.flip_vertically) {
-                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
-                                        + (((sprite_secondary_OAM[i].pattern_id & 0xFE) + 1) * TILE_SIZE_IN_BYTES)
-                                        + (7 - ((scanlines - sprite_secondary_OAM[i].y) & 0x07));
-                            // If the difference between the scanline and the sprite's top-left corner is >= 8,
-                            // Then the scanline is in the next tile of the 8x16 sprite, so move to the next tile.
-                            // (Or in this case the previous tile, since the sprite is flipped vertically).
-                            if (scanlines - sprite_secondary_OAM[i].y >= 8) {
-                                sprite_addr -= TILE_SIZE_IN_BYTES;
-                            }
-                        }
-                        // Otherwise just take the tile normally.
-                        else {
-                            sprite_addr = ((sprite_secondary_OAM[i].pattern_id & 0x01) * PATTERNTABLE_SIZE)
-                                        + ((sprite_secondary_OAM[i].pattern_id & 0xFE) * TILE_SIZE_IN_BYTES)
-                                        + ((scanlines - sprite_secondary_OAM[i].y) & 0x07);
-                            // If the difference between the scanline and the sprite's top-left corner is >= 8,
-                            // Then the scanline is in the next tile of the 8x16 sprite, so move to the next tile.
-                            if (scanlines - sprite_secondary_OAM[i].y >= 8) {
-                                sprite_addr += TILE_SIZE_IN_BYTES;
-                            }
-                        }
-                    }
-                    // Else 8x8 sprites.
-                    else {
-                        // If the sprite is flipped vertically, start from the bottom row in the tile and move up.
-                        if (sprite_secondary_OAM[i].flags.flip_vertically) {
-                            sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
-                                        + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
-                                        + (7 - (scanlines - sprite_secondary_OAM[i].y));
-                        }
-                        // Otherwise just take the tile normally.
-                        else {
-                            sprite_addr = (ppu_ctrl.ptrn_addr * PATTERNTABLE_SIZE)
-                                        + (sprite_secondary_OAM[i].pattern_id * TILE_SIZE_IN_BYTES)
-                                        + (scanlines - sprite_secondary_OAM[i].y);
-                        }
-                    }
-                    // Read the sprite data from the calculated address.
-                    sprite_low = ppuRead(sprite_addr);
-                    sprite_high = ppuRead(sprite_addr + 8);
-                    // If the sprite is flipped horizontally, flip the read byte.
-                    if (sprite_secondary_OAM[i].flags.flip_horizontally) {
-                        sprite_low = flipByte(sprite_low);
-                        sprite_high = flipByte(sprite_high);
-                    }
-                    // Add the new data to the sprite shifters.
-                    sprite_shifter_low[i] = sprite_low;
-                    sprite_shifter_high[i] = sprite_high;
-                }
+                loadSpriteShifters();
             }
         }
     }
@@ -866,55 +943,8 @@ bool PPU::executeCycle() {
         }
     }
 
-    // Choose the correct color for every pixel by getting data from the shifter registers.
-    bg_pixel = 0x00;
-    bg_palette = 0x00;
-    sprite_behind_bg = false;
-    
-    // Get the color of the background if background rendering is on.
-    if (ppu_mask.showbg) {
-        uint16_t bit_mask = 0x01 << (8 + (7 - fine_x));
-
-        uint8_t pixel_low = (bg_shifter_low & bit_mask) != 0;
-        uint8_t pixel_high = (bg_shifter_high & bit_mask) != 0;
-        bg_pixel = (pixel_high << 1) | pixel_low;
-
-        uint8_t palette_low = (att_shifter_low & bit_mask) != 0;
-        uint8_t palette_high = (att_shifter_high & bit_mask) != 0;
-        // Adding curr_palette allows the colors to be changed, but it is not necessary.
-        bg_palette = ((palette_high << 1) | palette_low) + curr_palette;
-    }
-
-    sprite_pixel = 0x00;
-    sprite_palette = 0x00;
-
-    // Get the color of the sprite if sprite rendering is on.
-    if (ppu_mask.showsprites) {
-        sprite_zero_rendering = false;
-        for (int i = 0; i < secondary_OAM_index; i++) {
-            if ((cycles - 1) >= sprite_secondary_OAM[i].x && (cycles - 1) < sprite_secondary_OAM[i].x + 8) {
-                uint16_t bit_mask = 0x80;
-                // Take the highest bit from the shifters. This represents an color index inside a palette.
-                uint8_t pixel_low = (sprite_shifter_low[i] & bit_mask) != 0;
-                uint8_t pixel_high = (sprite_shifter_high[i] & bit_mask) != 0;
-                sprite_pixel = (pixel_high << 1) | pixel_low;
-
-                // Adding curr_palette allows the colors to be changed, but it is not necessary.
-                // The + 0x04 is to get to the sprite palettes, since this is the color of a sprite.
-                sprite_palette = sprite_secondary_OAM[i].flags.palette + 0x04 + curr_palette;
-                // Set whether the sprite is in front or behind th background.
-                sprite_behind_bg = sprite_secondary_OAM[i].flags.priority;
-                // If the sprite's is visible.
-                if (sprite_pixel != 0x00) {
-                    // If the current sprite being rendered is zero (OAM[0]).
-                    if (i == 0) {
-                        sprite_zero_rendering = true;
-                    }
-                    break;
-                }
-            }
-        }
-    }
+    getBackgroundPixel();
+    getForegroundPixel();
 
     final_pixel = 0x00;
     final_palette = 0x00;
@@ -980,15 +1010,7 @@ bool PPU::executeCycle() {
         // If the scanline is at the end of a frame, set the scanline back to the prerender line.
 		if (scanlines >= MAX_SCANLINES) {
 			scanlines = -1;
-			frame_finished = true;
-
-            total_frames += 1;
-            odd_frame = !odd_frame;
-            // Scale the current frame to fit inside the NES window.
-            SDL_LockTexture(gui->texture, nullptr, reinterpret_cast<void**>(&gui->texture_pixels), &gui->pitch);
-            memcpy(gui->texture_pixels, gui->pixels.data(), gui->pixels.size());
-            SDL_UnlockTexture(gui->texture);
-            SDL_RenderCopy(gui->renderer, gui->texture, nullptr, &gui->scaled_screen_rect);
+			finalizeFrame();
 		}
 	}
     

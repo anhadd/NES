@@ -79,6 +79,7 @@ bool ROM::loadRom(string romName) {
     // Dump the ROM contents. Nice to have for debugging.
     // dumpContents(&romFile);
 
+    // Read the header data.
     romFile.read(reinterpret_cast<char*>(h.full), ROM_HEADER_SIZE);
 
     // Trainer data is skipped.

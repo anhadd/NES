@@ -54,7 +54,7 @@ uint8_t BUS::busReadCPU(uint16_t address) {
     }
     // Read from audio registers.
     else if (address >= 0x4000 && address <= 0x4015) {
-        // Audio registers are not readable.
+        return apu->readRegister(address);
     }
     // Read from controller registers.
     else if (address == 0x4016 || address == 0x4017) {

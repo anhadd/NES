@@ -14,6 +14,23 @@ using namespace std::this_thread;
 using namespace std::chrono;
 
 
+void saveGame(NES nes) {
+    // Saving to save file.
+    printf("Saving game...\n");
+    // Delete the old save.
+    remove(nes.rom.save_path.c_str());
+    // Create the new save and write the RAM data to it.
+    ofstream save_file(nes.rom.save_path, ios::out | ios::binary);
+    if (!save_file.is_open()) {
+        printf("Error: Could not save the game: %s\n", strerror(errno));
+    }
+    else {
+        ostream_iterator<uint8_t> file_iterator(save_file);
+        copy(nes.rom.PRG_ram.begin(), nes.rom.PRG_ram.end(), file_iterator);
+        save_file.close();
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     // Set up SDL
@@ -69,21 +86,9 @@ int main(int argc, char *argv[]) {
 
     // Save the game if the ROM supports it.
     if (nes.rom.mapper->prg_ram_enabled) {
-        // Saving to save file.
-        printf("Saving game...\n");
-        // Delete the old save.
-        remove(nes.rom.save_path.c_str());
-        // Create the new save and write the RAM data to it.
-        ofstream save_file(nes.rom.save_path, ios::out | ios::binary);
-        if (!save_file.is_open()) {
-            printf("Error: Could not save the game: %s\n", strerror(errno));
-        }
-        else {
-            ostream_iterator<uint8_t> file_iterator(save_file);
-            copy(nes.rom.PRG_ram.begin(), nes.rom.PRG_ram.end(), file_iterator);
-            save_file.close();
-        }
+        saveGame(nes);
     }
+
     // Quit SDL and end the program.
     SDL_Quit();
     printf("Finished!\n");
