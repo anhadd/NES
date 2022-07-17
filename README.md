@@ -2,7 +2,7 @@
 A NES Emulator in C++ using SDL2.
 
 
-#### How to Run
+#### <br/> How to Run
 From the project directory, run:  
 `make all`  
 Then run the created main binary with:  
@@ -10,7 +10,7 @@ Then run the created main binary with:
 
 Make sure that SDL2 and g++11 are installed.
 
-#### Controls
+#### <br/> Controls
 Button      | Mapped To
 ----------- | ------------
 **A**       | Z
@@ -39,3 +39,11 @@ Others:\
 
 Disabled By Default:\
 `L`: Log debug information to file.
+
+### <br/> Extra Features
+There are some extra definitions in NES.h that can be changed for some extras.\
+The key mapping can also be changed from this file.
+Definition        | Description
+----------------- | ------------
+**ALLOW_LR_UD**   | Allows pressing Left/Right ot Up/Down at the same time.
+**SHOW_DEBUG**    | Shows extra debug windows, eg pattern tables.
