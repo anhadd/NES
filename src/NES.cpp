@@ -136,7 +136,7 @@ void NES::executeFrame() {
                 // Run a single CPU cycle.
                 cpu.executeCycle();
             }
-            // If OAM is being written to.
+            // Else OAM is being written to.
             else {
                 // Read or write 1 byte of data for OAM.
                 transferOAM();
@@ -149,5 +149,6 @@ void NES::executeFrame() {
             this_thread::sleep_for(chrono::milliseconds(7));
         }
     }
+    
     ppu.frame_finished = false;
 }
