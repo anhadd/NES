@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Save the game if the ROM supports it.
-    if (nes.rom.mapper->prg_ram_enabled) {
+    if (nes.rom.persistent_RAM) {
         saveGame(nes);
     }
 

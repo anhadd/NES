@@ -9,6 +9,7 @@ ROM::ROM() {
     mapper_id = 0;
 
     CHR_is_ram = false;
+    persistent_RAM = false;
 }
 
 
@@ -145,7 +146,8 @@ bool ROM::loadRom(string romName) {
     printf("Prg banks: %u    Chr banks: %u\n", mapper->PRG_banks, mapper->CHR_banks);
 
     // If the mapper uses PRG RAM, it is allowed to use saves and loads, so load the game if possible.
-    if (mapper->prg_ram_enabled) {
+    persistent_RAM = h.f6.persistent_memory;
+    if (persistent_RAM) {
         loadSaveFile(romName);
     }
 

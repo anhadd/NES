@@ -58,7 +58,6 @@ class Mapper {
         uint8_t CHR_banks;      // The amount of CHR banks.
 
         enum Mirroring mirroring;   // Mirroring type for the nametables.
-        bool prg_ram_enabled;       // Whether PRG RAM is enabled, determines whether the cartridge uses persistent saves.
 
         // Constructor / Destructor.
         Mapper(uint8_t nPRG = 0, uint8_t nCHR = 0);

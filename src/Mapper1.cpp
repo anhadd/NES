@@ -19,9 +19,6 @@ Mapper1::Mapper1(uint8_t nPRG, uint8_t nCHR) {
     load_reg = 0x00;
     load_reg_index = 0;
     ctrl_reg.full = 0x0C;
-
-    // PRG RAM is enabled by default on Mapper1.
-    prg_ram_enabled = true;
 }
 
 
@@ -116,7 +113,6 @@ uint32_t Mapper1::cpuMap(uint16_t address, bool write, uint8_t value) {
                                 prg_bank0 = load_reg & 0x0F;
                                 prg_bank1 = PRG_banks - 1;
                             }
-                            prg_ram_enabled = (load_reg & 0x10) == 0;
                             break;
                     }
                     load_reg = 0x00;

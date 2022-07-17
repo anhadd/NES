@@ -122,9 +122,10 @@ class ROM {
         vector<uint8_t> PRG_ram;        // PRG RAM, not used by every mapper. Contains the save data.
         vector<uint8_t> CHR_memory;     // CHR memory. Is a vector so that it is resizable for each mapper.
                                         // Stores the pattern table.
+        vector<uint8_t> Expansion_ROM;  // Expansion ROM memory.
         
         bool CHR_is_ram;                // Determines whether writes to CHR memory are allowed.
-        vector<uint8_t> Expansion_ROM;  // Expansion ROM memory.
+        bool persistent_RAM;            // Determines whether the game supports save games.
 
         string save_path;               // The path of the save file. Used to save and load game data.
 
