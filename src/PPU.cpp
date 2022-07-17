@@ -872,11 +872,11 @@ bool PPU::executeCycle() {
                     break;
                 case 4:
                     // Load data of the low byte of a tile.
-                    loadTileByte(false);
+                    loadTileByte(LOW_BYTE);
                     break;
                 case 6:
                     // Load data of the high byte of a tile.
-                    loadTileByte(true);
+                    loadTileByte(HIGH_BYTE);
                     break;
                 case 7:
                     // Increment the x tile every 8 cycles (since a tile is 8 pixels wide).

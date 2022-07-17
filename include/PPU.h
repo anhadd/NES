@@ -78,6 +78,9 @@ using namespace std;
 
 #define FRAMES_PER_DEBUG_UPDATE 60
 
+#define LOW_BYTE false
+#define HIGH_BYTE true
+
 
 // Struct for the colors of the NES palette.
 struct Color {
