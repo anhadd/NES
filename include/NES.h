@@ -36,6 +36,8 @@
 
 #define INPUT_LOG SDLK_l
 #define INPUT_FRAME SDLK_f
+
+#define ALLOW_LR_UD false
 #define SHOW_DEBUG false
 
 using namespace std;
