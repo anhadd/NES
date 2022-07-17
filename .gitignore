@@ -37,4 +37,5 @@
 /roms/*
 main
 *.log
+*.o.tmp
 saves/*
