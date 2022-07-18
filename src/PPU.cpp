@@ -129,7 +129,6 @@ void PPU::reset() {
     final_pixel = 0x00;
     final_palette = 0x00;
 
-    SDL_FillRect(gui->surface, NULL, 0x000000);
     if (show_debug) {
         SDL_FillRect(gui->pattern_surface, NULL, 0x000000);
         SDL_FillRect(gui->palette_surface, NULL, 0x000000);

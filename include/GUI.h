@@ -19,13 +19,11 @@ class GUI {
         
         SDL_Renderer *renderer;
         SDL_Texture *texture;
+        SDL_Rect scaled_screen_rect;
+        
         vector<uint8_t> pixels;
         unsigned char* texture_pixels;
         int pitch;
-        
-        SDL_Surface *surface;
-        SDL_Surface *surface_buff;
-        SDL_Rect scaled_screen_rect;
 
         // Pattern table window.
         SDL_Window *pattern_window;
